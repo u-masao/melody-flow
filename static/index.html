@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melody Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.jsをCDNから読み込みます -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-8 space-y-8">
+        <header class="text-center">
+            <h1 class="text-4xl font-bold tracking-tight">Melody Flow</h1>
+            <p class="text-gray-400 mt-2">君の“ノリ”が、メロディになる。</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center bg-gray-900/50 p-6 rounded-lg">
+            <div>
+                <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">1. コード進行</label>
+                <select id="chord-progression" class="w-full bg-gray-700 border-gray-600 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option>C - G - Am - F (カノン進行)</option>
+                    <option>F - G - Em - Am (王道進行)</option>
+                    <option>Am - F - G - C (小室進行)</option>
+                    <option>Dm7 - G7 - Cmaj7 (II-V-I Jazz)</option>
+                </select>
+            </div>
+            <div>
+                <label for="music-style" class="block text-sm font-medium text-gray-300 mb-2">2. スタイル</label>
+                <select id="music-style" class="w-full bg-gray-700 border-gray-600 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option>JAZZ風</option>
+                    <option>POP風</option>
+                </select>
+            </div>
+            <div class="self-end">
+                 <button id="generate-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md text-lg">
+                    メロディ生成
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-lg font-semibold mb-2">生成されたMIDIデータ (デバッグ用)</h3>
+            <pre id="midi-output" class="bg-gray-900/70 p-4 rounded-md h-48 overflow-auto text-xs whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+
+    <!-- このHTMLファイルに対応するJavaScriptファイルを読み込みます -->
+    <script src="/static/main.js"></script>
+</body>
+</html>
+
