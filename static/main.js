@@ -1,84 +1,209 @@
-// DOMが完全に読み込まれたら処理を開始します
 document.addEventListener('DOMContentLoaded', () => {
-    // HTMLから操作したい要素を取得します
+    // --- DOM要素 ---
     const chordSelect = document.getElementById('chord-progression');
     const styleSelect = document.getElementById('music-style');
     const generateButton = document.getElementById('generate-button');
-    const midiOutput = document.getElementById('midi-output');
+    const bpmSlider = document.getElementById('bpm-slider');
+    const bpmValue = document.getElementById('bpm-value');
+    const playStopButton = document.getElementById('play-stop-button');
+    const progressionDisplay = document.getElementById('progression-display');
+    const statusArea = document.getElementById('status-area');
 
-    // Tone.jsのシンセサイザーを準備します
+    // --- 音楽関連 ---
     const synth = new Tone.PolySynth(Tone.Synth).toDestination();
 
-    // 「メロディ生成」ボタンがクリックされたときの処理を定義します
-    generateButton.addEventListener('click', async () => {
-        const chordProgression = chordSelect.value;
-        const musicStyle = styleSelect.value;
+    // --- 状態管理 ---
+    let chordMelodies = {};
+    let progression = [];
+    let activeChord = null;
+    let currentNoteIndex = 0;
+    let isPlaying = false;
 
-        generateButton.textContent = '生成中...';
+    // --- 初期化 ---
+    setupMidi();
+    setupKeyboardListener();
+    
+    // --- イベントリスナー ---
+    if (bpmSlider) {
+        bpmSlider.addEventListener('input', (e) => {
+            const newBpm = e.target.value;
+            if (bpmValue) bpmValue.textContent = newBpm;
+            Tone.Transport.bpm.value = newBpm;
+        });
+    }
+
+    if (generateButton) {
+        generateButton.addEventListener('click', generatePhrases);
+    }
+
+    if (playStopButton) {
+        playStopButton.addEventListener('click', togglePlayback);
+    }
+
+    // --- 機能関数 ---
+
+    /**
+     * AudioContextが 'running' 状態でない場合のみTone.start()を呼び出す関数
+     */
+    async function ensureAudioContext() {
+        if (Tone.context.state !== 'running') {
+            await Tone.start();
+        }
+    }
+
+    /** AIにフレーズを生成させる */
+    async function generatePhrases() {
+        if (!generateButton) return;
         generateButton.disabled = true;
-        midiOutput.textContent = 'AIがメロディを考えています...';
+        generateButton.textContent = 'AIが作曲中...';
+        statusArea.textContent = 'コードごとにフレーズを生成しています...';
+        stopPlayback();
 
         try {
             const response = await fetch('/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    chord_progression: chordProgression,
-                    style: musicStyle,
+                    chord_progression: chordSelect.value,
+                    style: styleSelect.value,
                 }),
             });
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            progression = Object.keys(data.chord_melodies);
+
+            chordMelodies = {};
+            for (const chord in data.chord_melodies) {
+                const decoded = atob(data.chord_melodies[chord]);
+                chordMelodies[chord] = decoded.trim().split('\n')
+                    .map(line => {
+                        const [pitch, duration, wait, velocity] = line.split(' ').map(Number);
+                        return { pitch, duration, wait, velocity };
+                    })
+                    .filter(note => !isNaN(note.pitch));
             }
 
-            const data = await response.json();
-            const decodedMidi = atob(data.midi_data);
-            midiOutput.textContent = decodedMidi;
-
-            // --- メロディ再生ロジック ---
-            // 以前の単音再生の代わりに、シーケンスを再生する処理を追加します。
-            
-            // 1. 再生中のシーケンスがあれば停止・クリアします
-            Tone.Transport.stop();
-            Tone.Transport.cancel();
-
-            // 2. テキストデータをノート情報の配列に変換します
-            //    各行は "pitch duration wait velocity instrument" の形式です
-            const notes = decodedMidi.trim().split('\n').map(line => {
-                const [pitch, duration, wait, velocity] = line.split(' ').map(Number);
-                return { pitch, duration, wait, velocity };
-            });
-
-            // 3. Tone.jsのPartを使ってシーケンスをスケジューリングします
-            let accumulatedTime = 0; // 経過時間を記録する変数 (ミリ秒)
-            const part = new Tone.Part((time, note) => {
-                // MIDIノート番号を周波数に変換
-                const freq = Tone.Midi(note.pitch).toFrequency();
-                // durationを秒に変換
-                const dur = note.duration / 1000;
-                // velocity(0-127)を音量(0-1)に変換
-                const vel = note.velocity / 127;
-                
-                synth.triggerAttackRelease(freq, dur, time, vel);
-            }, notes.map(note => {
-                // 各ノートの開始時間を計算
-                accumulatedTime += note.wait;
-                const startTime = accumulatedTime / 1000; // 秒に変換
-                return { time: startTime, ...note }; // Partに渡すオブジェクト
-            })).start(0);
-
-            // 4. オーディオを開始し、シーケンスの再生を開始します
-            await Tone.start();
-            Tone.Transport.start();
+            updateProgressionDisplay();
+            statusArea.textContent = 'フレーズ生成完了。「演奏開始」ボタンを押してください。';
 
         } catch (error) {
-            console.error('Error generating melody:', error);
-            midiOutput.textContent = `エラーが発生しました: ${error.message}`;
+            console.error('フレーズ生成に失敗:', error);
+            statusArea.textContent = `エラー: ${error.message}`;
         } finally {
-            generateButton.textContent = 'メロディ生成';
             generateButton.disabled = false;
+            generateButton.textContent = '1. フレーズをAIに生成させる';
         }
-    });
+    }
+
+    /** 演奏の開始/停止をトグルする */
+    async function togglePlayback() {
+        if (progression.length === 0) {
+            statusArea.textContent = '先にフレーズを生成してください。';
+            return;
+        }
+        await ensureAudioContext();
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            startPlayback();
+        }
+    }
+
+    /** 演奏を開始する */
+    function startPlayback() {
+        Tone.Transport.start();
+        isPlaying = true;
+        if (playStopButton) {
+            playStopButton.textContent = '演奏停止';
+            playStopButton.classList.replace('bg-green-600', 'bg-red-600');
+            playStopButton.classList.replace('hover:bg-green-700', 'hover:bg-red-700');
+        }
+    }
+
+    /** 演奏を停止する */
+    function stopPlayback() {
+        Tone.Transport.stop();
+        document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-yellow-400'));
+        activeChord = null;
+        isPlaying = false;
+        if (playStopButton) {
+            playStopButton.textContent = '2. 演奏開始';
+            playStopButton.classList.replace('bg-red-600', 'bg-green-600');
+            playStopButton.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
+        }
+    }
+
+    /** 進行表示UIを更新する */
+    function updateProgressionDisplay() {
+        if (!progressionDisplay) return;
+        progressionDisplay.innerHTML = '';
+        progression.forEach((chord, index) => {
+            const chordName = chord.split('_')[0];
+            const el = document.createElement('div');
+            el.id = `indicator-${index}`;
+            el.className = 'indicator text-center p-2 rounded-md w-20';
+            el.textContent = chordName;
+            progressionDisplay.appendChild(el);
+        });
+    }
+
+    // 1小節ごとに実行されるイベント
+    Tone.Transport.scheduleRepeat((time) => {
+        const currentMeasure = Math.floor(Tone.Transport.position.split(':')[0]);
+        const chordIndex = currentMeasure % progression.length;
+        
+        Tone.Draw.schedule(() => {
+            document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-yellow-400'));
+            const activeIndicator = document.getElementById(`indicator-${chordIndex}`);
+            if (activeIndicator) {
+                activeIndicator.classList.add('bg-yellow-400');
+            }
+        }, time);
+
+        activeChord = progression[chordIndex];
+        currentNoteIndex = 0;
+    }, "1m");
+
+    /** 次のノートを再生する */
+    async function playNextNote(velocity = 0.75) {
+        await ensureAudioContext();
+        
+        if (!isPlaying || !activeChord || !chordMelodies[activeChord] || chordMelodies[activeChord].length === 0) {
+            return;
+        }
+
+        const notesOfCurrentChord = chordMelodies[activeChord];
+        const noteToPlay = notesOfCurrentChord[currentNoteIndex];
+        
+        if (!noteToPlay || typeof noteToPlay.pitch !== 'number' || isNaN(noteToPlay.pitch)) {
+            currentNoteIndex = (currentNoteIndex + 1) % notesOfCurrentChord.length;
+            return;
+        }
+        
+        const freq = Tone.Midi(noteToPlay.pitch).toFrequency();
+        synth.triggerAttackRelease(freq, "8n", Tone.now(), velocity);
+
+        currentNoteIndex = (currentNoteIndex + 1) % notesOfCurrentChord.length;
+    }
+    
+    function setupKeyboardListener() {
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !e.repeat) playNextNote();
+        });
+    }
+    async function setupMidi() {
+        if (!navigator.requestMIDIAccess) return;
+        try {
+            await WebMidi.enable();
+            const midiInput = WebMidi.inputs[0];
+            if (midiInput && statusArea) {
+                statusArea.textContent = `接続中: ${midiInput.name}`;
+                midiInput.channels[1].addListener("noteon", e => playNextNote(e.velocity));
+            }
+        } catch (err) {
+            console.warn("MIDIの初期化に失敗:", err);
+        }
+    }
 });
 
