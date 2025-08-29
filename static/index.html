@@ -11,6 +11,26 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .indicator { transition: all 0.2s ease-in-out; }
+        #piano-roll-container {
+            position: relative;
+            background-color: #1a202c;
+            border: 1px solid #4a5568;
+            height: 200px;
+            overflow: hidden;
+        }
+        .note-block {
+            position: absolute;
+            background-color: #6366f1;
+            border-radius: 4px;
+            opacity: 0.8;
+        }
+        #playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #f59e0b;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
@@ -20,7 +40,7 @@
             <h1 class="text-4xl font-bold tracking-tight">Melody Flow</h1>
         </header>
 
-        <!-- 1. 設定パネル -->
+        <!-- 1. 設定パネル (変更なし) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-900/50 p-6 rounded-lg">
             <div>
                 <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">コード進行</label>
@@ -34,8 +54,8 @@
             <div>
                 <label for="music-style" class="block text-sm font-medium text-gray-300 mb-2">スタイル</label>
                 <select id="music-style" class="w-full bg-gray-700 rounded-md p-3">
-                    <option>JAZZ風</option>
-                    <option>POP風</option>
+                    <option>JAZZ</option>
+                    <option>POP</option>
                 </select>
             </div>
             <div class="md:col-span-2">
@@ -44,7 +64,7 @@
                 </button>
             </div>
         </div>
-        
+
         <!-- 2. 演奏パネル -->
         <div class="bg-gray-900/50 p-6 rounded-lg space-y-4">
             <div class="flex items-center justify-center gap-6">
@@ -63,16 +83,28 @@
             <div id="progression-display" class="flex justify-around p-3 bg-black/30 rounded-md">
                 <!-- JSで動的に生成されます -->
             </div>
+            <!-- ピアノロール表示エリア -->
+            <div id="piano-roll-container" class="rounded-md">
+                <div id="playhead"></div>
+                <!-- 【追加】現在再生中の音程表示 -->
+                <div id="current-pitch-display" class="absolute top-2 right-3 text-2xl font-mono bg-black/50 p-2 rounded-md transition-transform transform scale-100">--</div>
+            </div>
+            <!-- 【追加】生成フレーズのテキスト表示エリア -->
+            <div class="bg-black/30 p-3 rounded-md">
+                <h3 class="text-sm font-medium text-gray-400 mb-2">現在のフレーズ (MIDI Note #)</h3>
+                <p id="note-display-area" class="font-mono text-lg break-all">...</p>
+            </div>
         </div>
 
-        <!-- 3. ステータス表示 -->
+        <!-- 3. ステータス表示 (変更なし) -->
         <div id="status-area" class="text-center text-gray-400 p-3 bg-gray-900/50 rounded-lg">
             MIDIデバイスを接続、またはスペースキーで演奏
         </div>
     </div>
 
-    <!-- 【重要】?v=2 を追加してキャッシュを無効化 -->
-    <script src="/static/main.js?v=2"></script>
+    <!-- 【重要】?v=4 に更新 -->
+    <script src="/static/main.js?v=4"></script>
 </body>
 </html>
+
 
