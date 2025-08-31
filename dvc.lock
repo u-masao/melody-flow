@@ -28,7 +28,37 @@ stages:
   train_model_llama-midi:
     cmd: uv run python -m src.train_model --model_name 'dx2102/llama-midi' 
       data/interim/train.json models/llama-midi.pth/
+    deps:
+    - path: data/interim/train.json
+      hash: md5
+      md5: 19832914ba9f4e183cb51740531c5754
+      size: 3560985
+    - path: src/train_model.py
+      hash: md5
+      md5: 38b4d7e343dd0ff0d9cc42796c0c844a
+      size: 8615
+    outs:
+    - path: models/llama-midi.pth/
+      hash: md5
+      md5: e41f0bd89067d1adeddb2e6ac22b618d.dir
+      size: 62389352
+      nfiles: 7
   train_model_llama_3.2-1b:
     cmd: uv run python -m src.train_model --model_name 
       'unsloth/Llama-3.2-1B-bnb-4bit' data/interim/train.json 
       models/llama-3.2-1b.pth/
+    deps:
+    - path: data/interim/train.json
+      hash: md5
+      md5: 19832914ba9f4e183cb51740531c5754
+      size: 3560985
+    - path: src/train_model.py
+      hash: md5
+      md5: 38b4d7e343dd0ff0d9cc42796c0c844a
+      size: 8615
+    outs:
+    - path: models/llama-3.2-1b.pth/
+      hash: md5
+      md5: bb21835d46251ec7b4e8c4677dea2933.dir
+      size: 62385622
+      nfiles: 6
