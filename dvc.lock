@@ -1,0 +1,10 @@
+schema: '2.0'
+stages:
+  download_wjazzd_dataset:
+    cmd: curl https://jazzomat.hfm-weimar.de/download/downloads/wjazzd.db -o 
+      data/raw/wjazzd.db
+    outs:
+    - path: data/raw/wjazzd.db
+      hash: md5
+      md5: 89f02b08ce00e3f46ffd466c8f3e0e5d
+      size: 42512384
