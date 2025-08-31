@@ -5,3 +5,10 @@ stages:
       -o data/raw/wjazzd.db
     outs:
       - data/raw/wjazzd.db
+
+  make_dataset:
+    cmd: >-
+      uv run python -m src.make_dataset
+      data/raw/wjazzd.db
+      data/interim/train.json
+
