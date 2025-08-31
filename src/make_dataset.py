@@ -1,5 +1,6 @@
 import argparse
 import json
+import io
 import sqlite3
 from pathlib import Path
 import pandas as pd
@@ -95,7 +96,9 @@ def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
         # 必要な列のみを選択
         melody_notes = df[['pitch', 'duration', 'wait', 'velocity', 'instrument']]
         melody_data_str = "pitch duration wait velocity instrument\n"
-        melody_data_str += melody_notes.to_string(header=False, index=False)
+        buffer = io.StringIO()
+        melody_notes.to_csv(buffer, sep=' ', index=False, header=False)
+        melody_data_str += buffer.getvalue()
 
     # 4. 最終出力文字列の整形
     return f"<s>[INST] {prompt} [/INST] {melody_data_str} </s>"
