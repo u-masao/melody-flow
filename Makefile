@@ -24,4 +24,4 @@ PIPELINE.md: dvc.yaml params.yaml
 
 check_commit:
 	git diff --exit-code
-	git diff --exit-code --stages
+	git diff --exit-code --staged
