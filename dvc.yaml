@@ -11,4 +11,8 @@ stages:
       uv run python -m src.make_dataset
       data/raw/wjazzd.db
       data/interim/train.json
-
+    deps:
+      - src/make_dataset.py
+      - data/raw/wjazzd.db
+    outs:
+      - data/interim/train.json
