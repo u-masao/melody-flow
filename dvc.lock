@@ -18,8 +18,8 @@ stages:
       size: 42512384
     - path: src/make_dataset.py
       hash: md5
-      md5: a4575146e6d7dbbc8b6c8821f5f1d729
-      size: 5995
+      md5: 9a1f79ba5cf72794b4437f89530ae2c5
+      size: 5982
     outs:
     - path: data/interim/train.json
       hash: md5
@@ -27,7 +27,7 @@ stages:
       size: 3560985
   train_model_llama-midi:
     cmd: uv run python -m src.train_model --model_name 'dx2102/llama-midi' 
-      data/interim/train.json models/llama-midi.pth/
+      --num_train_epochs 5 data/interim/train.json models/llama-midi.pth/
     deps:
     - path: data/interim/train.json
       hash: md5
@@ -35,18 +35,18 @@ stages:
       size: 3560985
     - path: src/train_model.py
       hash: md5
-      md5: 38b4d7e343dd0ff0d9cc42796c0c844a
-      size: 8615
+      md5: 9bda275ae79273a0ea5390593a9ab8e4
+      size: 8592
     outs:
     - path: models/llama-midi.pth/
       hash: md5
-      md5: e41f0bd89067d1adeddb2e6ac22b618d.dir
+      md5: d7c97bc50d0da7739fb99fa914572fe3.dir
       size: 62389352
       nfiles: 7
   train_model_llama_3.2-1b:
     cmd: uv run python -m src.train_model --model_name 
-      'unsloth/Llama-3.2-1B-bnb-4bit' data/interim/train.json 
-      models/llama-3.2-1b.pth/
+      'unsloth/Llama-3.2-1B-bnb-4bit' --num_train_epochs 5 
+      data/interim/train.json models/llama-3.2-1b.pth/
     deps:
     - path: data/interim/train.json
       hash: md5
@@ -54,11 +54,11 @@ stages:
       size: 3560985
     - path: src/train_model.py
       hash: md5
-      md5: 38b4d7e343dd0ff0d9cc42796c0c844a
-      size: 8615
+      md5: 9bda275ae79273a0ea5390593a9ab8e4
+      size: 8592
     outs:
     - path: models/llama-3.2-1b.pth/
       hash: md5
-      md5: bb21835d46251ec7b4e8c4677dea2933.dir
+      md5: 00920d1bcf586bad16275d09ec447e87.dir
       size: 62385622
       nfiles: 6
