@@ -7,7 +7,7 @@ from typing import Dict
 import uvicorn
 import torch
 from unsloth import FastLanguageModel
-from transformers import LogitsProcessorList
+from transformers import LogitsProcessorList, AutoModelForCausalLM, AutoTokenizer
 import base64
 import re
 import os
@@ -16,20 +16,36 @@ import time
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 # --- AIモデルのセットアップ ---
-MODEL_NAME = "models/llama-midi.pth/" # ファインチューニング済みモデルのパス
+# 環境変数 `MODEL_NAME` からモデル名を取得。指定がなければデフォルト値を使用
+MODEL_NAME = os.getenv("MODEL_NAME", "models/llama-midi.pth/")
 print(f"Loading model: {MODEL_NAME}...")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {DEVICE}")
+
 try:
-    MODEL, TOKENIZER = FastLanguageModel.from_pretrained(
-        model_name=MODEL_NAME,
-        max_seq_length=4096,
-        dtype=None,
-        load_in_4bit=True,
-    )
-    # --- 【追加】NoteTokenizerのインスタンスを作成 ---
+    # ローカルのUnslothモデルか、HuggingFaceのモデルかを判定
+    if os.path.isdir(MODEL_NAME):
+        # ローカルのUnslothモデルをロード
+        print("Loading local Unsloth model...")
+        MODEL, TOKENIZER = FastLanguageModel.from_pretrained(
+            model_name=MODEL_NAME,
+            max_seq_length=4096,
+            dtype=None,
+            load_in_4bit=True,
+        )
+    else:
+        # HuggingFace Hubからモデルをロード
+        print("Loading HuggingFace model...")
+        MODEL = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.bfloat16,
+        ).to(DEVICE)
+        TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+    # NoteTokenizerのインスタンスを作成
     NOTE_TOKENIZER_HELPER = NoteTokenizer(TOKENIZER)
     print("Model loaded successfully.")
+
 except Exception as e:
     print(f"Error loading model: {e}")
     TOKENIZER, MODEL, NOTE_TOKENIZER_HELPER = None, None, None
