@@ -16,3 +16,17 @@ stages:
       - data/raw/wjazzd.db
     outs:
       - data/interim/train.json
+
+  train_model_llama-midi:
+    cmd: >-
+      uv run python -m src.train_model
+      --model_name 'dx2102/llama-midi'
+      data/interim/train.json
+      models/llama-midi.pth/
+
+  train_model_llama_3.2-1b:
+    cmd: >-
+      uv run python -m src.train_model
+      --model_name 'unsloth/Llama-3.2-1B-bnb-4bit'
+      data/interim/train.json
+      models/llama-3.2-1b.pth/
