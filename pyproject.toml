@@ -13,5 +13,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "dvc[dev,gdrive]>=3.62.0",
     "pytest>=8.4.1",
 ]
