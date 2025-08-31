@@ -3,11 +3,17 @@ name = "melody-flow"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
+    "datasets>=4.0.0",
     "fastapi>=0.116.1",
+    "loguru>=0.7.3",
+    "mlflow>=3.3.2",
     "torch>=2.8.0",
     "transformers>=4.55.4",
+    "trl<0.19.1",
+    "typed-argument-parser>=1.10.1",
+    "unsloth>=2025.7.2",
     "uvicorn>=0.35.0",
 ]
 
