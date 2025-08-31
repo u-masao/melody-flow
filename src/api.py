@@ -39,8 +39,7 @@ try:
         MODEL = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             torch_dtype=torch.bfloat16,
-            load_in_4bit=True,
-        )
+        ).to(DEVICE)
         TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
 
     # NoteTokenizerのインスタンスを作成
