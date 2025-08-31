@@ -50,3 +50,13 @@ PIPELINE.md: dvc.yaml params.yaml
 inferance:
 	uv run python -m src.inferance models/llama-midi.pth/ \
     'Title: Anthropology Chords:  Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7'
+
+
+##############################################################################
+# tools 
+##############################################################################
+
+## code formatting
+lint:
+	uv run ruff check --fix src
+	uv run ruff format src
