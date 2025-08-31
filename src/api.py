@@ -6,7 +6,8 @@ from pydantic import BaseModel
 from typing import Dict
 import uvicorn
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
+from unsloth import FastLanguageModel
+from transformers import LogitsProcessorList
 import base64
 import re
 import os
@@ -15,13 +16,17 @@ import time
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 # --- AIモデルのセットアップ ---
-MODEL_NAME = "dx2102/llama-midi"
+MODEL_NAME = "models/llama-midi.pth/" # ファインチューニング済みモデルのパス
 print(f"Loading model: {MODEL_NAME}...")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {DEVICE}")
 try:
-    TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
-    MODEL = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(DEVICE)
+    MODEL, TOKENIZER = FastLanguageModel.from_pretrained(
+        model_name=MODEL_NAME,
+        max_seq_length=4096,
+        dtype=None,
+        load_in_4bit=True,
+    )
     # --- 【追加】NoteTokenizerのインスタンスを作成 ---
     NOTE_TOKENIZER_HELPER = NoteTokenizer(TOKENIZER)
     print("Model loaded successfully.")
