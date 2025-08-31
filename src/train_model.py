@@ -1,4 +1,3 @@
-import argparse
 import sys
 import torch
 from loguru import logger
@@ -74,8 +73,8 @@ class MidiFinetuningExperiment:
             dataset = load_dataset("json", data_files=self.config['input_data_path'], split="train")
             logger.success("データセットの読み込みが完了しました。")
             return dataset
-        except Exception as e:
-            logger.exception(f"データセットの読み込みに失敗しました。パスを確認してください。")
+        except Exception:
+            logger.exception("データセットの読み込みに失敗しました。パスを確認してください。")
             raise
 
     def _run_training(self, train_dataset):
@@ -127,7 +126,7 @@ class MidiFinetuningExperiment:
         self.model.save_pretrained(output_path)
         self.tokenizer.save_pretrained(output_path)
         mlflow.log_artifacts(output_path, artifact_path="model")
-        logger.success(f"モデルの保存が完了しました。")
+        logger.success("モデルの保存が完了しました。")
 
     def run(self):
         """
