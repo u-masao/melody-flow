@@ -23,6 +23,11 @@ stages:
       --model_name 'dx2102/llama-midi'
       data/interim/train.json
       models/llama-midi.pth/
+    deps:
+      - src/train_model.py
+      - data/interim/train.json
+    outs:
+      - models/llama-midi.pth/
 
   train_model_llama_3.2-1b:
     cmd: >-
@@ -30,3 +35,8 @@ stages:
       --model_name 'unsloth/Llama-3.2-1B-bnb-4bit'
       data/interim/train.json
       models/llama-3.2-1b.pth/
+    deps:
+      - src/train_model.py
+      - data/interim/train.json
+    outs:
+      - models/llama-3.2-1b.pth/
