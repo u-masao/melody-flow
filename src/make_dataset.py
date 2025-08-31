@@ -74,10 +74,17 @@ def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
         # 変換ルールに基づき各列を計算
         df = melody_df.copy()
         df['pitch'] = df['pitch'].round().astype(int)
-        df['duration'] = (df['duration'] * 1000).astype(int)
 
-        # waitの計算 (差分)
-        df['wait'] = (df['onset'].diff().fillna(df['onset']) * 1000).astype(int)
+        # waitの計算 (次の音の開始時刻との差分)
+        # onsetは秒単位なので、waitも秒単位で計算してからミリ秒に変換する
+        wait_in_seconds = df['onset'].shift(-1) - df['onset']
+        # 最後の音のwaitは、その音のduration(秒)とする
+        # df['duration']はこの時点では秒単位
+        wait_in_seconds.fillna(df['duration'], inplace=True)
+        df['wait'] = (wait_in_seconds * 1000).astype(int)
+
+        # durationをミリ秒に変換
+        df['duration'] = (df['duration'] * 1000).astype(int)
 
         df['velocity'] = df['loud_med'].fillna(80).astype(int)
 
