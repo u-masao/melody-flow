@@ -1,0 +1,7 @@
+stages:
+  download_wjazzd_dataset:
+    cmd: >-
+      curl https://jazzomat.hfm-weimar.de/download/downloads/wjazzd.db
+      -o data/raw/wjazzd.db
+    outs:
+      - data/raw/wjazzd.db
