@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.116.1",
     "loguru>=0.7.3",
     "mlflow>=3.3.2",
+    "symusic>=0.5.8",
     "torch>=2.8.0",
     "transformers>=4.55.4",
     "trl<0.19.1",
@@ -21,4 +22,5 @@ dependencies = [
 dev = [
     "dvc[dev,gdrive]>=3.62.0",
     "pytest>=8.4.1",
+    "ruff>=0.12.11",
 ]
