@@ -4,7 +4,7 @@ from transformers import AutoTokenizer
 
 # テスト対象のクラスをインポート
 # プロジェクトのルートディレクトリからpytestを実行することを想定
-from src.melody_processor import MelodyControlLogitsProcessor
+from src.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 
 # --- テスト用のフィクスチャ ---
@@ -34,8 +34,9 @@ def test_melody_processor_restricts_notes(tokenizer, chord, expected_allowed_not
     """
     指定されたコードに基づき、スケール外の音の確率が-infに設定されるかをテストする
     """
+    note_tokenizer = NoteTokenizer(tokenizer)
     # 1. テストの準備
-    processor = MelodyControlLogitsProcessor(chord=chord, note_tokenizer=tokenizer)
+    processor = MelodyControlLogitsProcessor(chord=chord, note_tokenizer=note_tokenizer)
 
     # ダミーのlogitsを作成 (バッチサイズ1, トークン数=ボキャブラリサイズ)
     # 全てのlogitを0.0で初期化
