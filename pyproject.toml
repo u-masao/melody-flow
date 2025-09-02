@@ -25,3 +25,25 @@ dev = [
     "pytest>=8.4.1",
     "ruff>=0.12.11",
 ]
+
+[tool.ruff]
+line-length = 99
+src = ["llm_classification"]
+include = ["pyproject.toml", "src/**/*.py"]
+exclude = []
+
+[tool.ruff.lint]
+# flake8の主要なルールと一般的なプラグインのルールを選択
+# F: Pyflakes, E/W: pycodestyle, I: isort, B: flake8-bugbear, C4: flake8-comprehensions など
+select = ["A", "B", "C4", "E", "F", "I", "SIM", "UP", "W"]
+
+[tool.ruff.lint.isort]
+known-first-party = []
+force-sort-within-sections = true
+
+# black互換のフォーマッタを有効化
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
