@@ -146,16 +146,18 @@ def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
         melody_notes = df[["pitch", "duration", "wait", "velocity", "instrument"]]
         melody_data_str = "pitch duration wait velocity instrument\n"
         buffer = io.StringIO()
-        melody_notes.to_csv(buffer, sep=' ', index=False, header=False)
+        melody_notes.to_csv(buffer, sep=" ", index=False, header=False)
         melody_data_str += buffer.getvalue()
 
     # 4. 最終出力文字列の整形
     return f"<s>[INST] {prompt} [/INST] {melody_data_str} </s>"
 
+
 def get_table_list(con):
     cursor = con.cursor()
     cursor.execute("select name from sqlite_master where type='table';")
     return [x[0] for x in cursor.fetchall()]
+
 
 def load_database(con):
     db = {}
@@ -163,21 +165,17 @@ def load_database(con):
     logger.info(tables)
 
     for table in tables:
-        db[table] = pd.read_sql_query(
-        f"SELECT * from {table}", con
-
-    )
+        db[table] = pd.read_sql_query(f"SELECT * from {table}", con)
         logger.info(f"load table: {table}, {db[table].shape}")
-    
 
     return db
-    
+
 
 def load_dataset():
     """
     データベースからデータを読み込み、SFT形式のデータセットを生成してJSONファイルに保存する。
     """
-    db_path = Path('data/raw/wjazzd.db')
+    db_path = Path("data/raw/wjazzd.db")
     logger.info(f"Connecting to database: {db_path}")
     # データベースファイルが存在しない場合はエラー
     if not db_path.exists():
@@ -191,26 +189,6 @@ def load_dataset():
     logger.info(db)
     return db
 
-def main():
-
-    logger.info("Fetching all melids...")
-    melids = get_all_melids(con)
-
-    # For development, let's process only a small subset
-    # melids = melids[:10]
-
-    results = []
-    logger.info(f"Processing {len(melids)} melids...")
-    for melid in melids:
-        sft_text = process_melid(melid, con)
-        if sft_text:
-            results.append({"text": sft_text})
-            logger.info(f"{melid=}")
-            logger.info(f"{sft_text=}")
-            logger.info(sft_text)
-            break
-
-    con.close()
 
 db = load_dataset()
 
@@ -220,4 +198,4 @@ with gr.Blocks() as demo:
         df_view = gr.Dataframe(db[table].head(1000), label=table)
 
 if __name__ == "__main__":
-    demo.launch(share=False, server_name= '0.0.0.0', server_port= 7000)
+    demo.launch(share=False, server_name="0.0.0.0", server_port=7000)
