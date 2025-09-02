@@ -45,7 +45,7 @@ class NoteTokenizer:
         """MIDIピッチ0から127までのトークンIDを事前に計算してキャッシュする。"""
         for pitch in range(128):
             # llama-midiは "\n60 " のようにスペース区切りの数値をトークンとして扱う
-            token_str = f" {pitch}"
+            token_str = f"{pitch}"
             # トークナイザを使って文字列からトークンIDを取得
             token_ids = self.tokenizer.encode(token_str, add_special_tokens=False)
             if token_ids:
@@ -98,8 +98,8 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
             scale_notes = {0, 2, 4, 7, 9}
 
 
-        # 4オクターブ分 (MIDI: 48-95あたり) のスケール音を許可する
-        for octave in range(4, 8):
+        # 3オクターブ分 (MIDI: 48-84あたり) のスケール音を許可する
+        for octave in range(4, 7):
             for note_in_scale in scale_notes:
                 midi_pitch = 12 * octave + note_in_scale
                 if midi_pitch < 128:
@@ -125,23 +125,10 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
         if sequence.endswith("\n"):
             logger.info(sequence)
             logger.info(scores.shape)
-            # Create a mask of zeros.
-            mask = torch.zeros_like(scores)
-
-            # Get all possible pitch token IDs from the tokenizer cache.
-            all_pitch_token_ids = set(self.note_tokenizer.pitch_to_token_id_cache.values())
-
-            # Identify the pitch tokens that should be suppressed.
-            # These are the pitch tokens not in the allowed list.
-            allowed_token_ids_set = set(self.allowed_token_ids)
-            suppressed_pitch_ids = [
-                token_id for token_id in all_pitch_token_ids if token_id not in allowed_token_ids_set
-            ]
-
-            # Set the logits for the suppressed pitches to -inf.
-            if suppressed_pitch_ids:
-                mask[:, suppressed_pitch_ids] = -float("inf")
-
+            # Create a mask to suppress all tokens by default.
+            mask = torch.full_like(scores, -float("inf"))
+            # Allow only the tokens that correspond to the pitches in our scale.
+            mask[:, self.allowed_token_ids] = 0
             scores = scores + mask
 
         return scores
