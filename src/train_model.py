@@ -13,6 +13,7 @@ class MidiFinetuningExperiment:
     """
     MIDI生成モデルのファインチューニング実験を管理するクラス。
     """
+
     def __init__(self, config: dict):
         """
         実験の設定を初期化します。
@@ -39,10 +40,10 @@ class MidiFinetuningExperiment:
         """
         logger.info(f"モデル '{self.config['model_name']}' を読み込んでいます...")
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
-            model_name=self.config['model_name'],
-            max_seq_length=self.config['max_seq_length'],
+            model_name=self.config["model_name"],
+            max_seq_length=self.config["max_seq_length"],
             dtype=None,  # 自動選択
-            load_in_4bit=self.config.get('load_in_4bit', True),
+            load_in_4bit=self.config.get("load_in_4bit", True),
         )
         logger.success("モデルとトークナイザーの読み込みが完了しました。")
 
@@ -51,16 +52,16 @@ class MidiFinetuningExperiment:
         モデルにLoRAを適用します。
         """
         logger.info("モデルにLoRAアダプターを適用しています...")
-        lora_config = self.config['lora']
+        lora_config = self.config["lora"]
         self.model = FastLanguageModel.get_peft_model(
             self.model,
-            r=lora_config['r'],
-            target_modules=lora_config['target_modules'],
-            lora_alpha=lora_config['alpha'],
-            lora_dropout=lora_config.get('dropout', 0),
+            r=lora_config["r"],
+            target_modules=lora_config["target_modules"],
+            lora_alpha=lora_config["alpha"],
+            lora_dropout=lora_config.get("dropout", 0),
             bias="none",
             use_gradient_checkpointing=True,
-            random_state=self.config.get('seed', 42),
+            random_state=self.config.get("seed", 42),
         )
         logger.success("LoRAの適用が完了しました。")
 
@@ -68,13 +69,19 @@ class MidiFinetuningExperiment:
         """
         学習用データセットを読み込みます。
         """
-        logger.info(f"データセットを '{self.config['input_data_path']}' から読み込んでいます...")
+        logger.info(
+            f"データセットを '{self.config['input_data_path']}' から読み込んでいます..."
+        )
         try:
-            dataset = load_dataset("json", data_files=self.config['input_data_path'], split="train")
+            dataset = load_dataset(
+                "json", data_files=self.config["input_data_path"], split="train"
+            )
             logger.success("データセットの読み込みが完了しました。")
             return dataset
         except Exception:
-            logger.exception("データセットの読み込みに失敗しました。パスを確認してください。")
+            logger.exception(
+                "データセットの読み込みに失敗しました。パスを確認してください。"
+            )
             raise
 
     def _run_training(self, train_dataset):
@@ -82,23 +89,25 @@ class MidiFinetuningExperiment:
         SFTTrainerを使用してモデルのトレーニングを実行します。
         """
         logger.info("MLflowで実験を開始します...")
-        mlflow.set_experiment(self.config.get('mlflow_experiment_name', "Default Experiment"))
+        mlflow.set_experiment(
+            self.config.get("mlflow_experiment_name", "Default Experiment")
+        )
         mlflow.autolog()
 
         with mlflow.start_run() as run:
             logger.info(f"MLflow Run ID: {run.info.run_id}")
 
-            training_args_dict = self.config['training_args']
-            training_args_dict['seed'] = self.config.get('seed', 42)
-            
+            training_args_dict = self.config["training_args"]
+            training_args_dict["seed"] = self.config.get("seed", 42)
+
             trainer = SFTTrainer(
                 model=self.model,
                 tokenizer=self.tokenizer,
                 train_dataset=train_dataset,
                 dataset_text_field="text",
-                max_seq_length=self.config['max_seq_length'],
-                dataset_num_proc=self.config.get('dataset_num_proc', 2),
-                packing=self.config.get('packing', False),
+                max_seq_length=self.config["max_seq_length"],
+                dataset_num_proc=self.config.get("dataset_num_proc", 2),
+                packing=self.config.get("packing", False),
                 args=TrainingArguments(**training_args_dict),
             )
 
@@ -114,14 +123,16 @@ class MidiFinetuningExperiment:
             if torch.cuda.is_available():
                 used_memory = round(torch.cuda.max_memory_reserved() / 1024**3, 2)
                 mlflow.log_metric("peak_gpu_memory_gb", used_memory)
-            
-            mlflow.log_metric("train_runtime_sec", trainer_stats.metrics['train_runtime'])
-            
+
+            mlflow.log_metric(
+                "train_runtime_sec", trainer_stats.metrics["train_runtime"]
+            )
+
     def _save_model(self):
         """
         ファインチューニングされたモデルを保存します。
         """
-        output_path = self.config['output_model_path']
+        output_path = self.config["output_model_path"]
         logger.info(f"モデルを '{output_path}' に保存しています...")
         self.model.save_pretrained(output_path)
         self.tokenizer.save_pretrained(output_path)
@@ -144,6 +155,7 @@ class Args(Tap):
     """
     LLMをLoRAでファインチューニングするスクリプトの設定。
     """
+
     # --- 必須の引数 ---
     input_data_path: str  # 入力となる学習データ（JSONファイル）のパス
     output_model_path: str  # ファインチューニング済みモデルの保存先パス
@@ -185,7 +197,9 @@ def main():
     スクリプトのエントリーポイント。
     typed-argument-parserを使って引数を解析し、実験クラスをインスタンス化して実行します。
     """
-    args = Args(description="LLMをLoRAでファインチューニングするスクリプト").parse_args()
+    args = Args(
+        description="LLMをLoRAでファインチューニングするスクリプト"
+    ).parse_args()
 
     # ArgsオブジェクトからMidiFinetuningExperimentが期待するconfig辞書を構築
     config = {
@@ -196,16 +210,19 @@ def main():
         "load_in_4bit": args.load_in_4bit,
         "seed": args.seed,
         "mlflow_experiment_name": args.mlflow_experiment_name,
-        
         "lora": {
             "r": args.lora_r,
             "alpha": args.lora_alpha,
             "target_modules": [
-                "q_proj", "k_proj", "v_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj",
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "gate_proj",
+                "up_proj",
+                "down_proj",
             ],
         },
-
         "training_args": {
             "per_device_train_batch_size": args.per_device_train_batch_size,
             "gradient_accumulation_steps": args.gradient_accumulation_steps,
@@ -229,6 +246,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

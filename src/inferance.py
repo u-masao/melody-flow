@@ -7,27 +7,31 @@ import transformers
 import json
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
+
 class InferenceArgs(Tap):
     """
     MIDI生成モデルでの推論に関する設定。
     """
+
     model_path: str  # ファインチューニング済みモデル（LoRAアダプター）の保存先パス
-    prompt: str      # 生成の元となるプロンプト。例: "Title: My Favorite Things Chords: E- Cmaj7"
-    
+    prompt: str  # 生成の元となるプロンプト。例: "Title: My Favorite Things Chords: E- Cmaj7"
+
     # --- 生成パラメータ ---
     max_new_tokens: int = 1024
     temperature: float = 0.8
     top_p: float = 0.9
-    
+
     def configure(self):
         """引数を必須の位置引数として設定します。"""
         self.add_argument("model_path")
         self.add_argument("prompt")
 
+
 class MidiGenerator:
     """
     ファインチューニングされたモデルを使ってMIDIテキストを生成するクラス。
     """
+
     def __init__(self, model_path: str):
         """
         モデルとトークナイザーを初期化してロードします。
@@ -37,14 +41,14 @@ class MidiGenerator:
         """
         self._setup_logging()
         logger.info(f"モデルを '{model_path}' から読み込んでいます...")
-        
+
         # 学習済みLoRAモデルをロード
         # Unslothが自動でベースモデルとアダプターを結合します
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
             model_name=model_path,
             max_seq_length=4096,  # 学習時と同じ値を設定
             dtype=None,
-            load_in_4bit=True,    # 学習時と同じ量子化設定を使用
+            load_in_4bit=True,  # 学習時と同じ量子化設定を使用
         )
         logger.success("モデルとトークナイザーの読み込みが完了しました。")
 
@@ -53,7 +57,9 @@ class MidiGenerator:
             "text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
-            torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+            torch_dtype=torch.bfloat16
+            if torch.cuda.is_bf16_supported()
+            else torch.float16,
             # device="cuda",
         )
 
@@ -77,7 +83,7 @@ class MidiGenerator:
         formatted_prompt = (
             f"<s>[INST] {prompt} [/INST] pitch duration wait velocity instrument\n"
         )
-        
+
         logger.info("推論を開始します...")
         logger.info(f"Prompt: {prompt}")
 
@@ -88,17 +94,20 @@ class MidiGenerator:
             prompt_data = json.loads(prompt_json_str)
             chord_progression = prompt_data.get("chord_progression")
         except (json.JSONDecodeError, AttributeError):
-            logger.warning("プロンプトからコード進行を抽出できませんでした。制約なしで生成します。")
+            logger.warning(
+                "プロンプトからコード進行を抽出できませんでした。制約なしで生成します。"
+            )
             chord_progression = None
 
         # LogitsProcessorを準備
         processors = []
         if chord_progression:
-            logger.info(f"コード進行 '{chord_progression}' に基づいてメロディを制約します。")
+            logger.info(
+                f"コード進行 '{chord_progression}' に基づいてメロディを制約します。"
+            )
             note_tokenizer = NoteTokenizer(self.tokenizer)
             logits_processor = MelodyControlLogitsProcessor(
-                chord_progression=chord_progression,
-                note_tokenizer=note_tokenizer
+                chord_progression=chord_progression, note_tokenizer=note_tokenizer
             )
             processors.append(logits_processor)
         else:
@@ -113,12 +122,12 @@ class MidiGenerator:
             logits_processor=processors,
             **kwargs,
         )
-        
-        generated_text = outputs[0]['generated_text']
-        
+
+        generated_text = outputs[0]["generated_text"]
+
         # プロンプト部分を除去し、生成された部分のみを抽出
         result = generated_text.split("[/INST]")[-1].strip()
-        
+
         logger.success("推論が完了しました。")
         return result
 
@@ -128,17 +137,19 @@ def main():
     スクリプトのエントリーポイント。
     引数を解析し、MIDI生成を実行します。
     """
-    args = InferenceArgs(description="ファインチューニング済みモデルでMIDIを生成するスクリプト").parse_args()
+    args = InferenceArgs(
+        description="ファインチューニング済みモデルでMIDIを生成するスクリプト"
+    ).parse_args()
 
     generator = MidiGenerator(model_path=args.model_path)
-    
+
     generated_midi = generator.generate(
         prompt=args.prompt,
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         top_p=args.top_p,
     )
-    
+
     print("\n--- Generated MIDI data ---\n")
     print(generated_midi)
 

@@ -11,7 +11,7 @@ def get_all_melids(con: sqlite3.Connection) -> List[int]:
     """データベースから全てのユニークなmelidを取得する"""
     # 'solos'テーブルは存在しないため、'solo_info'を使用する
     df = pd.read_sql_query("SELECT DISTINCT melid FROM solo_info", con)
-    return df['melid'].tolist()
+    return df["melid"].tolist()
 
 
 def _get_instrument_id(instrument_name: Optional[str]) -> int:
@@ -22,16 +22,16 @@ def _get_instrument_id(instrument_name: Optional[str]) -> int:
         "ts": 66,  # Tenor Sax
         "tp": 56,  # Trumpet
         "tb": 57,  # Trombone
-        "p": 0,    # Acoustic Grand Piano
-        "g": 26,   # Steel String Guitar -> Jazz Guitarっぽくするために変更
-        "b": 33,   # Electric Bass (finger)
+        "p": 0,  # Acoustic Grand Piano
+        "g": 26,  # Steel String Guitar -> Jazz Guitarっぽくするために変更
+        "b": 33,  # Electric Bass (finger)
         "d": 118,  # Synth Drum
         "cl": 71,  # Clarinet
         "ss": 64,  # Soprano Sax
-        "vib": 11, # Vibraphone
+        "vib": 11,  # Vibraphone
         "vn": 40,  # Violin
         "fl": 73,  # Flute
-        "org": 16, # Drawbar Organ
+        "org": 16,  # Drawbar Organ
     }
     # デフォルトは Jazz Guitar (MIDI Program 52) ではなく、Acoustic Steel Guitar (26)
     # 仕様書は52だが、llama-midiの学習データに合わせて調整
@@ -45,24 +45,31 @@ def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
     """
     # 1. データ取得
     # 'solo_info'テーブルからタイトルと楽器を取得
-    solo_df = pd.read_sql_query(f"SELECT title, instrument FROM solo_info WHERE melid = {melid}", con)
+    solo_df = pd.read_sql_query(
+        f"SELECT title, instrument FROM solo_info WHERE melid = {melid}", con
+    )
     if solo_df.empty:
         print(f"Warning: melid {melid} not found in solo_info table. Skipping.")
         return None
 
-    title = solo_df['title'].iloc[0]
-    instrument_name = solo_df['instrument'].iloc[0]
+    title = solo_df["title"].iloc[0]
+    instrument_name = solo_df["instrument"].iloc[0]
 
     # 'beats'テーブルからコード進行を取得 (旧'chords'テーブル)
-    chords_df = pd.read_sql_query(f"SELECT chord FROM beats WHERE melid = {melid} ORDER BY onset", con)
+    chords_df = pd.read_sql_query(
+        f"SELECT chord FROM beats WHERE melid = {melid} ORDER BY onset", con
+    )
 
     # melodyテーブルからノート情報を取得
-    melody_df = pd.read_sql_query(f"SELECT pitch, duration, onset, loud_med FROM melody WHERE melid = {melid} ORDER BY onset", con)
+    melody_df = pd.read_sql_query(
+        f"SELECT pitch, duration, onset, loud_med FROM melody WHERE melid = {melid} ORDER BY onset",
+        con,
+    )
 
     # 2. プロンプト構築
     # 'chord'カラムの非None値を連結する
     if not chords_df.empty:
-        valid_chords = chords_df['chord'].dropna().unique()
+        valid_chords = chords_df["chord"].dropna().unique()
         prompt_chords = " ".join(valid_chords)
     else:
         prompt_chords = ""
@@ -74,30 +81,30 @@ def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
     else:
         # 変換ルールに基づき各列を計算
         df = melody_df.copy()
-        df['pitch'] = df['pitch'].round().astype(int)
+        df["pitch"] = df["pitch"].round().astype(int)
 
         # waitの計算 (次の音の開始時刻との差分)
         # onsetは秒単位なので、waitも秒単位で計算してからミリ秒に変換する
-        wait_in_seconds = df['onset'].shift(-1) - df['onset']
+        wait_in_seconds = df["onset"].shift(-1) - df["onset"]
         # 最後の音のwaitは、その音のduration(秒)とする
         # df['duration']はこの時点では秒単位
-        wait_in_seconds.fillna(df['duration'], inplace=True)
-        df['wait'] = (wait_in_seconds * 1000).astype(int)
+        wait_in_seconds.fillna(df["duration"], inplace=True)
+        df["wait"] = (wait_in_seconds * 1000).astype(int)
 
         # durationをミリ秒に変換
-        df['duration'] = (df['duration'] * 1000).astype(int)
+        df["duration"] = (df["duration"] * 1000).astype(int)
 
-        df['velocity'] = df['loud_med'].fillna(80).astype(int)
+        df["velocity"] = df["loud_med"].fillna(80).astype(int)
 
         # 楽器情報の取得と変換
         # 仕様書ではデフォルト52だが、llama-midiの学習データに合わせて調整
-        df['instrument'] = _get_instrument_id(instrument_name)
+        df["instrument"] = _get_instrument_id(instrument_name)
 
         # 必要な列のみを選択
-        melody_notes = df[['pitch', 'duration', 'wait', 'velocity', 'instrument']]
+        melody_notes = df[["pitch", "duration", "wait", "velocity", "instrument"]]
         melody_data_str = "pitch duration wait velocity instrument\n"
         buffer = io.StringIO()
-        melody_notes.to_csv(buffer, sep=' ', index=False, header=False)
+        melody_notes.to_csv(buffer, sep=" ", index=False, header=False)
         melody_data_str += buffer.getvalue()
 
     # 4. 最終出力文字列の整形
@@ -133,15 +140,19 @@ def main(db_path: Path, output_path: Path):
 
     print(f"Saving dataset to {output_path}...")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
     print("Dataset creation complete.")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="WJazzDデータセットからSFT用テキストを生成するスクリプト")
-    parser.add_argument("db_path", type=str, help="入力SQLiteデータベースファイルのパス")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="WJazzDデータセットからSFT用テキストを生成するスクリプト"
+    )
+    parser.add_argument(
+        "db_path", type=str, help="入力SQLiteデータベースファイルのパス"
+    )
     parser.add_argument("output_path", type=str, help="出力JSONファイルのパス")
     args = parser.parse_args()
 
