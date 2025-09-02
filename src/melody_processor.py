@@ -1,5 +1,7 @@
 import torch
+from loguru import logger
 from transformers import LogitsProcessor, AutoTokenizer
+
 from typing import List, Dict
 
 # --- 定数 (変更なし) ---
@@ -33,12 +35,14 @@ class NoteTokenizer:
     def _build_pitch_cache(self):
         """MIDIピッチ0から127までのトークンIDを事前に計算してキャッシュする。"""
         for pitch in range(128):
-            # llama-midiは " 60" のようにスペース区切りの数値をトークンとして扱う
-            token_str = f" {pitch}"
+            # llama-midiは "\n60 " のようにスペース区切りの数値をトークンとして扱う
+            token_str = f"{pitch}"
             # トークナイザを使って文字列からトークンIDを取得
             token_ids = self.tokenizer.encode(token_str, add_special_tokens=False)
             if token_ids:
                 self.pitch_to_token_id_cache[pitch] = token_ids[0]
+                if len(token_ids) > 1:
+                    logger.warning(f'ピッチのトークンが一つじゃないです: {token_ids}')
 
     def pitch_to_token_id(self, pitch: int) -> int | None:
         """キャッシュからMIDIピッチに対応するトークンIDを返す。"""
@@ -76,6 +80,9 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
                         token_id = self.note_tokenizer.pitch_to_token_id(midi_pitch)
                         if token_id:
                             allowed_ids.add(token_id)
+
+            logger.info(f"{chord}: {scale=}")
+        logger.info(f"{allowed_ids=}")
         return list(allowed_ids)
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
@@ -88,6 +95,8 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
         # A new line is indicated by the previous token being a newline character.
         # So, we check if the decoded sequence ends with a newline.
         if sequence.endswith('\n'):
+            logger.info(sequence)
+            logger.info(scores.shape)
              # Create a mask to suppress all tokens by default.
             mask = torch.full_like(scores, -float('inf'))
             # Allow only the tokens that correspond to the pitches in our scale.
