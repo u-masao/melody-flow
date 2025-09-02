@@ -68,7 +68,7 @@ def test_melody_processor_restricts_notes(
                         f"Chord '{chord}': Allowed note {pitch} ({note_index}) was incorrectly restricted. "
                         f"Logit was {processed_scores[0, token_id]}."
                     )
-                else: # Disallowed note
+                else:  # Disallowed note
                     if processed_scores[0, token_id] != -float("inf"):
                         # トークンが抑制されていない場合、トークン衝突が原因かチェックする
                         colliding_pitches = token_to_pitches_map.get(token_id, [])
@@ -84,17 +84,17 @@ def test_melody_processor_restricts_notes(
                             )
                         # else: 含まれている場合、衝突により抑制されなかったのは許容される挙動
         elif processed_scores[0, token_id] != 0:
-             # ピッチ以外のトークンは変更されてはいけない
-             if token_id in token_to_pitches_map:
-                 # This is a pitch token, but not in the 48-84 range. It should be suppressed.
-                 if processed_scores[0, token_id] != -float("inf"):
+            # ピッチ以外のトークンは変更されてはいけない
+            if token_id in token_to_pitches_map:
+                # This is a pitch token, but not in the 48-84 range. It should be suppressed.
+                if processed_scores[0, token_id] != -float("inf"):
                     colliding_pitches = token_to_pitches_map.get(token_id, [])
                     colliding_notes = {p % 12 for p in colliding_pitches}
                     if not colliding_notes.intersection(expected_allowed_notes):
                         pytest.fail(
                             f"Out-of-range pitch token {token_id} was not restricted."
                         )
-             else:
+            else:
                 # This is a non-pitch token and should be untouched.
                 assert processed_scores[0, token_id] == 0, (
                     f"Non-pitch token '{tokenizer.decode([token_id])}' (ID: {token_id}) was incorrectly modified to {processed_scores[0, token_id]}."

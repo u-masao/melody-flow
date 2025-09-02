@@ -1,17 +1,17 @@
 # src/api.py
+import base64
+import os
+import re
+import time
+
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Dict
-import uvicorn
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
 from unsloth import FastLanguageModel
-from transformers import LogitsProcessorList, AutoModelForCausalLM, AutoTokenizer
-import base64
-import re
-import os
-import time
+import uvicorn
 
 # --- 【変更】NoteTokenizerもインポート ---
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
@@ -67,14 +67,12 @@ class MelodyGenerationRequest(BaseModel):
 
 
 class MelodyGenerationResponse(BaseModel):
-    chord_melodies: Dict[str, str]
-    raw_outputs: Dict[str, str]
+    chord_melodies: dict[str, str]
+    raw_outputs: dict[str, str]
 
 
 # --- ヘルパー関数 (変更なし) ---
-def generate_midi_from_model(
-    prompt: str, processor: MelodyControlLogitsProcessor
-) -> str:
+def generate_midi_from_model(prompt: str, processor: MelodyControlLogitsProcessor) -> str:
     if not MODEL or not TOKENIZER:
         raise RuntimeError("Model is not loaded.")
     inputs = TOKENIZER(prompt, return_tensors="pt").to(DEVICE)
@@ -90,9 +88,7 @@ def generate_midi_from_model(
 
 
 def parse_and_encode_midi(decoded_text: str) -> str:
-    match = re.search(
-        r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL
-    )
+    match = re.search(r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL)
     midi_note_data = match.group(1).strip() if match else decoded_text
     return base64.b64encode(midi_note_data.encode("utf-8")).decode("utf-8")
 
@@ -117,7 +113,10 @@ def generate_melody(request: MelodyGenerationRequest):
         # --- 【変更】NOTE_TOKENIZER_HELPER を使用 ---
         processor = MelodyControlLogitsProcessor(chord, NOTE_TOKENIZER_HELPER)
 
-        prompt = f"style={request.style}, chord_progression={chord}\npitch duration wait velocity instrument\n"
+        prompt = (
+            f"style={request.style}, chord_progression={chord}\n"
+            "pitch duration wait velocity instrument\n"
+        )
         raw_output = generate_midi_from_model(prompt, processor)
         encoded_midi = parse_and_encode_midi(raw_output)
 
@@ -130,9 +129,7 @@ def generate_melody(request: MelodyGenerationRequest):
         raw_outputs[key] = raw_output
 
         chord_end_time = time.time()
-        print(
-            f"  - Generated for {key} in {chord_end_time - chord_start_time:.2f} seconds"
-        )
+        print(f"  - Generated for {key} in {chord_end_time - chord_start_time:.2f} seconds")
 
     total_end_time = time.time()
     print(f"Total generation time: {total_end_time - total_start_time:.2f} seconds")

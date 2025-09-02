@@ -1,9 +1,7 @@
-import torch
 from loguru import logger
-from transformers import LogitsProcessor, AutoTokenizer
 from src.chord_name_parser import parse_chord_name
-
-from typing import List, Dict
+import torch
+from transformers import AutoTokenizer, LogitsProcessor
 
 # --- 定数 (変更なし) ---
 NOTE_TO_MIDI = {
@@ -38,7 +36,7 @@ class NoteTokenizer:
 
     def __init__(self, tokenizer: AutoTokenizer):
         self.tokenizer = tokenizer
-        self.pitch_to_token_id_cache: Dict[int, int] = {}
+        self.pitch_to_token_id_cache: dict[int, int] = {}
         self._build_pitch_cache()
 
     def _build_pitch_cache(self):
@@ -70,7 +68,7 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
         self.note_tokenizer = note_tokenizer
         self.allowed_token_ids = self._get_allowed_token_ids(chord)
 
-    def _get_allowed_token_ids(self, chord: str) -> List[int]:
+    def _get_allowed_token_ids(self, chord: str) -> list[int]:
         """コード進行に含まれるすべてのコードのスケール音のトークンIDリストを取得する。"""
         allowed_ids = set()
         scale_notes = set()
@@ -89,14 +87,17 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
                     scale_notes.add(note)
 
         except ValueError as e:
-            logger.warning(f"Error parsing chord '{chord}': {e}. Defaulting to C major pentatonic.")
+            logger.warning(
+                f"Error parsing chord '{chord}': {e}. Defaulting to C major pentatonic."
+            )
             # エラー時はCメジャーペンタトニックスケールを使用
             scale_notes = {0, 2, 4, 7, 9}
 
         if not scale_notes:
-            logger.warning(f"No scale found for chord '{chord}'. Defaulting to C major pentatonic.")
+            logger.warning(
+                f"No scale found for chord '{chord}'. Defaulting to C major pentatonic."
+            )
             scale_notes = {0, 2, 4, 7, 9}
-
 
         # 4オクターブ分 (MIDI: 48-95あたり) のスケール音を許可する
         for octave in range(4, 8):
@@ -114,9 +115,10 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
     def __call__(
         self, input_ids: torch.LongTensor, scores: torch.FloatTensor
     ) -> torch.FloatTensor:
-        # NOTE: This logic depends on the model's output format: 'pitch duration wait velocity instrument\n'
-
-        # Decode the generated token IDs to a string. Don't skip special tokens or strip spaces.
+        # NOTE: This logic depends on the model's output format:
+        # 'pitch duration wait velocity instrument\n'
+        # Decode the generated token IDs to a string.
+        # Don't skip special tokens or strip spaces.
         sequence = self.note_tokenizer.tokenizer.decode(input_ids[0])
 
         # We constrain the 'pitch' token, which is the first token on a new line.
@@ -135,7 +137,9 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
             # These are the pitch tokens not in the allowed list.
             allowed_token_ids_set = set(self.allowed_token_ids)
             suppressed_pitch_ids = [
-                token_id for token_id in all_pitch_token_ids if token_id not in allowed_token_ids_set
+                token_id
+                for token_id in all_pitch_token_ids
+                if token_id not in allowed_token_ids_set
             ]
 
             # Set the logits for the suppressed pitches to -inf.

@@ -41,7 +41,7 @@ def test_parse_chord_name_valid(
         "Z",  # 不正なルート音
         "Hmaj7",
         "C!",  # 不正なコード種別
-        "Cmaj9", # 未定義のコード
+        "Cmaj9",  # 未定義のコード
         "Gsus",
         "",  # 空文字
         None,  # None
