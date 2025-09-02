@@ -1,5 +1,7 @@
 import torch
+from loguru import logger
 from transformers import LogitsProcessor, AutoTokenizer
+
 from typing import List, Dict
 
 # --- 定数 (変更なし) ---
@@ -33,12 +35,14 @@ class NoteTokenizer:
     def _build_pitch_cache(self):
         """MIDIピッチ0から127までのトークンIDを事前に計算してキャッシュする。"""
         for pitch in range(128):
-            # llama-midiは " 60" のようにスペース区切りの数値をトークンとして扱う
-            token_str = f" {pitch}"
+            # llama-midiは "\n60 " のようにスペース区切りの数値をトークンとして扱う
+            token_str = f"{pitch}"
             # トークナイザを使って文字列からトークンIDを取得
             token_ids = self.tokenizer.encode(token_str, add_special_tokens=False)
             if token_ids:
                 self.pitch_to_token_id_cache[pitch] = token_ids[0]
+                if len(token_ids) > 1:
+                    logger.warning(f'ピッチのトークンが一つじゃないです: {token_ids}')
 
     def pitch_to_token_id(self, pitch: int) -> int | None:
         """キャッシュからMIDIピッチに対応するトークンIDを返す。"""
@@ -51,45 +55,52 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
     """
     コード進行に基づいて、次に出現する音の確率(logit)を制御するプロセッサ。
     """
-    # 【変更】tokenizer: AutoTokenizer -> note_tokenizer: NoteTokenizer
-    def __init__(self, chord: str, note_tokenizer: NoteTokenizer):
+    def __init__(self, chord_progression: str, note_tokenizer: NoteTokenizer):
         self.note_tokenizer = note_tokenizer
-        self.allowed_token_ids = self._get_allowed_token_ids(chord)
-        # pitchトークンが出現する最初のステップかどうかを判定するフラグ
-        self.is_first_step = True
+        self.allowed_token_ids = self._get_allowed_token_ids(chord_progression)
 
-    def _get_allowed_token_ids(self, chord: str) -> List[int]:
-        """コードに対応するスケール音のトークンIDリストを取得する。"""
-        root_note = chord.replace('m', '').replace('7', '').replace('maj', '')
-        scale = CHORD_TO_SCALE.get(root_note, CHORD_TO_SCALE['C'])
-        
-        allowed_ids = []
-        # 3オクターブ分 (MIDI: 48-84あたり) のスケール音を許可する
-        for octave in range(3, 7):
-            for note_in_scale in scale:
-                midi_pitch = 12 * octave + note_in_scale
-                if midi_pitch < 128:
-                    token_id = self.note_tokenizer.pitch_to_token_id(midi_pitch)
-                    if token_id:
-                        allowed_ids.append(token_id)
-        return list(set(allowed_ids))
+    def _get_allowed_token_ids(self, chord_progression: str) -> List[int]:
+        """コード進行に含まれるすべてのコードのスケール音のトークンIDリストを取得する。"""
+        allowed_ids = set()
+        chords = [c.strip() for c in chord_progression.split('-')]
+
+        for chord in chords:
+            # 'Cmaj7' -> 'C', 'Am' -> 'A' のようにルート音を抽出
+            root_note = chord.replace('m', '').replace('7', '').replace('maj', '')
+            scale = CHORD_TO_SCALE.get(root_note, CHORD_TO_SCALE.get(chord)) # 'Am' のようなケースに対応
+            if not scale:
+                print(f"Warning: Chord '{chord}' not found in CHORD_TO_SCALE map. Skipping.")
+                continue
+
+            # 3オクターブ分 (MIDI: 48-84あたり) のスケール音を許可する
+            for octave in range(3, 7):
+                for note_in_scale in scale:
+                    midi_pitch = 12 * octave + note_in_scale
+                    if midi_pitch < 128:
+                        token_id = self.note_tokenizer.pitch_to_token_id(midi_pitch)
+                        if token_id:
+                            allowed_ids.add(token_id)
+
+            logger.info(f"{chord}: {scale=}")
+        logger.info(f"{allowed_ids=}")
+        return list(allowed_ids)
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
-        # NOTE: このロジックは llama-midi の出力形式 'pitch duration wait velocity instrument' に依存する
+        # NOTE: This logic depends on the model's output format: 'pitch duration wait velocity instrument\n'
         
-        # 最後の改行からのトークンを取得
+        # Decode the generated token IDs to a string. Don't skip special tokens or strip spaces.
         sequence = self.note_tokenizer.tokenizer.decode(input_ids[0])
-        last_line = sequence.strip().split('\n')[-1]
-        tokens_in_line = last_line.strip().split(' ')
 
-        # pitch, duration, wait, velocity のどれを生成している段階かを判定
-        # ここでは単純化し、最初のトークン(pitch)のみを制御対象とする
-        if len(tokens_in_line) == 1 and tokens_in_line[0] == "": # 改行直後
-             # マスク用のテンソルを作成 (全トークンの確率を -inf に)
+        # We constrain the 'pitch' token, which is the first token on a new line.
+        # A new line is indicated by the previous token being a newline character.
+        # So, we check if the decoded sequence ends with a newline.
+        if sequence.endswith('\n'):
+            logger.info(sequence)
+            logger.info(scores.shape)
+             # Create a mask to suppress all tokens by default.
             mask = torch.full_like(scores, -float('inf'))
-            # 許可されたトークンIDの箇所だけ確率を 0 に戻す (元の確率を維持)
+            # Allow only the tokens that correspond to the pitches in our scale.
             mask[:, self.allowed_token_ids] = 0
             scores = scores + mask
 
         return scores
-

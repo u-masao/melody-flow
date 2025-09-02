@@ -4,6 +4,8 @@ from loguru import logger
 from unsloth import FastLanguageModel
 from tap import Tap
 import transformers
+import json
+from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 class InferenceArgs(Tap):
     """
@@ -79,12 +81,36 @@ class MidiGenerator:
         logger.info("推論を開始します...")
         logger.info(f"Prompt: {prompt}")
 
+        # プロンプトからコード進行を抽出
+        try:
+            # プロンプトは末尾に ' がつくことがあるので除去
+            prompt_json_str = prompt.strip().rstrip("'")
+            prompt_data = json.loads(prompt_json_str)
+            chord_progression = prompt_data.get("chord_progression")
+        except (json.JSONDecodeError, AttributeError):
+            logger.warning("プロンプトからコード進行を抽出できませんでした。制約なしで生成します。")
+            chord_progression = None
+
+        # LogitsProcessorを準備
+        processors = []
+        if chord_progression:
+            logger.info(f"コード進行 '{chord_progression}' に基づいてメロディを制約します。")
+            note_tokenizer = NoteTokenizer(self.tokenizer)
+            logits_processor = MelodyControlLogitsProcessor(
+                chord_progression=chord_progression,
+                note_tokenizer=note_tokenizer
+            )
+            processors.append(logits_processor)
+        else:
+            logger.info("コード進行が指定されていないため、制約なしで生成します。")
+
         # パイプラインを使用してテキストを生成
         outputs = self.pipe(
             formatted_prompt,
             do_sample=True,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
+            logits_processor=processors,
             **kwargs,
         )
         
