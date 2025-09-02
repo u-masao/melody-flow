@@ -63,5 +63,9 @@ inferance-llama32:
 
 ## code formatting
 lint:
-	uv run ruff check --fix src
-	uv run ruff format src
+	uv run ruff check --fix src tests
+	uv run ruff format src tests
+
+## test
+test:
+	uv run pytest tests
