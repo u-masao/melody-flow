@@ -1,9 +1,22 @@
 import pytest
+from loguru import logger
 import torch
 from transformers import AutoTokenizer
 
 from src.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
+import re
+
+def is_arabic_numerals_only(s: str) -> bool:
+    # 空文字列は False とする
+    if not s:
+        return False
+    if s == '0':
+        return True
+    if s.startswith('0'):
+        return False
+    # パターン r'[0-9]+' が文字列全体にマッチするかチェック
+    return re.fullmatch(r'[0-9]+', s) is not None
 
 @pytest.fixture(scope="module")
 def tokenizer():
@@ -53,16 +66,25 @@ def test_melody_processor_restricts_notes(
 
     scores = torch.zeros((1, len(tokenizer)))
     input_ids = torch.LongTensor([tokenizer.encode("\n", add_special_tokens=False)])
+    logger.info(f"{input_ids=}")
     processed_scores = processor(input_ids, scores)
+    logger.info(f"{scores.sum()=}")
+    logger.info(f"{processed_scores.sum()=}")
+    logger.info(f"{processed_scores[:100]=}")
+    logger.info(f"{processed_scores.shape=}")
+    logger.info(f"{(processed_scores==0).sum()=}")
+    logger.info(f"{(processed_scores==-float('inf')).sum()=}")
+    logger.info(f"{expected_allowed_notes=}")
 
     for token_id in range(len(tokenizer)):
         token_str = tokenizer.decode([token_id], skip_special_tokens=True)
 
-        if token_str.strip().isdigit():
+        if is_arabic_numerals_only(token_str):
             pitch = int(token_str.strip())
             if 48 <= pitch <= 84:
                 note_index = pitch % 12
 
+                # logger.info(f"{pitch=}, {note_index=}")
                 if note_index in expected_allowed_notes:
                     assert processed_scores[0, token_id] == 0, (
                         f"Chord '{chord}': Allowed note {pitch} ({note_index}) was incorrectly restricted. "
