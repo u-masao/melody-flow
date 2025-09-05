@@ -43,7 +43,7 @@ class NoteTokenizer:
         """MIDIピッチ0から127までのトークンIDを事前に計算してキャッシュする。"""
         for pitch in range(128):
             # llama-midiは "\n60 " のようにスペース区切りの数値をトークンとして扱う
-            token_str = f" {pitch}"
+            token_str = f"{pitch}"
             # トークナイザを使って文字列からトークンIDを取得
             token_ids = self.tokenizer.encode(token_str, add_special_tokens=False)
             if token_ids:
@@ -76,16 +76,20 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
         try:
             # コード名を解析して、ルート音と利用可能なスケールを取得
             chord_info = parse_chord_name(chord)
+            logger.info(f"{chord_info=}")
             root_note_val = chord_info["root"]
             available_scales = chord_info["scales"]
 
             # 利用可能なすべてのスケールの音をセットに追加
             for scale_intervals in available_scales.values():
+                logger.info(f"{scale_intervals=}")
                 for interval in scale_intervals:
+                    logger.debug(f"{interval=}")
                     # ルート音からのインターバルを実際のノートナンバーに変換 (mod 12)
                     note = (root_note_val + interval) % 12
                     scale_notes.add(note)
 
+            logger.info(f"{scale_notes=}")
         except ValueError as e:
             logger.warning(
                 f"Error parsing chord '{chord}': {e}. Defaulting to C major pentatonic."
@@ -104,17 +108,24 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
             for note_in_scale in scale_notes:
                 midi_pitch = 12 * octave + note_in_scale
                 if midi_pitch < 128:
+                    logger.debug(f"{midi_pitch=}")
                     token_id = self.note_tokenizer.pitch_to_token_id(midi_pitch)
+                    logger.debug(f"{token_id=}")
                     if token_id:
                         allowed_ids.add(token_id)
 
         logger.info(f"{chord}: scale_notes={scale_notes}")
         logger.info(f"{allowed_ids=}")
+        logger.info(f"{len(allowed_midi_pitchs)=}")
         return list(allowed_ids)
 
     def __call__(
         self, input_ids: torch.LongTensor, scores: torch.FloatTensor
     ) -> torch.FloatTensor:
+        logger.info(f"{scores.shape=}")
+        logger.info(f"{scores.sum()=}")
+        logger.info(f"{scores.mean()=}")
+        logger.info(f"{scores.min()=}")
         # NOTE: This logic depends on the model's output format:
         # 'pitch duration wait velocity instrument\n'
         # Decode the generated token IDs to a string.
@@ -125,27 +136,43 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
         # A new line is indicated by the previous token being a newline character.
         # So, we check if the decoded sequence ends with a newline.
         if sequence.endswith("\n"):
-            logger.info(sequence)
-            logger.info(scores.shape)
+            logger.info(f"{sequence=}")
+            logger.info(f"{scores.shape=}")
             # Create a mask of zeros.
             mask = torch.zeros_like(scores)
 
             # Get all possible pitch token IDs from the tokenizer cache.
             all_pitch_token_ids = set(self.note_tokenizer.pitch_to_token_id_cache.values())
 
+            def ids_to_string(ids: list[int]):
+                pitchs = []
+                for x in ids:
+                    pitchs.append(int(self.note_tokenizer.tokenizer.decode([x])))
+                return " ".join([str(x) for x in sorted(pitchs)])
+
+            logger.info(f"{ids_to_string(all_pitch_token_ids)=}")
+
             # Identify the pitch tokens that should be suppressed.
             # These are the pitch tokens not in the allowed list.
             allowed_token_ids_set = set(self.allowed_token_ids)
+            logger.info(f"{ids_to_string(allowed_token_ids_set)=}")
+
             suppressed_pitch_ids = [
                 token_id
                 for token_id in all_pitch_token_ids
                 if token_id not in allowed_token_ids_set
             ]
+            logger.info(f"{ids_to_string(suppressed_pitch_ids)=}")
 
             # Set the logits for the suppressed pitches to -inf.
             if suppressed_pitch_ids:
                 mask[:, suppressed_pitch_ids] = -float("inf")
 
             scores = scores + mask
+
+        logger.info(f"{(scores==-float('inf')).sum()=}")
+        logger.info(f"{scores.sum()=}")
+        logger.info(f"{scores.mean()=}")
+        logger.info(f"{scores.min()=}")
 
         return scores
