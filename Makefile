@@ -8,6 +8,9 @@ PORT=7860
 # servers
 ##############################################################################
 
+# export MODEL_NAME:=dx2102/llama-midi
+export MODEL_NAME:=models/llama-midi.pth/
+
 ## run ui and api
 ui:
 api:

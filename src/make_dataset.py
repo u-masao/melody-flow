@@ -1,20 +1,20 @@
 import argparse
-import json
 import io
-import sqlite3
+import json
 from pathlib import Path
+import sqlite3
+
 import pandas as pd
-from typing import List, Optional
 
 
-def get_all_melids(con: sqlite3.Connection) -> List[int]:
+def get_all_melids(con: sqlite3.Connection) -> list[int]:
     """データベースから全てのユニークなmelidを取得する"""
     # 'solos'テーブルは存在しないため、'solo_info'を使用する
     df = pd.read_sql_query("SELECT DISTINCT melid FROM solo_info", con)
     return df["melid"].tolist()
 
 
-def _get_instrument_id(instrument_name: Optional[str]) -> int:
+def _get_instrument_id(instrument_name: str | None) -> int:
     """楽器名からMIDIプログラムナンバーを取得する。不明な場合はデフォルト値52を返す。"""
     # このマッピングは必要に応じて拡張する必要がある
     instrument_map = {
@@ -38,7 +38,7 @@ def _get_instrument_id(instrument_name: Optional[str]) -> int:
     return instrument_map.get(instrument_name, 26)
 
 
-def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
+def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
     """
     単一のmelidを処理し、SFT形式のテキストを生成する。
     仕様書に基づき、データベースから情報を取得し、整形する。
@@ -62,7 +62,8 @@ def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
 
     # melodyテーブルからノート情報を取得
     melody_df = pd.read_sql_query(
-        f"SELECT pitch, duration, onset, loud_med FROM melody WHERE melid = {melid} ORDER BY onset",
+        "SELECT pitch, duration, onset, loud_med FROM melody "
+        f"WHERE melid = {melid} ORDER BY onset",
         con,
     )
 
@@ -150,9 +151,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="WJazzDデータセットからSFT用テキストを生成するスクリプト"
     )
-    parser.add_argument(
-        "db_path", type=str, help="入力SQLiteデータベースファイルのパス"
-    )
+    parser.add_argument("db_path", type=str, help="入力SQLiteデータベースファイルのパス")
     parser.add_argument("output_path", type=str, help="出力JSONファイルのパス")
     args = parser.parse_args()
 

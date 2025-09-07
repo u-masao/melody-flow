@@ -1,11 +1,11 @@
 import io
-from pathlib import Path
-import sqlite3
-
-import gradio as gr
 from loguru import logger
-import pandas as pd
+import gradio as gr
 import symusic
+import sqlite3
+from pathlib import Path
+import pandas as pd
+from typing import List, Optional
 
 
 def postprocess(txt, path):
@@ -19,7 +19,9 @@ def postprocess(txt, path):
         # we need to ignore the invalid output by the model
         try:
             pitch, duration, wait, velocity, instrument = line.split(" ")
-            pitch, duration, wait, velocity = [int(x) for x in [pitch, duration, wait, velocity]]
+            pitch, duration, wait, velocity = [
+                int(x) for x in [pitch, duration, wait, velocity]
+            ]
             if instrument not in tracks:
                 tracks[instrument] = symusic.core.TrackSecond()
                 if instrument != "drum":
@@ -39,7 +41,9 @@ def postprocess(txt, path):
         except Exception as e:
             logger.info(f'Postprocess: Ignored line: "{line}" because of error:', e)
 
-    logger.info(f"Postprocess: Got {sum(len(track.notes) for track in tracks.values())} notes")
+    logger.info(
+        f"Postprocess: Got {sum(len(track.notes) for track in tracks.values())} notes"
+    )
 
     try:
         # track = symusic.core.TrackSecond()
@@ -52,14 +56,14 @@ def postprocess(txt, path):
         logger.info("Postprocess: Ignored postprocessing error:", e)
 
 
-def get_all_melids(con: sqlite3.Connection) -> list[int]:
+def get_all_melids(con: sqlite3.Connection) -> List[int]:
     """データベースから全てのユニークなmelidを取得する"""
     # 'solos'テーブルは存在しないため、'solo_info'を使用する
     df = pd.read_sql_query("SELECT DISTINCT melid FROM solo_info", con)
     return df["melid"].tolist()
 
 
-def _get_instrument_id(instrument_name: str | None) -> int:
+def _get_instrument_id(instrument_name: Optional[str]) -> int:
     """楽器名からMIDIプログラムナンバーを取得する。不明な場合はデフォルト値52を返す。"""
     # このマッピングは必要に応じて拡張する必要がある
     instrument_map = {
@@ -83,7 +87,7 @@ def _get_instrument_id(instrument_name: str | None) -> int:
     return instrument_map.get(instrument_name, 26)
 
 
-def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
+def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
     """
     単一のmelidを処理し、SFT形式のテキストを生成する。
     仕様書に基づき、データベースから情報を取得し、整形する。
@@ -107,8 +111,7 @@ def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
 
     # melodyテーブルからノート情報を取得
     melody_df = pd.read_sql_query(
-        "SELECT pitch, duration, onset, loud_med FROM melody"
-        f" WHERE melid = {melid} ORDER BY onset",
+        f"SELECT pitch, duration, onset, loud_med FROM melody WHERE melid = {melid} ORDER BY onset",
         con,
     )
 
@@ -190,7 +193,7 @@ def load_dataset():
 db = load_dataset()
 
 with gr.Blocks() as demo:
-    for table in db:
+    for table in db.keys():
         gr.Markdown(str(db[table].columns))
         df_view = gr.Dataframe(db[table].head(1000), label=table)
 

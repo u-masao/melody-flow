@@ -1,0 +1,17 @@
+LICENSE.md
+README.md
+pyproject.toml
+src/api.py
+src/chord_name_parser.py
+src/inferance.py
+src/make_dataset.py
+src/melody_processor.py
+src/train_model.py
+src/adhoc/data_viewer.py
+src/melody_flow.egg-info/PKG-INFO
+src/melody_flow.egg-info/SOURCES.txt
+src/melody_flow.egg-info/dependency_links.txt
+src/melody_flow.egg-info/requires.txt
+src/melody_flow.egg-info/top_level.txt
+tests/test_chord_name_parser.py
+tests/test_melody_processor.py

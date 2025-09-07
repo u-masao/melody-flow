@@ -1,12 +1,10 @@
-import json
 import sys
-
-from loguru import logger
-from tap import Tap
 import torch
-import transformers
+from loguru import logger
 from unsloth import FastLanguageModel
-
+from tap import Tap
+import transformers
+import json
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 
@@ -59,7 +57,9 @@ class MidiGenerator:
             "text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
-            torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+            torch_dtype=torch.bfloat16
+            if torch.cuda.is_bf16_supported()
+            else torch.float16,
             # device="cuda",
         )
 
@@ -80,7 +80,9 @@ class MidiGenerator:
             str: 生成されたMIDIテキスト。
         """
         # 学習データと同じ形式のプロンプトを作成
-        formatted_prompt = f"<s>[INST] {prompt} [/INST] pitch duration wait velocity instrument\n"
+        formatted_prompt = (
+            f"<s>[INST] {prompt} [/INST] pitch duration wait velocity instrument\n"
+        )
 
         logger.info("推論を開始します...")
         logger.info(f"Prompt: {prompt}")
@@ -100,7 +102,9 @@ class MidiGenerator:
         # LogitsProcessorを準備
         processors = []
         if chord_progression:
-            logger.info(f"コード進行 '{chord_progression}' に基づいてメロディを制約します。")
+            logger.info(
+                f"コード進行 '{chord_progression}' に基づいてメロディを制約します。"
+            )
             note_tokenizer = NoteTokenizer(self.tokenizer)
             logits_processor = MelodyControlLogitsProcessor(
                 chord_progression=chord_progression, note_tokenizer=note_tokenizer

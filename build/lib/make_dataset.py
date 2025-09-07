@@ -1,65 +1,20 @@
+import argparse
+import json
 import io
-from pathlib import Path
 import sqlite3
-
-import gradio as gr
-from loguru import logger
+from pathlib import Path
 import pandas as pd
-import symusic
+from typing import List, Optional
 
 
-def postprocess(txt, path):
-    # remove prefix
-    txt = txt.split("\n\n")[-1]
-    # track = symusic.core.TrackSecond()
-    tracks = {}
-
-    now = 0
-    for line in txt.split("\n"):
-        # we need to ignore the invalid output by the model
-        try:
-            pitch, duration, wait, velocity, instrument = line.split(" ")
-            pitch, duration, wait, velocity = [int(x) for x in [pitch, duration, wait, velocity]]
-            if instrument not in tracks:
-                tracks[instrument] = symusic.core.TrackSecond()
-                if instrument != "drum":
-                    tracks[instrument].program = int(instrument)
-                else:
-                    tracks[instrument].is_drum = True
-            # Eg. Note(time=7.47, duration=5.25, pitch=43, velocity=64, ttype='Quarter')
-            tracks[instrument].notes.append(
-                symusic.core.NoteSecond(
-                    time=now / 1000,
-                    duration=duration / 1000,
-                    pitch=int(pitch),
-                    velocity=min(int(velocity * 4), 127),
-                )
-            )
-            now += wait
-        except Exception as e:
-            logger.info(f'Postprocess: Ignored line: "{line}" because of error:', e)
-
-    logger.info(f"Postprocess: Got {sum(len(track.notes) for track in tracks.values())} notes")
-
-    try:
-        # track = symusic.core.TrackSecond()
-        # track.notes = symusic.core.NoteSecondList(notes)
-        score = symusic.Score(ttype="Second")
-        # score.tracks.append(track)
-        score.tracks.extend(tracks.values())
-        score.dump_midi(path)
-    except Exception as e:
-        logger.info("Postprocess: Ignored postprocessing error:", e)
-
-
-def get_all_melids(con: sqlite3.Connection) -> list[int]:
+def get_all_melids(con: sqlite3.Connection) -> List[int]:
     """データベースから全てのユニークなmelidを取得する"""
     # 'solos'テーブルは存在しないため、'solo_info'を使用する
     df = pd.read_sql_query("SELECT DISTINCT melid FROM solo_info", con)
     return df["melid"].tolist()
 
 
-def _get_instrument_id(instrument_name: str | None) -> int:
+def _get_instrument_id(instrument_name: Optional[str]) -> int:
     """楽器名からMIDIプログラムナンバーを取得する。不明な場合はデフォルト値52を返す。"""
     # このマッピングは必要に応じて拡張する必要がある
     instrument_map = {
@@ -83,7 +38,7 @@ def _get_instrument_id(instrument_name: str | None) -> int:
     return instrument_map.get(instrument_name, 26)
 
 
-def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
+def process_melid(melid: int, con: sqlite3.Connection) -> Optional[str]:
     """
     単一のmelidを処理し、SFT形式のテキストを生成する。
     仕様書に基づき、データベースから情報を取得し、整形する。
@@ -94,7 +49,7 @@ def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
         f"SELECT title, instrument FROM solo_info WHERE melid = {melid}", con
     )
     if solo_df.empty:
-        logger.info(f"Warning: melid {melid} not found in solo_info table. Skipping.")
+        print(f"Warning: melid {melid} not found in solo_info table. Skipping.")
         return None
 
     title = solo_df["title"].iloc[0]
@@ -107,8 +62,7 @@ def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
 
     # melodyテーブルからノート情報を取得
     melody_df = pd.read_sql_query(
-        "SELECT pitch, duration, onset, loud_med FROM melody"
-        f" WHERE melid = {melid} ORDER BY onset",
+        f"SELECT pitch, duration, onset, loud_med FROM melody WHERE melid = {melid} ORDER BY onset",
         con,
     )
 
@@ -128,10 +82,17 @@ def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
         # 変換ルールに基づき各列を計算
         df = melody_df.copy()
         df["pitch"] = df["pitch"].round().astype(int)
-        df["duration"] = (df["duration"] * 1000).astype(int)
 
-        # waitの計算 (差分)
-        df["wait"] = (df["onset"].diff().fillna(df["onset"]) * 1000).astype(int)
+        # waitの計算 (次の音の開始時刻との差分)
+        # onsetは秒単位なので、waitも秒単位で計算してからミリ秒に変換する
+        wait_in_seconds = df["onset"].shift(-1) - df["onset"]
+        # 最後の音のwaitは、その音のduration(秒)とする
+        # df['duration']はこの時点では秒単位
+        wait_in_seconds.fillna(df["duration"], inplace=True)
+        df["wait"] = (wait_in_seconds * 1000).astype(int)
+
+        # durationをミリ秒に変換
+        df["duration"] = (df["duration"] * 1000).astype(int)
 
         df["velocity"] = df["loud_med"].fillna(80).astype(int)
 
@@ -150,49 +111,49 @@ def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
     return f"<s>[INST] {prompt} [/INST] {melody_data_str} </s>"
 
 
-def get_table_list(con):
-    cursor = con.cursor()
-    cursor.execute("select name from sqlite_master where type='table';")
-    return [x[0] for x in cursor.fetchall()]
-
-
-def load_database(con):
-    db = {}
-    tables = get_table_list(con)
-    logger.info(tables)
-
-    for table in tables:
-        db[table] = pd.read_sql_query(f"SELECT * from {table}", con)
-        logger.info(f"load table: {table}, {db[table].shape}")
-
-    return db
-
-
-def load_dataset():
+def main(db_path: Path, output_path: Path):
     """
     データベースからデータを読み込み、SFT形式のデータセットを生成してJSONファイルに保存する。
     """
-    db_path = Path("data/raw/wjazzd.db")
-    logger.info(f"Connecting to database: {db_path}")
+    print(f"Connecting to database: {db_path}")
     # データベースファイルが存在しない場合はエラー
     if not db_path.exists():
-        logger.info(f"Error: Database file not found at {db_path}")
-        logger.info("Please run 'dvc stage run download_wjazzd_dataset' first.")
+        print(f"Error: Database file not found at {db_path}")
+        print("Please run 'dvc stage run download_wjazzd_dataset' first.")
         return
     con = sqlite3.connect(db_path)
 
-    db = load_database(con)
+    print("Fetching all melids...")
+    melids = get_all_melids(con)
 
-    logger.info(db)
-    return db
+    # For development, let's process only a small subset
+    # melids = melids[:10]
 
+    results = []
+    print(f"Processing {len(melids)} melids...")
+    for melid in melids:
+        sft_text = process_melid(melid, con)
+        if sft_text:
+            results.append({"text": sft_text})
 
-db = load_dataset()
+    con.close()
 
-with gr.Blocks() as demo:
-    for table in db:
-        gr.Markdown(str(db[table].columns))
-        df_view = gr.Dataframe(db[table].head(1000), label=table)
+    print(f"Saving dataset to {output_path}...")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+
+    print("Dataset creation complete.")
+
 
 if __name__ == "__main__":
-    demo.launch(share=False, server_name="0.0.0.0", server_port=7000)
+    parser = argparse.ArgumentParser(
+        description="WJazzDデータセットからSFT用テキストを生成するスクリプト"
+    )
+    parser.add_argument(
+        "db_path", type=str, help="入力SQLiteデータベースファイルのパス"
+    )
+    parser.add_argument("output_path", type=str, help="出力JSONファイルのパス")
+    args = parser.parse_args()
+
+    main(Path(args.db_path), Path(args.output_path))

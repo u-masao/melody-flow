@@ -1,13 +1,12 @@
 import sys
-
-from datasets import load_dataset
-from loguru import logger
-import mlflow
-from tap import Tap
 import torch
+from loguru import logger
+from unsloth import FastLanguageModel
+import mlflow
+from datasets import load_dataset
 from transformers import TrainingArguments
 from trl import SFTTrainer
-from unsloth import FastLanguageModel
+from tap import Tap
 
 
 class MidiFinetuningExperiment:
@@ -70,7 +69,9 @@ class MidiFinetuningExperiment:
         """
         学習用データセットを読み込みます。
         """
-        logger.info(f"データセットを '{self.config['input_data_path']}' から読み込んでいます...")
+        logger.info(
+            f"データセットを '{self.config['input_data_path']}' から読み込んでいます..."
+        )
         try:
             dataset = load_dataset(
                 "json", data_files=self.config["input_data_path"], split="train"
@@ -78,7 +79,9 @@ class MidiFinetuningExperiment:
             logger.success("データセットの読み込みが完了しました。")
             return dataset
         except Exception:
-            logger.exception("データセットの読み込みに失敗しました。パスを確認してください。")
+            logger.exception(
+                "データセットの読み込みに失敗しました。パスを確認してください。"
+            )
             raise
 
     def _run_training(self, train_dataset):
@@ -86,7 +89,9 @@ class MidiFinetuningExperiment:
         SFTTrainerを使用してモデルのトレーニングを実行します。
         """
         logger.info("MLflowで実験を開始します...")
-        mlflow.set_experiment(self.config.get("mlflow_experiment_name", "Default Experiment"))
+        mlflow.set_experiment(
+            self.config.get("mlflow_experiment_name", "Default Experiment")
+        )
         mlflow.autolog()
 
         with mlflow.start_run() as run:
@@ -119,7 +124,9 @@ class MidiFinetuningExperiment:
                 used_memory = round(torch.cuda.max_memory_reserved() / 1024**3, 2)
                 mlflow.log_metric("peak_gpu_memory_gb", used_memory)
 
-            mlflow.log_metric("train_runtime_sec", trainer_stats.metrics["train_runtime"])
+            mlflow.log_metric(
+                "train_runtime_sec", trainer_stats.metrics["train_runtime"]
+            )
 
     def _save_model(self):
         """
@@ -190,7 +197,9 @@ def main():
     スクリプトのエントリーポイント。
     typed-argument-parserを使って引数を解析し、実験クラスをインスタンス化して実行します。
     """
-    args = Args(description="LLMをLoRAでファインチューニングするスクリプト").parse_args()
+    args = Args(
+        description="LLMをLoRAでファインチューニングするスクリプト"
+    ).parse_args()
 
     # ArgsオブジェクトからMidiFinetuningExperimentが期待するconfig辞書を構築
     config = {

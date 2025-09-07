@@ -1,5 +1,67 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    class Chord {
+        static NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        static NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+        // 各コードタイプの構成音（ルートからの半音差）
+        static INTERVALS = {
+            '': [0, 4, 7],         // Major
+            'M7': [0, 4, 7, 11],    // Major 7th
+            '7': [0, 4, 7, 10],     // Dominant 7th
+            'm': [0, 3, 7],         // Minor
+            'm7': [0, 3, 7, 10],    // Minor 7th
+            'mM7': [0, 3, 7, 11],   // Minor Major 7th
+            'm7b5': [0, 3, 6, 10],  // Half-Diminished
+            'dim': [0, 3, 6],       // Diminished
+            'dim7': [0, 3, 6, 9],   // Diminished 7th
+            'aug': [0, 4, 8],       // Augmented
+            'sus4': [0, 5, 7]       // Suspended 4th
+        };
+
+        static midiToNoteName(midi, useFlats = false) {
+            const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
+            const octave = Math.floor(midi / 12) - 1;
+            const noteIndex = midi % 12;
+            return notes[noteIndex] + octave;
+        }
+
+        static getVoicing(chordName) {
+            let rootStr, quality;
+            if (chordName.length > 1 && (chordName[1] === '#' || chordName[1] === 'b')) {
+                rootStr = chordName.substring(0, 2);
+                quality = chordName.substring(2);
+            } else {
+                rootStr = chordName.substring(0, 1);
+                quality = chordName.substring(1);
+            }
+
+            if (quality === 'M7') quality = 'M7';
+            else if(quality.startsWith('m')) {}
+            else {
+                if (this.INTERVALS[quality] === undefined && this.INTERVALS[quality.toLowerCase()]){
+                    quality = quality.toLowerCase();
+                } else if (this.INTERVALS[quality] === undefined && chordName.length <=2) {
+                    quality = "";
+                }
+            }
+
+            const useFlats = rootStr.includes('b');
+            const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
+            let rootMidi = notes.indexOf(rootStr);
+            if (rootMidi === -1) return [];
+            rootMidi += 48;
+
+            const intervals = this.INTERVALS[quality];
+            if (!intervals) return [];
+
+            return intervals.map(interval => {
+                const noteMidi = rootMidi + interval;
+                return this.midiToNoteName(noteMidi, useFlats);
+            });
+        }
+    }
+
     // --- DOM Elements ---
     const chordSelect = document.getElementById('chord-progression');
     const styleSelect = document.getElementById('music-style');
@@ -14,34 +76,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteDisplayArea = document.getElementById('note-display-area');
 
     // --- Audio Synthesis ---
-    let leadSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-    let pianoSynth = new Tone.PolySynth(Tone.Synth, {
+    const leadSynth = new Tone.MonoSynth({
+        // ノコギリ波(sawtooth)は、管楽器の元になる複雑な倍音を多く含んでおり加工に適しています
         oscillator: {
-            type: 'triangle'
+            type: 'sawtooth'
         },
+        // 吹奏楽器のような、少し遅れて立ち上がり、長く持続する音量を表現します
         envelope: {
-            attack: 0.01,
-            decay: 0.5,
-            sustain: 0.2,
-            release: 1
+            attack: 0.05,   // 息を吹き込むような、わずかに遅い立ち上がり
+            decay: 0.2,
+            sustain: 0.7,   // キーを押している間は音量を高く保つ
+            release: 0.15   // 息を止めるとスッと音が切れる感じ
         },
+        // フィルターで高音を削り、アタック時に音が開くことで「ブワッ」というニュアンスを加えます
+        filter: {
+            Q: 2,
+            type: 'lowpass', // 高音域をカットするフィルター
+            frequency: 1200  // 音の基本的な明るさ。値を下げるとこもる
+        },
+        filterEnvelope: {
+            attack: 0.06,
+            decay: 0.1,
+            sustain: 0.5,
+            release: 0.2,
+            baseFrequency: 300, // フィルターの基本位置（暗め）
+            octaves: 3.5        // アタック時にフィルターが動く幅。サックスの表情をつけます
+        }
+    }).toDestination();
+
+    const pianoSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.01, decay: 0.5, sustain: 0.2, release: 1 },
     }).toDestination();
     pianoSynth.volume.value = -12;
 
     // --- Musical Constants ---
-    const CHORD_VOICINGS = {
-        'C': ['C3', 'E3', 'G3'],
-        'G': ['B2', 'D3', 'G3'],
-        'Am': ['A2', 'C3', 'E3'],
-        'F': ['A2', 'C3', 'F3'],
-        'Em': ['E3', 'G3', 'B3'],
-        'Dm7': ['D3', 'F3', 'A3', 'C4'],
-        'G7': ['G2', 'B2', 'D3', 'F3'],
-        'Cmaj7': ['C3', 'E3', 'G3', 'B3'],
-        'E7': ['E2', 'G#2', 'B2', 'D3'],
-    };
     const BEATS_PER_MEASURE = 4;
-    const TICKS_PER_MEASURE = Tone.Transport.PPQ * BEATS_PER_MEASURE;
+    const TICKS_PER_BEAT = Tone.Transport.PPQ;
+    const TICKS_PER_MEASURE = TICKS_PER_BEAT * BEATS_PER_MEASURE;
 
     // --- State Management ---
     let chordMelodies = {};
@@ -50,7 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentNoteIndex = 0;
     let isPlaying = false;
     let animationFrameId = null;
-    let activeNotes = {};
+    let activeLeadNoteInfo = null;
+    let midiKeyDownCount = 0;
     let spacebarActive = false;
     let backingPart = null;
 
@@ -74,9 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Functions ---
 
-    /**
-     * Fetches melody phrases from the backend API.
-     */
     async function generatePhrases() {
         generateButton.disabled = true;
         playStopButton.disabled = true;
@@ -93,9 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const response = await fetch('/generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
             });
 
@@ -115,19 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const [pitch, duration, wait, velocity] = line.split(' ').map(Number);
                     const startTime = accumulatedWait;
                     accumulatedWait += wait;
-                    return {
-                        pitch,
-                        duration,
-                        wait,
-                        velocity,
-                        startTime
-                    };
+                    return { pitch, duration, wait, velocity, startTime };
                 }).filter(note => !isNaN(note.pitch));
             }
 
             updateProgressionDisplay();
             drawTimingIndicators();
-            scheduleBackingTrack();
             playStopButton.disabled = false;
             statusArea.textContent = 'フレーズ生成完了。「演奏開始」ボタンを押してください。';
 
@@ -140,9 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Toggles playback on and off.
-     */
     async function togglePlayback() {
         if (progression.length === 0) return;
         await ensureAudioContext();
@@ -154,47 +212,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playStopButton) playStopButton.blur();
     }
 
-    /**
-     * Starts playback and resets the transport.
-     */
     function startPlayback() {
         const playedNotes = pianoRollContent.querySelectorAll('.note-block');
         playedNotes.forEach(note => note.remove());
-
+        scheduleBackingTrack();
         Tone.Transport.seconds = 0;
         Tone.Transport.start();
         isPlaying = true;
-
         playStopButton.textContent = '演奏停止';
         playStopButton.classList.replace('bg-green-600', 'bg-red-600');
         playStopButton.classList.replace('hover:bg-green-700', 'hover:bg-red-700');
         animatePlayhead();
     }
 
-    /**
-     * Stops playback and resets all synthesizers and states.
-     */
     function stopPlayback() {
         Tone.Transport.stop();
-
-        if (leadSynth) leadSynth.dispose();
-        leadSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-
-        if (pianoSynth) pianoSynth.dispose();
-        pianoSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: {
-                type: 'triangle'
-            },
-            envelope: {
-                attack: 0.01,
-                decay: 0.5,
-                sustain: 0.2,
-                release: 1
-            },
-        }).toDestination();
-        pianoSynth.volume.value = -12;
-
-        activeNotes = {};
+        Tone.Transport.cancel(0);
+        if (backingPart) {
+            backingPart.stop(0).clear().dispose();
+            backingPart = null;
+        }
+        
+        // BUGFIX: MonoSynthにはreleaseAllがないため、triggerReleaseに変更
+        if (leadSynth) leadSynth.triggerRelease();
+        if (pianoSynth) pianoSynth.releaseAll();
+        
+        activeLeadNoteInfo = null;
+        midiKeyDownCount = 0;
         spacebarActive = false;
 
         if (animationFrameId) {
@@ -205,74 +249,89 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-yellow-400'));
         activeChord = null;
         isPlaying = false;
-
         playStopButton.textContent = '2. 演奏開始';
         playStopButton.classList.replace('bg-red-600', 'bg-green-600');
         playStopButton.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
         noteDisplayArea.textContent = '...';
     }
 
-    // --- Backing Track ---
-
-    /**
-     * Schedules the piano backing track based on the chord progression.
-     */
     function scheduleBackingTrack() {
         if (backingPart) {
             backingPart.stop(0).clear().dispose();
+            backingPart = null;
         }
 
-        const pianoEvents = [];
+        const events = [];
         progression.forEach((chord, measureIndex) => {
             const chordName = chord.split('_')[0];
-            const notes = CHORD_VOICINGS[chordName] || [];
+            const notes = Chord.getVoicing(chordName);
+
+            events.push({
+                time: Tone.Ticks(measureIndex * TICKS_PER_MEASURE).toSeconds(),
+                type: 'update',
+                chord: progression[measureIndex],
+                chordIndex: measureIndex
+            });
+
             if (notes.length > 0) {
-                // Creates four quarter-note events for each measure
-                for (let beat = 0; beat < 4; beat++) {
-                    pianoEvents.push({
-                        time: `${measureIndex}:${beat}`, // "measure:beat"
-                        notes: notes,
+                for (let beat = 0; beat < BEATS_PER_MEASURE; beat++) {
+                    const startTimeInTicks = (measureIndex * TICKS_PER_MEASURE) + (beat * TICKS_PER_BEAT);
+                    events.push({
+                        time: Tone.Ticks(startTimeInTicks).toSeconds(),
+                        type: 'play',
+                        notes: [...notes],
                         duration: '4n'
                     });
                 }
             }
         });
 
+        if (events.length === 0) return;
+
         backingPart = new Tone.Part((time, value) => {
-            pianoSynth.triggerAttackRelease(value.notes, value.duration, time);
-        }, pianoEvents).start(0);
+            if (value.type === 'play') {
+                pianoSynth.triggerAttackRelease(value.notes, value.duration, time);
+            } else if (value.type === 'update') {
+                Tone.Draw.schedule(() => {
+                    activeChord = value.chord;
+                    currentNoteIndex = 0;
+                    updateNoteDisplay(chordMelodies[activeChord]);
+                    document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-yellow-400'));
+                    const activeIndicator = document.getElementById(`indicator-${value.chordIndex}`);
+                    if (activeIndicator) activeIndicator.classList.add('bg-yellow-400');
+                }, time);
+            }
+        }, events).start(0);
 
         backingPart.loop = true;
-        backingPart.loopEnd = `${progression.length}m`;
+        const totalTicks = progression.length * TICKS_PER_MEASURE;
+        backingPart.loopEnd = Tone.Ticks(totalTicks).toSeconds();
     }
 
-
-    // --- Note Handling ---
-
-    /**
-     * Handles the note-on event from MIDI or keyboard.
-     * @param {number} [velocity=0.75] - The velocity of the note.
-     */
-    async function handleNoteOn(velocity = 0.75) {
+    async function playNextLeadNote(velocity = 0.75) {
         await ensureAudioContext();
         if (!isPlaying || !activeChord || !chordMelodies[activeChord] || chordMelodies[activeChord].length === 0) {
+            return;
+        }
+        if (activeLeadNoteInfo) {
             return;
         }
 
         const notesOfCurrentChord = chordMelodies[activeChord];
         const noteToPlay = notesOfCurrentChord[currentNoteIndex];
-        const pitch = noteToPlay.pitch;
+        if (!noteToPlay) return;
 
-        if (!noteToPlay || typeof pitch !== 'number' || activeNotes[pitch]) {
-            return;
-        }
+        const pitch = noteToPlay.pitch;
+        if (typeof pitch !== 'number') return;
 
         const freq = Tone.Midi(pitch).toFrequency();
         leadSynth.triggerAttack(freq, Tone.now(), velocity);
 
         const noteStartTicks = Tone.Transport.ticks;
         const noteElement = drawPlayedNote(pitch, noteStartTicks);
-        activeNotes[pitch] = {
+
+        activeLeadNoteInfo = {
+            pitch: pitch,
             startTicks: noteStartTicks,
             element: noteElement
         };
@@ -280,67 +339,48 @@ document.addEventListener('DOMContentLoaded', () => {
         currentNoteIndex = (currentNoteIndex + 1) % notesOfCurrentChord.length;
     }
 
-    /**
-     * Handles the note-off event from MIDI or keyboard.
-     * @param {number} pitch - The MIDI pitch number of the note to release.
-     */
-    function handleNoteOff(pitch) {
-        const noteInfo = activeNotes[pitch];
-        if (!noteInfo) return;
+    function stopCurrentLeadNote() {
+        if (!activeLeadNoteInfo) return;
 
-        const freq = Tone.Midi(pitch).toFrequency();
-        leadSynth.triggerRelease(freq, Tone.now());
+        const noteInfo = activeLeadNoteInfo;
+        leadSynth.triggerRelease(Tone.now());
 
         const endTicks = Tone.Transport.ticks;
         const durationTicks = endTicks - noteInfo.startTicks;
         const totalTicks = progression.length * TICKS_PER_MEASURE;
 
-        if (totalTicks === 0) return;
-
-        const widthPercentage = (durationTicks / totalTicks) * 100;
-        if (noteInfo.element) {
-            noteInfo.element.style.width = `${widthPercentage}%`;
+        if (totalTicks > 0) {
+            const widthPercentage = (durationTicks / totalTicks) * 100;
+            if (noteInfo.element) {
+                noteInfo.element.style.width = `${Math.max(0.5, widthPercentage)}%`;
+            }
         }
-        delete activeNotes[pitch];
+        activeLeadNoteInfo = null;
     }
 
-
-    // --- UI Drawing ---
-
-    /**
-     * Draws a note block on the piano roll.
-     * @param {number} pitch - The MIDI pitch number.
-     * @param {number} startTicks - The start time in transport ticks.
-     * @returns {HTMLElement|null} The created note element or null.
-     */
     function drawPlayedNote(pitch, startTicks) {
-        const PITCH_MIN = 48,
-            PITCH_MAX = 84,
-            PITCH_RANGE = PITCH_MAX - PITCH_MIN;
+        const PITCH_MIN = 48, PITCH_MAX = 84, PITCH_RANGE = PITCH_MAX - PITCH_MIN;
         if (pitch < PITCH_MIN || pitch > PITCH_MAX) return null;
-
+        
         const noteBlock = document.createElement('div');
         noteBlock.className = 'note-block';
-
+        
         const totalTicks = progression.length * TICKS_PER_MEASURE;
         if (totalTicks === 0) return null;
-
+        
         const currentLoopTicks = startTicks % totalTicks;
         const leftPercentage = (currentLoopTicks / totalTicks) * 100;
         const topPercentage = 100 - ((pitch - PITCH_MIN) / PITCH_RANGE) * 100;
-
+        
         noteBlock.style.top = `${topPercentage}%`;
         noteBlock.style.height = `${100 / PITCH_RANGE}%`;
         noteBlock.style.left = `${leftPercentage}%`;
-        noteBlock.style.width = `1%`; // Initial width, updated on note-off
-
+        noteBlock.style.width = `1%`;
+        
         pianoRollContent.appendChild(noteBlock);
         return noteBlock;
     }
 
-    /**
-     * Draws vertical lines indicating potential note timings.
-     */
     function drawTimingIndicators() {
         const indicators = pianoRollContent.querySelectorAll('.timing-indicator');
         indicators.forEach(ind => ind.remove());
@@ -363,9 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * Updates the chord progression display.
-     */
     function updateProgressionDisplay() {
         progressionDisplay.innerHTML = '';
         progression.forEach((chord, index) => {
@@ -378,22 +415,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * Displays the available notes for the current chord.
-     * @param {Array<Object>} notes - The array of note objects.
-     */
     function updateNoteDisplay(notes) {
-        if (!noteDisplayArea || !notes) {
-            noteDisplayArea.textContent = '...';
+        if (!noteDisplayArea || !notes || notes.length === 0) {
+            if (noteDisplayArea) noteDisplayArea.textContent = '...';
             return;
         }
         const pitchList = notes.map(n => n.pitch).join(' ');
         noteDisplayArea.textContent = pitchList;
     }
 
-    /**
-     * Animates the playhead across the piano roll.
-     */
     function animatePlayhead() {
         if (!isPlaying) {
             animationFrameId = null;
@@ -411,86 +441,64 @@ document.addEventListener('DOMContentLoaded', () => {
         animationFrameId = requestAnimationFrame(animatePlayhead);
     }
 
-
-    // --- Input Setup ---
-
-    /**
-     * Sets up listeners for keyboard events (spacebar).
-     */
     function setupKeyboardListener() {
         document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (!e.repeat && !spacebarActive) {
                     spacebarActive = true;
-                    handleNoteOn();
+                    playNextLeadNote();
                 }
             }
         });
         document.addEventListener('keyup', (e) => {
+            if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
             if (e.code === 'Space' && spacebarActive) {
                 spacebarActive = false;
-                const lastPlayedPitch = Object.keys(activeNotes).pop();
-                if (lastPlayedPitch) {
-                    handleNoteOff(parseInt(lastPlayedPitch, 10));
-                }
+                stopCurrentLeadNote();
             }
         });
     }
-
-    /**
-     * Initializes the Web MIDI API and sets up listeners.
-     */
-    async function setupMidi() {
-        if (!navigator.requestMIDIAccess) return;
-        try {
-            await WebMidi.enable();
-            const midiInput = WebMidi.inputs[0];
-            if (midiInput) {
-                statusArea.textContent = `接続中: ${midiInput.name}`;
-                midiInput.on("noteon", e => handleNoteOn(e.velocity));
-                midiInput.on("noteoff", e => handleNoteOff(e.note.number));
-            }
-        } catch (err) {
-            console.error("Could not enable MIDI:", err);
+    
+    function handleMidiNoteOn(velocity = 0.75) {
+        midiKeyDownCount++;
+        if (midiKeyDownCount === 1) {
+            playNextLeadNote(velocity);
         }
     }
 
-
-    // --- Transport Scheduling ---
-
-    /**
-     * Main transport loop, scheduled every measure.
-     */
-    Tone.Transport.scheduleRepeat((time) => {
-        const totalMeasures = progression.length;
-        if (totalMeasures === 0) return;
-
-        const currentMeasure = Math.floor(Tone.Transport.position.split(':')[0]);
-        const chordIndex = currentMeasure % totalMeasures;
-        const newActiveChord = progression[chordIndex];
-
-        if (activeChord !== newActiveChord) {
-            activeChord = newActiveChord;
-            currentNoteIndex = 0;
-            updateNoteDisplay(chordMelodies[activeChord]);
+    function handleMidiNoteOff() {
+        if (midiKeyDownCount > 0) {
+            midiKeyDownCount--;
         }
+        if (midiKeyDownCount === 0) {
+            stopCurrentLeadNote();
+        }
+    }
 
-        Tone.Draw.schedule(() => {
-            document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-yellow-400'));
-            const activeIndicator = document.getElementById(`indicator-${chordIndex}`);
-            if (activeIndicator) activeIndicator.classList.add('bg-yellow-400');
-        }, time);
-    }, "1m");
+    async function setupMidi() {
+        if (!navigator.requestMIDIAccess) return;
+        try {
+            if (typeof WebMidi === 'undefined') return;
+            await WebMidi.enable();
+            const midiInput = WebMidi.inputs[0];
+            if (midiInput) {
+                statusArea.textContent = `MIDI In: ${midiInput.name}`;
+                midiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
+                midiInput.on("noteoff", e => handleMidiNoteOff());
+            } else {
+                statusArea.textContent = 'MIDIデバイス未接続。PCキーボードのスペースキーで演奏できます。';
+            }
+        } catch (err) {
+            console.error("Could not enable MIDI:", err);
+            statusArea.textContent = 'MIDIデバイスの有効化に失敗しました。';
+        }
+    }
 
-
-    /**
-     * Ensures the AudioContext is running.
-     */
     async function ensureAudioContext() {
         if (Tone.context.state !== 'running') {
             await Tone.start();
         }
     }
 });
-
