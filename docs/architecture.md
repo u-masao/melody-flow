@@ -15,7 +15,7 @@ title: Melody Flow AIモデルの学習プロセス
 ---
 graph TD
     subgraph "Hugging Face上の公開アセット"
-        Base("Base Model<br/>eta-llama/Llama-3.2-8B-Instruct")
+        Base("Base Model<br/>meta-llama/Llama-3.2-8B-Instruct")
         DS1[("amaai-lab/MidiCaps")]
         DS2[("projectlosangeles/Los-Angeles-MIDI-Dataset")]
     end
@@ -99,7 +99,7 @@ flowchart TD
 
     B -- Yes (次のNoteを予測するタイミング) --> C(現在のコードと過去のNote履歴を取得)
 
-    subgraph "音楽理論に基づく制約ルール"
+    subgraph "音楽理論に基づく制約"
         C --> D["chord_name_parser.py<br/>コード名を解析し、使用可能なスケール音を特定"]
         C --> E["calc_trend<br/>直近数音の平均ピッチ(トレンド)を計算"]
     end
