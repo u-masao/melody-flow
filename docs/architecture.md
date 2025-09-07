@@ -126,7 +126,7 @@ flowchart TD
         C --> E["<b>calc_trend</b><br/>直近数音の平均ピッチ(トレンド)を計算"]
     end
 
-    subgraph "🔧 Logits (確率分布) の操作"
+    subgraph "🔧 確率分布の操作"
         D --> F(🎵 スケール音とトレンドから<br/><b>許容するNote</b>のToken IDリストを作成)
         E --> F
         F --> G(🚫 許容リストに<b>含まれない</b>Note Tokenの<br/>Logitsに強いペナルティを課す)
