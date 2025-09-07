@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <title>MIDI IN 動作確認テスト</title>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 1em; background-color: #f5f5f5; }
+        #status { font-weight: bold; font-size: 1.2em; padding: 0.5em; background-color: #e0e0e0; border-radius: 5px; }
+        #log { margin-top: 1em; border: 1px solid #ccc; padding: 1em; height: 50vh; overflow-y: scroll; background-color: #fff; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>MIDI IN 動作確認テスト</h1>
+    <div id="status">MIDIデバイスを待機中...</div>
+    <div id="log">ここに受信したMIDIメッセージが表示されます。</div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+
+        function logMessage(message) {
+            console.log(message);
+            logDiv.innerHTML = message + '<br>' + logDiv.innerHTML;
+        }
+
+        async function runMidiTest() {
+            try {
+                // WebMidi.jsを有効化
+                await WebMidi.enable();
+                logMessage("WebMidi APIが有効になりました。");
+
+                // MIDI入力デバイスをチェック
+                if (WebMidi.inputs.length < 1) {
+                    statusDiv.textContent = "MIDI入力デバイスが見つかりません。";
+                    statusDiv.style.color = 'red';
+                    logMessage("エラー: MIDI入力デバイスがPCに接続されていないか、認識されていません。");
+                    return;
+                }
+                
+                statusDiv.textContent = `MIDIデバイスを検出しました: ${WebMidi.inputs.map(d => d.name).join(', ')}`;
+                statusDiv.style.color = 'green';
+                
+                // 見つかった全てのMIDI入力デバイスにリスナーを設定
+                WebMidi.inputs.forEach(inputDevice => {
+                    logMessage(`リスナーを設定中: ${inputDevice.name}`);
+
+                    // ノートオン（キーを押した時）のイベント
+                    inputDevice.addListener("noteon", e => {
+                        logMessage(`Note ON: ${e.note.name}${e.note.octave} (Note# ${e.note.number}), Velocity: ${e.velocity.toFixed(2)}`);
+                    });
+
+                    // ノートオフ（キーを離した時）のイベント
+                    inputDevice.addListener("noteoff", e => {
+                        logMessage(`Note OFF: ${e.note.name}${e.note.octave} (Note# ${e.note.number})`);
+                    });
+
+                    // コントロールチェンジ（ペダルやノブなど）のイベント
+                    inputDevice.addListener("controlchange", e => {
+                        logMessage(`Control Change: Controller# ${e.controller.number}, Value: ${e.value}`);
+                    });
+                });
+
+            } catch (err) {
+                statusDiv.textContent = "WebMidi APIを有効化できませんでした。";
+                statusDiv.style.color = 'red';
+                logMessage(`エラー: ${err}`);
+            }
+        }
+
+        runMidiTest();
+    </script>
+</body>
+</html>
