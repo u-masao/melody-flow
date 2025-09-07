@@ -77,8 +77,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Audio Synthesis ---
     const leadSynth = new Tone.MonoSynth({
-        oscillator: { type: 'sawtooth' },
-        envelope: { attack: 0.02, decay: 0.2, sustain: 0.6, release: 0.5 }
+        // ノコギリ波(sawtooth)は、管楽器の元になる複雑な倍音を多く含んでおり加工に適しています
+        oscillator: {
+            type: 'sawtooth'
+        },
+        // 吹奏楽器のような、少し遅れて立ち上がり、長く持続する音量を表現します
+        envelope: {
+            attack: 0.05,   // 息を吹き込むような、わずかに遅い立ち上がり
+            decay: 0.2,
+            sustain: 0.7,   // キーを押している間は音量を高く保つ
+            release: 0.15   // 息を止めるとスッと音が切れる感じ
+        },
+        // フィルターで高音を削り、アタック時に音が開くことで「ブワッ」というニュアンスを加えます
+        filter: {
+            Q: 2,
+            type: 'lowpass', // 高音域をカットするフィルター
+            frequency: 1200  // 音の基本的な明るさ。値を下げるとこもる
+        },
+        filterEnvelope: {
+            attack: 0.06,
+            decay: 0.1,
+            sustain: 0.5,
+            release: 0.2,
+            baseFrequency: 300, // フィルターの基本位置（暗め）
+            octaves: 3.5        // アタック時にフィルターが動く幅。サックスの表情をつけます
+        }
     }).toDestination();
 
     const pianoSynth = new Tone.PolySynth(Tone.Synth, {
