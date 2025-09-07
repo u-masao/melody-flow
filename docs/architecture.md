@@ -25,7 +25,7 @@ graph TD
         DS2[("🎵 projectlosangeles/Los-Angeles-MIDI-Dataset")]
     end
 
-    subgraph "👨‍🔬 dx2102/llama-midi (事前学習)"
+    subgraph "🔬 dx2102/llama-midi (事前学習)"
         FT1("Fine-Tuning")
         LlamaMidi("🎹 dx2102/llama-midi")
     end
