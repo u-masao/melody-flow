@@ -1,5 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    const getApiEndpoint = () => {
+        const hostname = window.location.hostname;
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+            return "http://localhost:7860/generate";
+        }
+        //
+        // 本番環境のバックエンドURLに適宜変更してください
+        // return "https://api.melody-flow.click/generate";
+        return "http://localhost:7860/generate";
+    };
+    const API_ENDPOINT = getApiEndpoint();
+
+
     class Chord {
         static NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         static NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -42,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DOM Elements ---
     const chordSelect = document.getElementById('chord-progression');
     const styleSelect = document.getElementById('music-style');
     const generateButton = document.getElementById('generate-button');
@@ -60,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('beat-3'), document.getElementById('beat-4')
     ];
 
-    // --- Audio Synthesis ---
     const leadSynth = new Tone.MonoSynth({
         oscillator: { type: 'sawtooth' },
         envelope: { attack: 0.05, decay: 0.2, sustain: 0.7, release: 0.15 },
@@ -74,22 +85,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }).toDestination();
     pianoSynth.volume.value = -12;
 
-    // --- Musical Constants & State ---
     const BEATS_PER_MEASURE = 4;
     const TICKS_PER_BEAT = Tone.Transport.PPQ;
     const TICKS_PER_MEASURE = TICKS_PER_BEAT * BEATS_PER_MEASURE;
     let chordMelodies = {}, progression = [], activeChord = null, currentNoteIndex = 0;
     let isPlaying = false, animationFrameId = null, activeLeadNoteInfo = null;
     let midiKeyDownCount = 0, backingPart = null, beatLoop = null;
-    let activeKeys = new Set(); // Changed from spacebarActive
+    let activeKeys = new Set();
 
-    // --- Initial Setup & Event Listeners ---
     setupMidi();
     setupKeyboardListener();
     bpmSlider.addEventListener('input', (e) => {
         bpmValue.textContent = e.target.value;
         Tone.Transport.bpm.value = e.target.value;
-        bpmSlider.blur(); //
+    });
+    bpmSlider.addEventListener('click', () => {
+        bpmSlider.blur();
     });
     generateButton.addEventListener('click', generatePhrases);
     playStopButton.addEventListener('click', togglePlayback);
@@ -98,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         muteBackingTrackCheckbox.blur();
     });
 
-    // --- Beat Animation ---
     function startBeatAnimation() {
         if (beatLoop) beatLoop.stop(0).dispose();
         beatLoop = new Tone.Loop(time => {
@@ -117,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
         beatIndicators.forEach(indicator => indicator.classList.remove('active'));
     }
 
-    // --- Core Functions ---
     async function generatePhrases() {
         generateButton.disabled = true; playStopButton.disabled = true;
         generateButton.textContent = 'フレーズ生成中...'; statusArea.textContent = 'AIがメロディを考えています...';
@@ -131,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         try {
-            const response = await fetch('/generate', {
+            const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chord_progression: chordSelect.value, style: styleSelect.value }),
@@ -152,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             updateProgressionDisplay(); drawTimingIndicators();
             playStopButton.disabled = false;
-            statusArea.textContent = 'フレーズの準備ができました。さあ、MIDIデバイスやスペースキーでセッションの始まりです！';
+            statusArea.textContent = 'フレーズの準備ができました。さあ、MIDIデバイスや数字キー、スペースキーでセッションの始まりです！';
         } catch (error) {
             console.error('フレーズ生成に失敗:', error.message);
             statusArea.textContent = `エラー: ${error.message}`;
@@ -191,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
         if (leadSynth) leadSynth.triggerRelease();
         if (pianoSynth) pianoSynth.releaseAll();
-        activeLeadNoteInfo = null; midiKeyDownCount = 0; activeKeys.clear(); //
+        activeLeadNoteInfo = null; midiKeyDownCount = 0; activeKeys.clear();
         if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
         playhead.style.left = '0%';
         document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-sky-500'));
@@ -330,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e) || activeKeys.has(e.code)) return;
             e.preventDefault();
             activeKeys.add(e.code);
-            if (activeKeys.size === 1) { //
+            if (activeKeys.size === 1) {
                 playNextLeadNote();
             }
         });
@@ -338,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keyup', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e)) return;
             activeKeys.delete(e.code);
-            if (activeKeys.size === 0) { //
+            if (activeKeys.size === 0) {
                 stopCurrentLeadNote();
             }
         });
@@ -361,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 midiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
                 midiInput.on("noteoff", e => handleMidiNoteOff());
             } else {
-                statusArea.textContent = 'MIDIデバイス未接続。PCキーボードで演奏できます。';
+                statusArea.textContent = 'MIDIデバイス未接続。PCのスペースキーや数字キーで演奏できます。';
             }
         } catch (err) {
             console.error("Could not enable MIDI:", err);

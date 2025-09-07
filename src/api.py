@@ -5,6 +5,7 @@ import re
 import time
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -13,20 +14,15 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorLis
 from unsloth import FastLanguageModel
 import uvicorn
 
-# --- 【変更】NoteTokenizerもインポート ---
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
-# --- AIモデルのセットアップ ---
-# 環境変数 `MODEL_NAME` からモデル名を取得。指定がなければデフォルト値を使用
 MODEL_NAME = os.getenv("MODEL_NAME", "models/llama-midi.pth/")
 print(f"Loading model: {MODEL_NAME}...")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {DEVICE}")
 
 try:
-    # ローカルのUnslothモデルか、HuggingFaceのモデルかを判定
     if os.path.isdir(MODEL_NAME):
-        # ローカルのUnslothモデルをロード
         print("Loading local Unsloth model...")
         MODEL, TOKENIZER = FastLanguageModel.from_pretrained(
             model_name=MODEL_NAME,
@@ -35,7 +31,6 @@ try:
             load_in_4bit=True,
         )
     else:
-        # HuggingFace Hubからモデルをロード
         print("Loading HuggingFace model...")
         MODEL = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
@@ -43,24 +38,37 @@ try:
         ).to(DEVICE)
         TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
 
-    # NoteTokenizerのインスタンスを作成
     NOTE_TOKENIZER_HELPER = NoteTokenizer(TOKENIZER)
     print("Model loaded successfully.")
-
 except Exception as e:
     print(f"Error loading model: {e}")
     TOKENIZER, MODEL, NOTE_TOKENIZER_HELPER = None, None, None
 
-# --- FastAPIアプリケーション (変更なし) ---
+
 app = FastAPI(title="Melody Flow API")
 
-# --- 静的ファイル配信 (変更なし) ---
+
+origins = [
+    "https://melody-flow.click",
+    "https://melody-flow.nano-button.click",
+    "http://localhost:7860",
+    "http://127.0.0.1:7860",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(current_dir, "..", "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
-# --- APIデータモデル (変更なし) ---
 class MelodyGenerationRequest(BaseModel):
     chord_progression: str
     style: str
@@ -71,7 +79,6 @@ class MelodyGenerationResponse(BaseModel):
     raw_outputs: dict[str, str]
 
 
-# --- ヘルパー関数 (変更なし) ---
 def generate_midi_from_model(prompt: str, processor: MelodyControlLogitsProcessor) -> str:
     if not MODEL or not TOKENIZER:
         raise RuntimeError("Model is not loaded.")
@@ -93,7 +100,6 @@ def parse_and_encode_midi(decoded_text: str) -> str:
     return base64.b64encode(midi_note_data.encode("utf-8")).decode("utf-8")
 
 
-# --- APIエンドポイント ---
 @app.get("/", response_class=FileResponse)
 async def read_index():
     return FileResponse(os.path.join(static_dir, "index.html"))
@@ -106,20 +112,15 @@ def generate_melody(request: MelodyGenerationRequest):
     melodies = {}
     raw_outputs = {}
     print(f"Generating melodies for chords: {chords}")
-
     for chord in chords:
         chord_start_time = time.time()
-
-        # --- 【変更】NOTE_TOKENIZER_HELPER を使用 ---
         processor = MelodyControlLogitsProcessor(chord, NOTE_TOKENIZER_HELPER)
-
         prompt = (
             f"style={request.style}, chord_progression={chord}\n"
             "pitch duration wait velocity instrument\n"
         )
         raw_output = generate_midi_from_model(prompt, processor)
         encoded_midi = parse_and_encode_midi(raw_output)
-
         key = chord
         count = 2
         while key in melodies:
@@ -127,16 +128,12 @@ def generate_melody(request: MelodyGenerationRequest):
             count += 1
         melodies[key] = encoded_midi
         raw_outputs[key] = raw_output
-
         chord_end_time = time.time()
         print(f"  - Generated for {key} in {chord_end_time - chord_start_time:.2f} seconds")
-
     total_end_time = time.time()
     print(f"Total generation time: {total_end_time - total_start_time:.2f} seconds")
-
     return MelodyGenerationResponse(chord_melodies=melodies, raw_outputs=raw_outputs)
 
 
-# --- サーバー起動 (変更なし) ---
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
