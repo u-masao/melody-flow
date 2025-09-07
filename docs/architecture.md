@@ -9,7 +9,7 @@ Melody Flow のアーキテクチャ
 dx2102/llama-midiがどのように作られ、このプロジェクトでさらにどう進化したかを図示します。
 
 
-```:mermaid
+```mermaid
 ---
 title: Melody Flow AIモデルの学習プロセス
 ---
@@ -48,7 +48,7 @@ graph TD
 ユーザーのMIDI入力が、どのようにブラウザとバックエンドの間で処理されるかを図示します。演奏中のリアルタイム性を担保するために、AIによるフレーズ生成を事前に行う点がアーキテクチャの重要なポイントです。
 
 
-```:mermaid
+```mermaid
 ---
 title: Melody Flow システムアーキテクチャ
 ---
@@ -88,7 +88,7 @@ sequenceDiagram
 バックエンドでAIが次の音を予測する瞬間に、どのように音楽理論に基づいた制約をかけているかを図示します。
 
 
-```:mermaid
+```mermaid
 ---
 title: MelodyControlLogitsProcessor の処理フロー
 ---
