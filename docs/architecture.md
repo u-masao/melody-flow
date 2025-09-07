@@ -64,7 +64,7 @@ graph TD
 title: Melody Flow システムアーキテクチャ
 ---
 sequenceDiagram
-    actor 👨‍💻 User
+    actor User
     participant 🌐 Browser (JavaScript)
     participant ⚙️ Backend (Python/FastAPI)
 
