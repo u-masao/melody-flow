@@ -5,19 +5,63 @@
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 1em; background-color: #f5f5f5; }
-        #status { font-weight: bold; font-size: 1.2em; padding: 0.5em; background-color: #e0e0e0; border-radius: 5px; }
-        #log { margin-top: 1em; border: 1px solid #ccc; padding: 1em; height: 50vh; overflow-y: scroll; background-color: #fff; font-family: monospace; }
+        body { font-family: sans-serif; padding: 1em; background-color: #f5f5f5; color: #333; }
+        h1 { border-bottom: 2px solid #ccc; padding-bottom: 0.5em;}
+        #status { font-weight: bold; font-size: 1.2em; padding: 0.5em; background-color: #e0e0e0; border-radius: 5px; margin-bottom: 1em; }
+        #log { margin-top: 1em; border: 1px solid #ccc; padding: 1em; height: 40vh; overflow-y: scroll; background-color: #fff; font-family: monospace; }
+        
+        /* --- ▼ここから追加 --- */
+        #velocity-meter-container {
+            width: 100%;
+            height: 40px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 0.5em;
+            position: relative;
+            box-sizing: border-box;
+        }
+        #velocity-bar {
+            width: 0%; /* 初期幅は0 */
+            height: 100%;
+            background-color: #4caf50; /* 初期色は緑 */
+            border-radius: 5px;
+            /* 幅と色の変化を滑らかにするアニメーション */
+            transition: width 0.05s linear, background-color 0.05s linear;
+        }
+        #velocity-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-shadow: 0 0 5px #fff;
+        }
+        /* --- ▲ここまで追加 --- */
+
     </style>
 </head>
 <body>
     <h1>MIDI IN 動作確認テスト</h1>
     <div id="status">MIDIデバイスを待機中...</div>
+
+    <strong>Velocity Meter</strong>
+    <div id="velocity-meter-container">
+        <div id="velocity-bar"></div>
+        <span id="velocity-value">0.00</span>
+    </div>
     <div id="log">ここに受信したMIDIメッセージが表示されます。</div>
 
     <script>
         const statusDiv = document.getElementById('status');
         const logDiv = document.getElementById('log');
+        // ▼ここから追加
+        const velocityBar = document.getElementById('velocity-bar');
+        const velocityValue = document.getElementById('velocity-value');
+        // ▲ここまで追加
+
 
         function logMessage(message) {
             console.log(message);
@@ -26,36 +70,47 @@
 
         async function runMidiTest() {
             try {
-                // WebMidi.jsを有効化
                 await WebMidi.enable();
                 logMessage("WebMidi APIが有効になりました。");
 
-                // MIDI入力デバイスをチェック
                 if (WebMidi.inputs.length < 1) {
                     statusDiv.textContent = "MIDI入力デバイスが見つかりません。";
                     statusDiv.style.color = 'red';
                     logMessage("エラー: MIDI入力デバイスがPCに接続されていないか、認識されていません。");
                     return;
                 }
-                
+
                 statusDiv.textContent = `MIDIデバイスを検出しました: ${WebMidi.inputs.map(d => d.name).join(', ')}`;
                 statusDiv.style.color = 'green';
-                
-                // 見つかった全てのMIDI入力デバイスにリスナーを設定
+
                 WebMidi.inputs.forEach(inputDevice => {
                     logMessage(`リスナーを設定中: ${inputDevice.name}`);
 
-                    // ノートオン（キーを押した時）のイベント
                     inputDevice.addListener("noteon", e => {
-                        logMessage(`Note ON: ${e.note.name}${e.note.octave} (Note# ${e.note.number}), Velocity: ${e.velocity.toFixed(2)}`);
+                        const velocity = e.velocity;
+                        const percentage = velocity * 100;
+                        
+                        // ▼ここから追加: ベロシティメーターを更新
+                        velocityBar.style.width = `${percentage}%`;
+                        velocityValue.textContent = velocity.toFixed(2);
+
+                        // ベロシティに応じてバーの色を変更
+                        if (velocity > 0.8) {
+                            velocityBar.style.backgroundColor = '#f44336'; // 強い: 赤
+                        } else if (velocity > 0.5) {
+                            velocityBar.style.backgroundColor = '#ffeb3b'; // 中間: 黄
+                        } else {
+                            velocityBar.style.backgroundColor = '#4caf50'; // 弱い: 緑
+                        }
+                        // ▲ここまで追加
+
+                        logMessage(`Note ON: ${e.note.name}${e.note.octave} (Note# ${e.note.number}), Velocity: ${velocity.toFixed(2)}`);
                     });
 
-                    // ノートオフ（キーを離した時）のイベント
                     inputDevice.addListener("noteoff", e => {
                         logMessage(`Note OFF: ${e.note.name}${e.note.octave} (Note# ${e.note.number})`);
                     });
 
-                    // コントロールチェンジ（ペダルやノブなど）のイベント
                     inputDevice.addListener("controlchange", e => {
                         logMessage(`Control Change: Controller# ${e.controller.number}, Value: ${e.value}`);
                     });
