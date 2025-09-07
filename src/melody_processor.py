@@ -159,7 +159,6 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
             if trend_pitch:
                 for pitch in range(trend_pitch - 5, trend_pitch + 5):
                     if pitch != last_pitch:
-                        logger.info(f"trend: {pitch=}")
                         trend_ids_set.add(self.note_tokenizer.pitch_to_token_id(pitch))
             logger.info(f"{trend_ids_set=}")
 
