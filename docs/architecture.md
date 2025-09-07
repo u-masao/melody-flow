@@ -19,18 +19,18 @@ Melody Flowの心臓部であるAIモデルは、汎用的な大規模言語モ�
 title: Melody Flow AIモデルの学習プロセス
 ---
 graph TD
-    subgraph "🌐 Hugging Face上の公開アセット"
+    subgraph "🤗 Hugging Face"
         Base("🤖 Base Model<br/>meta-llama/Llama-3.2-8B-Instruct")
         DS1[("🎼 amaai-lab/MidiCaps")]
         DS2[("🎵 projectlosangeles/Los-Angeles-MIDI-Dataset")]
     end
 
-    subgraph "🔬 dx2102/llama-midi (事前学習)"
+    subgraph "🔬 dx2102/llama-midi"
         FT1("Fine-Tuning")
         LlamaMidi("🎹 dx2102/llama-midi")
     end
 
-    subgraph "🚀 Melody Flow プロジェクト"
+    subgraph "🚀 Melody Flow Project"
         WJazzD[("🎷 Weimar Jazz Database")]
         ProjFT("<b>✨ Fine-Tuning (本プロジェクト)</b><br/>⚡ Unslothによる高速化<br/>💡 LoRAによる効率的学習")
         FinalModel("🏆 Melody Flow 専用モデル")
