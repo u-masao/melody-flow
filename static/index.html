@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Melody Flow</title>
-    <link rel="icon" href="static/favicon.svg">
+    <link rel="icon" href="/static/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
@@ -36,30 +36,56 @@
         #piano-roll-container {
             overflow-x: hidden;
         }
+        /* Beat Indicator Styles */
+        .beat-indicator {
+            width: 12px;
+            height: 12px;
+            background-color: #4b5563; /* Gray-600 */
+            border-radius: 50%;
+            transition: all 0.1s ease-in-out;
+        }
+        .beat-indicator.active {
+            background-color: #a78bfa; /* Violet-400 */
+            transform: scale(1.2);
+        }
+        .beat-indicator.downbeat.active {
+            background-color: #f59e0b; /* Amber-500 */
+            transform: scale(1.4);
+        }
+
+        /* Generating Animation */
+        @keyframes pulse-fade {
+            0% { background-color: #a78bfa; opacity: 1; }
+            100% { background-color: #4b5563; opacity: 0.5; }
+        }
+        .beat-indicator.generating {
+            animation: pulse-fade 0.8s ease-in-out infinite alternate;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
 
     <div class="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-8 space-y-6">
         <header class="text-center">
-            <h1 class="text-4xl font-bold tracking-tight">Melody Flow</h1>
+            <h1 class="text-4xl font-bold tracking-tight flex items-center justify-center gap-3">
+                <img src="/static/favicon.svg" alt="Melody Flow Logo" class="h-10 w-10">
+                <span>Melody Flow</span>
+            </h1>
         </header>
 
-        <!-- 1. 設定パネル -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-900/50 p-6 rounded-lg">
             <div>
-                <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">コード進行 (4小節)</label>
+                <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">コード進行プリセット</label>
                 <select id="chord-progression" class="w-full bg-gray-700 rounded-md p-3">
                     <option>Dm7 - G7</option>
+                    <option>Dm7 - G7 - Dm7 - G7 - Dm7 - G7 - Dm7 - G7</option>
                     <option>C - G - Am - F</option>
-                    <option>C - G - Am - F - C</option>
-                    <option>C - G - Am - F - C - F</option>
+                    <option>CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7</option>
+                    <option>Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7</option>
                     <option>F - G - Em - Am</option>
                     <option>Am - F - G - C</option>
                     <option>Dm7 - G7 - Cmaj7 - Cmaj7</option>
                     <option>Cm7 - Cm7 - Fm7 - Cm7</option>
-                    <option>Fm7 - Cm7 - G7 - C#7</option>
-                    <option>Cm7 - Cm7 - Fm7 - Cm7 - G7 - C#7</option>
                     <option>Cm7 - F7 - BbM7 - EbM7 - Am7b5- D7 - Gm - Gm - Am7b5 - D7 - Gm - Gm - Cm7 - F7 - BbM7 - EbM7</option>
                 </select>
             </div>
@@ -77,9 +103,15 @@
             </div>
         </div>
 
-        <!-- 2. 演奏パネル -->
         <div class="bg-gray-900/50 p-6 rounded-lg space-y-4">
             <div class="flex items-center justify-center gap-6">
+                <div class="flex items-center gap-2">
+                    <span id="beat-1" class="beat-indicator downbeat"></span>
+                    <span id="beat-2" class="beat-indicator"></span>
+                    <span id="beat-3" class="beat-indicator"></span>
+                    <span id="beat-4" class="beat-indicator"></span>
+                </div>
+
                 <div>
                     <label for="bpm-slider" class="block text-sm text-center font-medium text-gray-300 mb-1">BPM</label>
                     <div class="flex items-center gap-3">
@@ -87,16 +119,20 @@
                         <span id="bpm-value" class="font-mono text-lg w-10">120</span>
                     </div>
                 </div>
-                <button id="play-stop-button" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-md text-lg" disabled>
+                <button id="play-stop-button" class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-md text-lg" disabled>
                     2. 演奏開始
                 </button>
             </div>
-            <div id="progression-display" class="flex justify-around p-3 bg-black/30 rounded-md">
-                <!-- JSで動的に生成されます -->
+            <div class="flex justify-end items-center pr-2">
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="checkbox" id="mute-backing-track" class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    伴奏をミュート
+                </label>
             </div>
+            <div id="progression-display" class="flex justify-around p-3 bg-black/30 rounded-md min-h-[52px]">
+                </div>
         </div>
-        
-        <!-- 3. ピアノロール & フレーズ表示 -->
+
         <div class="bg-gray-900/50 p-4 rounded-lg space-y-3">
             <div id="piano-roll-container" class="relative h-48 bg-black/30 rounded-md border border-gray-700">
                 <div id="piano-roll-content" class="relative h-full w-full">
@@ -104,19 +140,16 @@
                 </div>
             </div>
             <div class="bg-black/30 p-3 rounded-md">
-                <p class="text-sm text-gray-400 mb-1">現在のフレーズ (MIDI Note #)</p>
+                <p class="text-sm text-gray-400 mb-1">現在のフレーズ (音名)</p>
                 <div id="note-display-area" class="font-mono text-lg text-indigo-300 break-all">...</div>
             </div>
         </div>
 
-        <!-- 4. ステータス表示 -->
-        <div id="status-area" class="text-center text-gray-400 p-3 bg-gray-900/50 rounded-lg">
+        <div id="status-area" class="text-center text-gray-400 p-3 bg-gray-900/50 rounded-lg min-h-[48px]">
             MIDIデバイスを接続、またはスペースキーで演奏
         </div>
     </div>
 
-    <!-- キャッシュ対策のためバージョン番号を更新 -->
-    <script src="/static/main.js?v=14"></script>
+    <script src="/static/main.js?v=18"></script>
 </body>
 </html>
-
