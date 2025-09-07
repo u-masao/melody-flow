@@ -2,6 +2,7 @@
 
 FILES=(
 docs/project_summary.md
+docs/architecture.md
 src/chord_name_parser.py
 src/melody_processor.py
 src/api.py
