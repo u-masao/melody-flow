@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Melody Flow Presentation</title>
-    <!-- Favicon Link -->
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +40,7 @@
             opacity: 1;
             z-index: 1;
         }
-        
+
         /* Animation Classes */
         .fade-in-up {
             animation: fadeInUp 1s ease-out forwards;
@@ -61,7 +60,7 @@
         .fade-in {
              animation: fadeIn 1s ease-out forwards;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -83,7 +82,7 @@
             margin-bottom: 2rem;
             text-align: center;
         }
-        
+
         .slide h3 {
             font-size: clamp(1.2rem, 2.5vw, 1.8rem);
             font-weight: 700;
@@ -97,11 +96,11 @@
             max-width: 800px;
             line-height: 1.8;
         }
-        
+
         .placeholder-svg {
             border-radius: 1rem;
             background-color: rgba(255, 255, 255, 0.05);
-            border: 2px dashed #4B5563;
+            /* border: 2px dashed #4B5563; */
         }
 
         .nav-arrow {
@@ -125,11 +124,9 @@
 </head>
 <body>
 
-    <!-- Slide 1: Opening -->
     <section class="slide active">
         <div class="text-center fade-in-up">
-             <!-- New Logo -->
-            <svg class="mx-auto mb-8" width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+             <svg class="mx-auto mb-8" width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
                         <stop offset="0%" stop-color="#818cf8"/>
@@ -145,69 +142,64 @@
         </div>
     </section>
 
-    <!-- Slide 2: Core Value for "Enjoy" users -->
     <section class="slide">
         <div class="text-center fade-in">
-            <h2 class="mb-12">むずかしいことは、AIにおまかせ。</h2>
+            <h2 class="mb-12">むずかしいことは AI におまかせ。</h2>
             <div class="grid md:grid-cols-3 gap-8 max-w-6xl">
-                <!-- Value 1: Be a Star -->
                 <div class="bg-gray-800 p-8 rounded-2xl text-center">
-                    <svg class="placeholder-svg mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="78" height="78" rx="39" stroke="#4B5563" stroke-width="2" stroke-dasharray="4 4"/>
-                        <path d="M40 15 L 45 35 L 65 37 L 50 50 L 55 70 L 40 58 L 25 70 L 30 50 L 15 37 L 35 35 Z" stroke="#818cf8" stroke-width="4" fill="none" stroke-linejoin="round"/>
-                        <text x="40" y="70" font-family="sans-serif" font-size="8" fill="#6B7280" text-anchor="middle">即興セッション</text>
+                    <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M25 60H55V65H25V60Z" fill="#4B5563"/>
+                        <rect x="28" y="55" width="24" height="5" fill="#E5E7EB"/>
+                        <path d="M31 55V45H34V55H31Z" fill="#374151"/><path d="M35 55V45H38V55H35Z" fill="#E5E7EB"/><path d="M39 55V45H42V55H39Z" fill="#374151"/><path d="M43 55V45H46V55H43Z" fill="#E5E7EB"/><path d="M47 55V45H50V55H47Z" fill="#374151"/>
+                        <path d="M20 25C20 15, 30 15, 40 25S60 35, 60 25" stroke="#c084fc" stroke-width="4" fill="none" stroke-linecap="round"/>
+                        <circle cx="60" cy="25" r="4" fill="#c084fc"/>
                     </svg>
-                    <h3 class="text-xl font-bold mb-2 text-white">楽器できなくても、<br>セッションの主役に。</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">必要なのはリズム感だけ。PCのキーボードやMIDIコントローラーを叩けば、AIがあなた専属のメロディを奏でます。</p>
+                    <h3 class="text-xl font-bold mb-2 text-white">楽器できなくても、主役に。</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">必要なのはリズム感だけ。PCのキーボードやMIDIコントローラーを叩けば、AIがあなたのメロディを奏でます。</p>
                 </div>
-                <!-- Value 2: Discover Music -->
                 <div class="bg-gray-800 p-8 rounded-2xl text-center">
-                     <svg class="placeholder-svg mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="78" height="78" rx="39" stroke="#4B5563" stroke-width="2" stroke-dasharray="4 4"/>
-                        <path d="M25 25 H 55 V 55 H 25 Z" fill="#4B5563"/>
-                        <path d="M30 60 L 50 20" stroke="#c084fc" stroke-width="4" fill="none"/>
-                        <path d="M30 20 L 50 60" stroke="#c084fc" stroke-width="4" fill="none"/>
-                        <text x="40" y="70" font-family="sans-serif" font-size="8" fill="#6B7280" text-anchor="middle">音楽との出会い</text>
+                     <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="40" cy="40" r="25" fill="#4B5563"/>
+                        <path d="M40 30C50 30 55 40 50 50S30 50 35 40S50 30 40 30" stroke="#818cf8" stroke-width="4" fill="none"/>
+                        <path d="M40 10V20" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M40 60V70" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M10 40H20" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M60 40H70" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
                     </svg>
-                    <h3 class="text-xl font-bold mb-2 text-white">偶然のメロディが、<br>インスピレーションを刺激。</h3>
+                    <h3 class="text-xl font-bold mb-2 text-white">AI のメロディが創作を刺激。</h3>
                     <p class="text-gray-400 text-sm leading-relaxed">気分に合わせて叩いたリズムから、想像もしていなかったメロディが生まれる。音楽の新しい楽しさとの出会いです。</p>
                 </div>
-                <!-- Value 3: Just For Fun -->
                 <div class="bg-gray-800 p-8 rounded-2xl text-center">
-                     <svg class="placeholder-svg mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="78" height="78" rx="39" stroke="#4B5563" stroke-width="2" stroke-dasharray="4 4"/>
-                        <path d="M25 55C30 45, 50 45, 55 55" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
-                        <path d="M25 35L35 30" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
-                        <path d="M55 35L45 30" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
-                         <text x="40" y="70" font-family="sans-serif" font-size="8" fill="#6B7280" text-anchor="middle">楽しさに集中</text>
+                     <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 45 C 25 65, 55 65, 65 45" stroke="#F9FAFB" stroke-width="4" fill="none" stroke-linecap="round"/>
+                        <circle cx="30" cy="30" r="5" fill="#818cf8"/>
+                        <circle cx="50" cy="30" r="5" fill="#c084fc"/>
+                        <path d="M20 20L40 10L60 20" stroke="#F9FAFB" stroke-width="4" fill="none" stroke-linecap="round"/>
                     </svg>
-                    <h3 class="text-xl font-bold mb-2 text-white">理屈は不要。<br>音楽を遊びつくそう。</h3>
+                    <h3 class="text-xl font-bold mb-2 text-white">理屈はいらない。音楽を遊びつくそう。</h3>
                     <p class="text-gray-400 text-sm leading-relaxed">コード進行やスケールの知識は一切不要。音楽の最も原始的で楽しい「リズムとメロディの対話」に没頭できます。</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Slide 3: Demonstration -->
     <section class="slide">
         <div class="text-center fade-in">
-            <h2>Demonstration</h2>
-            <p class="mb-8">Lo-fi Hip Hopでセッションしてみた</p>
-            <svg class="placeholder-svg" width="600" height="338" viewBox="0 0 600 338" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1" y="1" width="598" height="336" rx="15" stroke="#4B5563" stroke-width="2" stroke-dasharray="5 5"/>
-                <circle cx="300" cy="169" r="40" fill="#374151"/>
-                <path d="M285 149 L 325 169 L 285 189 Z" fill="#F9FAFB"/>
-                 <text x="300" y="320" font-family="sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">PC画面録画データのイメージ</text>
-            </svg>
+            <h2>デモンストレーション</h2>
+            <p class="mb-8">Melody Flow でセッションしよう</p>
+            <div class="placeholder-svg w-full max-w-3xl aspect-video bg-black flex items-center justify-center">
+                 <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="40" fill-opacity="0.2" fill="white"/>
+                    <path d="M42 35L65 50L42 65V35Z" fill="white"/>
+                </svg>
+            </div>
         </div>
     </section>
 
-    <!-- Slide 4: Competitive Analysis -->
     <section class="slide">
         <div class="w-full max-w-6xl text-center fade-in">
-            <h2 class="mb-12">Melody Flowの独自のポジション</h2>
+            <h2 class="mb-12">Melody Flow の独自のポジション</h2>
             <div class="grid md:grid-cols-3 gap-8">
-                <!-- Competitor Category 1 -->
                 <div class="bg-gray-900/50 p-6 rounded-2xl border border-gray-700">
                     <h3 class="text-lg font-bold text-gray-400 mb-2">カテゴリ1: 楽曲をもらう</h3>
                     <p class="font-bold text-2xl text-white mb-4">エンドツーエンド楽曲生成</p>
@@ -217,7 +209,6 @@
                         <span class="font-bold">あなた</span> → <span class="font-bold text-purple-400">AI</span> → <span class="font-bold">完成した曲</span>
                     </div>
                 </div>
-                <!-- Competitor Category 2 -->
                 <div class="bg-gray-900/50 p-6 rounded-2xl border border-gray-700">
                     <h3 class="text-lg font-bold text-gray-400 mb-2">カテゴリ2: 素材をもらう</h3>
                     <p class="font-bold text-2xl text-white mb-4">作編曲アシスタント</p>
@@ -227,7 +218,6 @@
                         <span class="font-bold">あなた</span> → <span class="font-bold text-purple-400">AI</span> → <span class="font-bold">MIDI素材</span>
                     </div>
                 </div>
-                <!-- Melody Flow's Category -->
                 <div class="bg-gradient-to-br from-indigo-500/30 to-purple-500/30 p-6 rounded-2xl border-2 border-purple-400 relative">
                     <span class="absolute -top-3 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">YOUR NEW EXPERIENCE</span>
                     <h3 class="text-lg font-bold text-purple-300 mb-2">Melody Flow: AIとセッションする</h3>
@@ -242,120 +232,104 @@
         </div>
     </section>
 
-    <!-- Slide 5: Technology -->
     <section class="slide">
         <div class="text-center fade-in">
-            <h2>AIが最高の相棒になるヒミツ</h2>
+            <h2>AI が最高の相棒になるヒミツ</h2>
             <p class="mb-12">あなたのリズムの意図を汲み取り、音楽的なメロディを返します。</p>
             <div class="flex flex-col md:flex-row gap-8 justify-center items-center">
-                <svg class="placeholder-svg" width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="298" height="198" rx="15" stroke="#4B5563" stroke-width="2" stroke-dasharray="5 5"/>
-                    <path d="M20,150 C 80,180 150,50 280,80" stroke="#c084fc" stroke-width="4" fill="none"/>
-                    <path d="M20,150 L 280,150" stroke="#4B5563" stroke-width="1"/>
-                    <path d="M20,20 L 20,150" stroke="#4B5563" stroke-width="1"/>
-                    <text x="150" y="185" font-family="sans-serif" font-size="10" fill="#6B7280" text-anchor="middle">メロディトレンド制御のイメージ</text>
+                <svg class="placeholder-svg w-full max-w-md" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#c084fc;stop-opacity:1" />
+                        </linearGradient>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="url(#grad1)" />
+                        </marker>
+                    </defs>
+                    <circle cx="50" cy="100" r="10" fill="#E5E7EB"/>
+                    <text x="50" y="105" font-family="monospace" font-size="12" fill="#111827" text-anchor="middle">C4</text>
+
+                    <circle cx="200" cy="80" r="10" fill="#E5E7EB"/>
+                     <text x="200" y="85" font-family="monospace" font-size="12" fill="#111827" text-anchor="middle">E4</text>
+
+                    <circle cx="350" cy="70" r="10" fill="#E5E7EB"/>
+                     <text x="350" y="75" font-family="monospace" font-size="12" fill="#111827" text-anchor="middle">G4</text>
+
+                    <path d="M100 150 C 110 90, 140 90, 150 150" stroke="url(#grad1)" stroke-width="2" stroke-opacity="0.5" fill="none"/>
+                    <text x="125" y="165" font-family="sans-serif" font-size="9" fill="#9CA3AF" text-anchor="middle">次の音の確率分布</text>
+                    <path d="M250 150 C 260 70, 290 70, 300 150" stroke="url(#grad1)" stroke-width="2" stroke-opacity="0.5" fill="none"/>
+                     <text x="275" y="165" font-family="sans-serif" font-size="9" fill="#9CA3AF" text-anchor="middle">トレンドを反映</text>
+
+                    <path d="M60 100 Q 125 90 200 80" stroke="url(#grad1)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M210 80 Q 275 75 350 70" stroke="url(#grad1)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
                 </svg>
                  <div class="text-left bg-gray-800 p-6 rounded-lg">
-                    <h3 class="mb-4 text-white">独自の『メロディトレンド制御技術』</h3>
-                    <p class="text-base">ただ音を並べるだけでなく、音楽的な盛り上がりや<br>展開を予測して、人間らしいメロディを生成します。</p>
-                    <div class="mt-4 space-x-2">
-                        <span class="bg-indigo-500 text-white text-sm font-bold px-3 py-1 rounded-full">LLM</span>
-                        <span class="bg-purple-500 text-white text-sm font-bold px-3 py-1 rounded-full">LogitsProcessor</span>
-                    </div>
-                </div>
+                     <h3 class="mb-4 text-white">独自の『メロディトレンド制御』</h3>
+                     <p class="text-base">直前の音の流れ（トレンド）をAIが計算。<br>次に来る音を自然な範囲に誘導し、人間らしい滑らかなメロディを生成します。</p>
+                     <div class="mt-4 space-x-2">
+                         <span class="bg-indigo-500 text-white text-sm font-bold px-3 py-1 rounded-full">LLM</span>
+                         <span class="bg-purple-500 text-white text-sm font-bold px-3 py-1 rounded-full">LogitsProcessor</span>
+                     </div>
+                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Slide 6: Appendix -->
     <section class="slide">
         <div class="w-full max-w-7xl text-center fade-in">
-            <h2 class="mb-8">Appendix: Architecture</h2>
+            <h2 class="mb-8">アーキテクチャ</h2>
             <div class="grid md:grid-cols-3 gap-6 text-left">
-                <!-- Column 1: AI Model -->
                 <div class="bg-gray-800 p-4 rounded-lg flex flex-col">
-                    <h3 class="text-lg font-bold mb-2 text-white">1. AIモデルの学習プロセス</h3>
+                    <h3 class="text-lg font-bold mb-2 text-white">1. AIモデルの学習</h3>
                     <p class="text-xs text-gray-400 mb-4 flex-grow">汎用言語モデルから、ジャズ演奏に特化した専用モデルへと段階的にファインチューニング。効率的な学習手法で開発しました。</p>
-                    <svg class="placeholder-svg w-full h-64 mt-auto" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="298" height="248" rx="15" stroke="#4B5563" stroke-width="2" stroke-dasharray="5 5"></rect>
-                        <rect x="80" y="20" width="140" height="40" rx="5" fill="#374151"></rect>
-                        <text x="150" y="45" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">Base Model (Llama)</text>
-                        <path d="M150 60 L 150 80" stroke="#4B5563" stroke-width="2"></path>
-                        <rect x="80" y="80" width="140" height="40" rx="5" fill="#374151"></rect>
-                        <text x="150" y="105" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">llama-midi (Fine-Tuned)</text>
-                        <path d="M150 120 L 150 140" stroke="#4B5563" stroke-width="2"></path>
-                        <rect x="50" y="140" width="200" height="50" rx="5" fill="#4f46e5"></rect>
-                        <text x="150" y="160" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">Melody Flow Fine-Tuning</text>
-                        <text x="150" y="175" font-family="sans-serif" font-size="9" fill="white" text-anchor="middle">(+ Weimar Jazz DB)</text>
-                        <path d="M150 190 L 150 210" stroke="#4B5563" stroke-width="2"></path>
-                        <rect x="80" y="210" width="140" height="25" rx="5" fill="#a855f7"></rect>
-                        <text x="150" y="225" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">🏆 Melody Flow Model</text>
+                    <svg class="w-full h-64 mt-auto" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M150 55 L 150 75" stroke="#4B5563" stroke-width="2"/>
+                        <g><rect x="90" y="20" width="120" height="35" rx="5" fill="#374151"/><text x="150" y="42" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">🤖 Base Model (Llama)</text></g>
+                        <path d="M150 135 L 150 155" stroke="#4B5563" stroke-width="2"/>
+                        <g><rect x="80" y="100" width="140" height="35" rx="5" fill="#374151"/><text x="150" y="122" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">🎹 llama-midi (Fine-Tuned)</text></g>
+                        <text x="180" y="85" font-family="sans-serif" font-size="10" fill="#9CA3AF" text-anchor="middle">+ 🎼 MIDI Datasets</text>
+                        <g><rect x="50" y="155" width="200" height="40" rx="5" fill="#4f46e5"/><text x="150" y="172" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">✨ Melody Flow Fine-Tuning</text><text x="150" y="187" font-family="sans-serif" font-size="9" fill="white" text-anchor="middle">(+ 🎷 Weimar Jazz DB)</text></g>
+                        <path d="M150 195 L 150 215" stroke="#4B5563" stroke-width="2"/>
+                        <g><rect x="80" y="215" width="140" height="25" rx="5" fill="#a855f7"/><text x="150" y="230" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">🏆 Melody Flow Model</text></g>
                     </svg>
                 </div>
-                <!-- Column 2: System Architecture -->
                 <div class="bg-gray-800 p-4 rounded-lg flex flex-col">
-                     <h3 class="text-lg font-bold mb-2 text-white">2. システム全体のアーキテクチャ</h3>
+                     <h3 class="text-lg font-bold mb-2 text-white">2. システム全体像</h3>
                      <p class="text-xs text-gray-400 mb-4 flex-grow">演奏中の遅延をなくすため、AIによる重い処理は事前に完了。演奏中はブラウザ内のみで高速に動作します。</p>
-                     <svg class="placeholder-svg w-full h-64 mt-auto" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="298" height="248" rx="15" stroke="#4B5563" stroke-width="2" stroke-dasharray="5 5"></rect>
-                        <!-- Participants -->
-                        <text x="50" y="30" font-family="sans-serif" font-size="12" fill="#D1D5DB" text-anchor="middle">User</text>
-                        <path d="M50 40 L 50 230" stroke="#4B5563" stroke-width="2"></path>
-                        <text x="150" y="30" font-family="sans-serif" font-size="12" fill="#D1D5DB" text-anchor="middle">Browser</text>
-                        <path d="M150 40 L 150 230" stroke="#4B5563" stroke-width="2"></path>
-                        <text x="250" y="30" font-family="sans-serif" font-size="12" fill="#D1D5DB" text-anchor="middle">Backend</text>
-                        <path d="M250 40 L 250 130" stroke="#4B5563" stroke-width="2"></path>
-                        <!-- Phase 1 -->
-                        <text x="150" y="60" font-family="sans-serif" font-size="10" fill="#a855f7" text-anchor="middle">Phase 1: Pre-generation</text>
-                        <path d="M150 75 L 250 75" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)"></path>
-                        <text x="200" y="70" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">POST /generate</text>
-                        <path d="M250 105 L 150 105" stroke="#818cf8" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow)"></path>
-                        <text x="200" y="100" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">Returns Phrases</text>
-                        <!-- Phase 2 -->
-                        <text x="150" y="150" font-family="sans-serif" font-size="10" fill="#a855f7" text-anchor="middle">Phase 2: Realtime Play</text>
-                        <path d="M50 175 L 150 175" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow)"></path>
-                        <text x="100" y="170" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">MIDI Input</text>
-                        <path d="M150 205 L 50 205" stroke="#c084fc" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow)"></path>
-                        <text x="100" y="200" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">Sound Output</text>
-                        <defs>
-                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#818cf8"></path></marker>
-                        </defs>
-                    </svg>
+                     <svg class="w-full h-64 mt-auto" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs><marker id="arrow2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#818cf8"></path></marker></defs>
+                        <g><path d="M50 40 L 50 230" stroke="#4B5563" stroke-width="2"/><text x="50" y="30" font-family="sans-serif" font-size="12" fill="#D1D5DB" text-anchor="middle">👤 User</text></g>
+                        <g><path d="M150 40 L 150 230" stroke="#4B5563" stroke-width="2"/><text x="150" y="30" font-family="sans-serif" font-size="12" fill="#D1D5DB" text-anchor="middle">🌐 Browser</text></g>
+                        <g><path d="M250 40 L 250 130" stroke="#4B5563" stroke-width="2"/><text x="250" y="30" font-family="sans-serif" font-size="12" fill="#D1D5DB" text-anchor="middle">⚙️ Backend</text></g>
+                        <text x="150" y="60" font-family="sans-serif" font-size="10" fill="#a855f7" text-anchor="middle">⚡ Phase 1: 事前生成</text>
+                        <path d="M150 75 L 250 75" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow2)"/><text x="200" y="70" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">POST /generate</text>
+                        <path d="M250 105 L 150 105" stroke="#818cf8" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow2)"/><text x="200" y="100" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">フレーズ返却</text>
+                        <text x="150" y="150" font-family="sans-serif" font-size="10" fill="#a855f7" text-anchor="middle">🎶 Phase 2: リアルタイム演奏</text>
+                        <path d="M50 175 L 150 175" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow2)"/><text x="100" y="170" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">MIDI入力</text>
+                        <path d="M150 205 L 50 205" stroke="#c084fc" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow2)"/><text x="100" y="200" font-family="sans-serif" font-size="9" fill="#D1D5DB" text-anchor="middle">音声出力</text>
+                     </svg>
                 </div>
-                <!-- Column 3: LogitsProcessor -->
                 <div class="bg-gray-800 p-4 rounded-lg flex flex-col">
-                     <h3 class="text-lg font-bold mb-2 text-white">3. MelodyControlLogitsProcessor</h3>
+                     <h3 class="text-lg font-bold mb-2 text-white">3. LogitsProcessor</h3>
                      <p class="text-xs text-gray-400 mb-4 flex-grow">AIの思考に介入し、音楽理論に基づき「ありえない音」の確率を下げる秘密兵器。自然なメロディを生成します。</p>
-                     <svg class="placeholder-svg w-full h-64 mt-auto" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="298" height="248" rx="15" stroke="#4B5563" stroke-width="2" stroke-dasharray="5 5"></rect>
-                        <rect x="100" y="20" width="100" height="30" rx="5" fill="#374151"></rect>
-                        <text x="150" y="40" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">LLM Predicts Note</text>
-                        <path d="M150 50 L 150 70" stroke="#4B5563" stroke-width="2"></path>
-                        <rect x="50" y="70" width="200" height="40" rx="5" fill="#374151"></rect>
-                        <text x="150" y="85" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">Get Code &amp; Note History</text>
-                        <path d="M150 110 L 150 130" stroke="#4B5563" stroke-width="2"></path>
-                        <rect x="20" y="130" width="120" height="40" rx="5" fill="#4f46e5"></rect>
-                        <text x="80" y="145" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">Analyze Theory</text>
-                        <text x="80" y="160" font-family="sans-serif" font-size="9" fill="white" text-anchor="middle">(Scale, Trend)</text>
-                        <rect x="160" y="130" width="120" height="40" rx="5" fill="#4f46e5"></rect>
-                        <text x="220" y="145" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">Create Allow-List</text>
-                        <text x="220" y="160" font-family="sans-serif" font-size="9" fill="white" text-anchor="middle">of Notes</text>
-                        <path d="M80 170 L 80 190" stroke="#4B5563" stroke-width="2"></path>
-                        <path d="M220 170 L 220 190" stroke="#4B5563" stroke-width="2"></path>
-                        <path d="M80 190 L 220 190" stroke="#4B5563" stroke-width="2"></path>
-                        <rect x="80" y="190" width="140" height="40" rx="5" fill="#a855f7"></rect>
-                        <text x="150" y="205" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">Apply Penalty to</text>
-                        <text x="150" y="220" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">Disallowed Notes</text>
-                    </svg>
+                     <svg class="w-full h-64 mt-auto" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M150 45 L 150 65" stroke="#4B5563" stroke-width="2"/><g><rect x="80" y="20" width="140" height="25" rx="5" fill="#374151"/><text x="150" y="35" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">LLMが次の音を予測</text></g>
+                        <path d="M150 90 L 150 110" stroke="#4B5563" stroke-width="2"/><g><rect x="80" y="65" width="140" height="25" rx="5" fill="#374151"/><text x="150" y="80" font-family="sans-serif" font-size="10" fill="#D1D5DB" text-anchor="middle">コードと演奏履歴を取得</text></g>
+                        <path d="M80 135 L 150 110 L 220 135" stroke="#4B5563" stroke-width="2"/>
+                        <g><rect x="20" y="135" width="120" height="30" rx="5" fill="#4f46e5"/><text x="80" y="152" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">📜 音楽理論を解析</text></g>
+                        <g><rect x="160" y="135" width="120" height="30" rx="5" fill="#4f46e5"/><text x="220" y="152" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">📈 トレンドを計算</text></g>
+                        <path d="M80 165 L 150 190 L 220 165" stroke="#4B5563" stroke-width="2"/>
+                        <path d="M150 230 L 150 190" stroke="#4B5563" stroke-width="2"/>
+                        <g><rect x="80" y="190" width="140" height="40" rx="5" fill="#a855f7"/><text x="150" y="207" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">🚫 不適切な音の</text><text x="150" y="222" font-family="sans-serif" font-size="10" fill="white" text-anchor="middle">確率を操作</text></g>
+                     </svg>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Slide 7: Closing -->
     <section class="slide">
         <div class="text-center fade-in-up">
-            <!-- New Logo -->
             <svg class="mx-auto mb-8" width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <linearGradient id="logoGradient2" x1="0" y1="0" x2="1" y2="1">
@@ -368,14 +342,13 @@
                 <path d="M40 30 C 45 40, 55 40, 60 30" stroke="url(#logoGradient2)" stroke-width="8" fill="none" stroke-linecap="round"/>
             </svg>
             <h2>さあ、新しい音楽の遊び方を始めよう。</h2>
-            <a href="#" class="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl px-12 py-4 rounded-lg my-4 hover:scale-105 transition-transform">
+            <a href="https://melody-flow.click" target="_blank" class="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl px-12 py-4 rounded-lg my-4 hover:scale-105 transition-transform">
                 今すぐセッションを始める
             </a>
-            <p class="text-gray-400 mt-4">melody-flow-official.com</p>
+            <p class="text-gray-400 mt-4">melody-flow.click</p>
         </div>
     </section>
-    
-    <!-- Navigation -->
+
     <div id="prev" class="nav-arrow">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -412,7 +385,7 @@
         document.getElementById('prev').addEventListener('click', prevSlide);
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') {
+            if (e.key === 'ArrowRight' || e.key === ' ') { // Add spacebar for next slide
                 nextSlide();
             } else if (e.key === 'ArrowLeft') {
                 prevSlide();
@@ -425,5 +398,3 @@
 
 </body>
 </html>
-
-
