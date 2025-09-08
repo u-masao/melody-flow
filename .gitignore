@@ -5,3 +5,7 @@ __pycache__
 /models/
 /outputs/
 /unsloth_compiled_cache/
+
+# build artifacts
+*.egg-info/
+build/
