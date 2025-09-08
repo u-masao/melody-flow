@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
         static INTERVALS = {
             '': [0, 4, 7], 'M7': [0, 4, 7, 11], '7': [0, 4, 7, 10], 'm': [0, 3, 7],
             'm7': [0, 3, 7, 10], 'mM7': [0, 3, 7, 11], 'm7b5': [0, 3, 6, 10],
-            'dim': [0, 3, 6], 'dim7': [0, 3, 6, 9], 'aug': [0, 4, 8], 'sus4': [0, 5, 7]
+            'dim': [0, 3, 6], 'dim7': [0, 3, 6, 9], 'aug': [0, 4, 8], 'sus4': [0, 5, 7],
+            '7b9': [0, 4, 7, 10] // For voicing, b9 is usually a tension
         };
 
         static midiToNoteName(midi, useFlats = false) {
@@ -37,19 +38,23 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 rootStr = chordName.substring(0, 1); quality = chordName.substring(1);
             }
-            if (quality === 'M7') {} else if (quality.startsWith('m')) {} else {
-                if (this.INTERVALS[quality] === undefined && this.INTERVALS[quality.toLowerCase()]) {
-                    quality = quality.toLowerCase();
-                } else if (this.INTERVALS[quality] === undefined && chordName.length <= 2) {
-                    quality = "";
-                }
-            }
+             // Handle simple aliases
+            if (quality.toLowerCase() === 'maj7') quality = 'M7';
+            if (quality.toLowerCase() === 'min7') quality = 'm7';
+
             const useFlats = rootStr.includes('b');
             const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
-            let rootMidi = notes.indexOf(rootStr);
+            let rootMidi = notes.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+             if (rootMidi === -1) { // Fallback for sharp/flat names
+                const sharpIndex = this.NOTES.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+                const flatIndex = this.NOTES_FLAT.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+                rootMidi = sharpIndex !== -1 ? sharpIndex : flatIndex;
+            }
+
             if (rootMidi === -1) return [];
-            rootMidi += 48;
-            const intervals = this.INTERVALS[quality];
+
+            rootMidi += 48; // Base octave
+            const intervals = this.INTERVALS[quality] || this.INTERVALS['']; // Default to major triad
             if (!intervals) return [];
             return intervals.map(interval => this.midiToNoteName(rootMidi + interval, useFlats));
         }
@@ -81,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     leadSynth.volume.value = -6;
     const pianoSynth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'triangle' },
-        envelope: { attack: 0.01, decay: 0.5, sustain: 0.2, release: 1 },
+        envelope: { attack: 0.01, decay: 0.5, sustain: 0.2, release: 0.7 },
     }).toDestination();
     pianoSynth.volume.value = -12;
 
@@ -214,6 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function scheduleBackingTrack() {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
+        const shuffleDuration = Tone.Time('8t').toSeconds() * 2; // 8分3連符2つ分の長さ
+
         const events = progression.flatMap((chord, measureIndex) => {
             const chordName = chord.split('_')[0];
             const notes = Chord.getVoicing(chordName);
@@ -224,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (notes.length > 0) {
                 for (let beat = 0; beat < BEATS_PER_MEASURE; beat++) {
                     const timeInSeconds = Tone.Ticks((measureIndex * TICKS_PER_MEASURE) + (beat * TICKS_PER_BEAT)).toSeconds();
-                    measureEvents.push({ time: timeInSeconds, type: 'play', notes: [...notes], duration: '4n' });
+                    measureEvents.push({ time: timeInSeconds, type: 'play', notes: [...notes], duration: shuffleDuration });
                 }
             }
             return measureEvents;
@@ -292,19 +299,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawTimingIndicators() {
         pianoRollContent.querySelectorAll('.timing-indicator').forEach(ind => ind.remove());
-        const totalTicks = progression.length * TICKS_PER_MEASURE;
-        if (totalTicks === 0) return;
-        progression.forEach((chordKey, measureIndex) => {
-            const notes = chordMelodies[chordKey];
-            if (!notes) return;
-            notes.forEach(note => {
-                const indicator = document.createElement('div');
-                indicator.className = 'timing-indicator';
-                const noteStartTick = measureIndex * TICKS_PER_MEASURE + note.startTime;
-                indicator.style.left = `${(noteStartTick / totalTicks) * 100}%`;
-                pianoRollContent.appendChild(indicator);
-            });
-        });
+        const totalMeasures = progression.length;
+        if (totalMeasures <= 1) return;
+
+        // 小節の頭にだけ線を描画
+        for (let i = 1; i < totalMeasures; i++) {
+            const indicator = document.createElement('div');
+            indicator.className = 'timing-indicator';
+            indicator.style.left = `${(i / totalMeasures) * 100}%`;
+            indicator.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+            indicator.style.width = '2px'; // 小節線を少し目立たせる
+            pianoRollContent.appendChild(indicator);
+        }
     }
 
     function updateProgressionDisplay() {
@@ -312,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         progression.forEach((chord, index) => {
             const el = document.createElement('div');
             el.id = `indicator-${index}`;
-            el.className = 'indicator text-center p-2 rounded-md w-24';
+            el.className = 'indicator text-center p-2 rounded-md flex-shrink-0';
             el.textContent = chord.split('_')[0];
             progressionDisplay.appendChild(el);
         });

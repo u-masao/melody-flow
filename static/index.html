@@ -77,16 +77,16 @@
             <div>
                 <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">コード進行プリセット</label>
                 <select id="chord-progression" class="w-full bg-gray-700 rounded-md p-3">
-                    <option>Dm7 - G7</option>
-                    <option>Dm7 - G7 - Dm7 - G7 - Dm7 - G7 - Dm7 - G7</option>
-                    <option>C - G - Am - F</option>
-                    <option>CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7</option>
-                    <option>Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7</option>
-                    <option>F - G - Em - Am</option>
-                    <option>Am - F - G - C</option>
-                    <option>Dm7 - G7 - Cmaj7 - Cmaj7</option>
-                    <option>Cm7 - Cm7 - Fm7 - Cm7</option>
-                    <option>Cm7 - F7 - BbM7 - EbM7 - Am7b5- D7 - Gm - Gm - Am7b5 - D7 - Gm - Gm - Cm7 - F7 - BbM7 - EbM7</option>
+                    <option value="Dm7 - G7 - Dm7 - G7 - Dm7 - G7 - Dm7 - G7">ツー・ファイブ（メジャー）</option>
+                    <option value="Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7">ツー・ファイブ（マイナー）</option>
+                    <option value="Dm7 - G7 - CM7 - CM7 - Dm7 - G7 - CM7 - CM7">ツー・ファイブ・ワン（メジャー）</option>
+                    <option value="Dm7b5 - G7 - Cm7 - Cm7 - Dm7b5 - G7 - Cm7 - Cm7">ツー・ファイブ・ワン（マイナー）</option>
+                    <option value="CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7">循環コード (C Am Dm G)</option>
+                    <option value="Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7">逆循環コード (Dm G C Am)</option>
+                    <option value="Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em - Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em">枯れ葉（前半）</option>
+                    <option value="F#m7b5 - B7b9 - Em - Em - Am7 - D7 - GM7 - GM7 - F#m7b5 - B7b9 - A7 - G7 - F#m7b5 - B7b9 - Em - Em">枯れ葉（後半）</option>
+                    <option value="C7 - F7 - C7 - C7 - F7 - F7 - C7 - C7 - G7 - F7 - C7 - G7">ブルース進行 (in C)</option>
+                    <option value="BbM7 - BbM7 - Bbm7 - Eb7 - FM7 - FM7 - Abm7 - Db7 - Gm7 - C7 - Am7 - Dm7 - G7 - G7 - Gm7 - C7">Just Friends (Aセクション)</option>
                 </select>
             </div>
             <div>
@@ -129,8 +129,8 @@
                     伴奏をミュート
                 </label>
             </div>
-            <div id="progression-display" class="flex justify-around p-3 bg-black/30 rounded-md min-h-[52px]">
-                </div>
+            <div id="progression-display" class="flex flex-wrap justify-center gap-2 p-3 bg-black/30 rounded-md min-h-[52px]">
+            </div>
         </div>
 
         <div class="bg-gray-900/50 p-4 rounded-lg space-y-3">
@@ -150,6 +150,6 @@
         </div>
     </div>
 
-    <script src="/static/main.js?v=18"></script>
+    <script src="/static/main.js?v=19"></script>
 </body>
 </html>
