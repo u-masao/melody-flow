@@ -95,6 +95,48 @@ Webアプリケーションで、すぐに体験できます。
 **技術的なこだわり**:
 AIが生成するメロディが音楽的に破綻しないよう、独自の制御システム（Logits Processor）を開発しました。これにより、AIの創造性と音楽理論の正確さを両立させ、高品質な音楽体験を実現しています。
 
+## ⚖️ ライセンスと帰属 (License and Attribution)
+
+このプロジェクトは、複数のオープンソースのモデルおよびデータセットを利用しています。各コンポーネントのライセンス情報は以下の通りです。
+
+### ⚠️ 商用利用に関する重要な注意
+
+このプロジェクトで使用されているモデルの一つ `dx2102/llama-midi` は、**非商用 (Non-Commercial)** のデータセット (`projectlosangeles/Los-Angeles-MIDI-Dataset`) を用いて学習されています。
+
+そのため、`dx2102/llama-midi` モデル、およびそれを組み込んだこの `Melody Flow` プロジェクト全体は、**現状では商用利用ができません**。ご注意ください。
+
+商用利用を検討される場合は、`dx2102/llama-midi` を、商用利用が明確に許可されているデータセットのみでファインチューニングしたモデルに置き換える必要があります。
+
+### モデル
+
+1.  **`dx2102/llama-midi`**
+    -   **ライセンス**: Llama 3.2 Community License
+    -   **商用利用**: **不可** (非商用データセットで学習されているため)
+    -   **ベースモデル**: `meta-llama/Llama-3.2-1B-Instruct`
+    -   **学習データ**: `amaai-lab/MidiCaps`, `projectlosangeles/Los-Angeles-MIDI-Dataset`
+
+2.  **`unsloth/Llama-3.2-1B-bnb-4bit` (およびそのファインチューニング後モデル)**
+    -   **ライセンス**: Llama 3.2 Community License
+    -   **商用利用**: **可** (ただし、サービスの月間アクティブユーザーが7億人を超える場合はMeta社へのライセンス申請が必要)
+    -   **ファインチューニングデータ**: `wjazzd.db`
+
+### データセット
+
+1.  **Weimar Jazz Database (`wjazzd.db`)**
+    -   **ライセンス**: [Open Data Commons Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1-0/)
+    -   **商用利用**: **可** (ただし、帰属表示と、派生データベースを同じライセンスで共有することが条件)
+    -   **帰属**: The Jazzomat Research Project (Hochschule für Musik FRANZ LISZT Weimar)
+
+2.  **MidiCaps (`amaai-lab/MidiCaps`)**
+    -   **ライセンス**: [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+    -   **商用利用**: **可** (ただし、帰属表示と、派生作品を同じライセンスで共有することが条件)
+    -   **帰属**: Jan Melechovsky, Abhinaba Roy, Dorien Herremans. 2024. MidiCaps: A large-scale MIDI dataset with text captions.
+    -   *注: このデータセットは、CC-BY 4.0ライセンスの Lakh MIDI Dataset を元に作成されています。*
+
+3.  **Los-Angeles-MIDI-Dataset (`projectlosangeles/Los-Angeles-MIDI-Dataset`)**
+    -   **ライセンス**: [Creative Commons Attribution-**NonCommercial**-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+    -   **商用利用**: **不可**
+
 ## 🌱 今後の開発
 
 -   演奏したメロディをMIDIファイルとして書き出す機能
