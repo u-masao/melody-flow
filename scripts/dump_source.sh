@@ -11,6 +11,8 @@ src/train_model.py
 src/inferance.py
 static/index.html
 static/main.js
+static/presentation.html
+static/site.html
 )
 
 for ((i=0; i<${#FILES[@]}; i++))
