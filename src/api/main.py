@@ -14,7 +14,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorLis
 from unsloth import FastLanguageModel
 import uvicorn
 
-from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
+from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 MODEL_NAME = os.getenv("MODEL_NAME", "models/llama-midi.pth/")
 print(f"Loading model: {MODEL_NAME}...")
@@ -136,4 +136,4 @@ def generate_melody(request: MelodyGenerationRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)

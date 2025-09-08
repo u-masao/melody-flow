@@ -1,7 +1,7 @@
 import re
 
 from loguru import logger
-from src.chord_name_parser import parse_chord_name
+from .chord_name_parser import parse_chord_name
 import torch
 from transformers import AutoTokenizer, LogitsProcessor
 
