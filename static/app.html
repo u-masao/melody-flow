@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melody Flow</title>
+    <link rel="icon" href="/static/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .indicator { transition: all 0.2s ease-in-out; }
+        .note-block {
+            position: absolute;
+            background-color: rgba(99, 102, 241, 0.8); /* Indigo */
+            border-radius: 2px;
+            border-left: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #f59e0b; /* Amber */
+            z-index: 10;
+        }
+        .timing-indicator {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        #piano-roll-container {
+            overflow-x: hidden;
+        }
+        /* Beat Indicator Styles */
+        .beat-indicator {
+            width: 12px;
+            height: 12px;
+            background-color: #4b5563; /* Gray-600 */
+            border-radius: 50%;
+            transition: all 0.1s ease-in-out;
+        }
+        .beat-indicator.active {
+            background-color: #a78bfa; /* Violet-400 */
+            transform: scale(1.2);
+        }
+        .beat-indicator.downbeat.active {
+            background-color: #f59e0b; /* Amber-500 */
+            transform: scale(1.4);
+        }
+
+        /* Generating Animation */
+        @keyframes pulse-fade {
+            0% { background-color: #a78bfa; opacity: 1; }
+            100% { background-color: #4b5563; opacity: 0.5; }
+        }
+        .beat-indicator.generating {
+            animation: pulse-fade 0.8s ease-in-out infinite alternate;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-8 space-y-6">
+        <header class="text-center">
+            <h1 class="text-4xl font-bold tracking-tight flex items-center justify-center gap-3">
+                <img src="/static/favicon.svg" alt="Melody Flow Logo" class="h-10 w-10">
+                <span>Melody Flow</span>
+            </h1>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-900/50 p-6 rounded-lg">
+            <div>
+                <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">コード進行プリセット</label>
+                <select id="chord-progression" class="w-full bg-gray-700 rounded-md p-3">
+                    <option value="Dm7 - G7 - Dm7 - G7 - Dm7 - G7 - Dm7 - G7">ツー・ファイブ（メジャー）</option>
+                    <option value="Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7">ツー・ファイブ（マイナー）</option>
+                    <option value="Dm7 - G7 - CM7 - CM7 - Dm7 - G7 - CM7 - CM7">ツー・ファイブ・ワン（メジャー）</option>
+                    <option value="Dm7b5 - G7 - Cm7 - Cm7 - Dm7b5 - G7 - Cm7 - Cm7">ツー・ファイブ・ワン（マイナー）</option>
+                    <option value="CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7">循環コード (C Am Dm G)</option>
+                    <option value="Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7">逆循環コード (Dm G C Am)</option>
+                    <option value="Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em - Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em">枯れ葉（前半）</option>
+                    <option value="F#m7b5 - B7b9 - Em - Em - Am7 - D7 - GM7 - GM7 - F#m7b5 - B7b9 - A7 - G7 - F#m7b5 - B7b9 - Em - Em">枯れ葉（後半）</option>
+                    <option value="C7 - F7 - C7 - C7 - F7 - F7 - C7 - C7 - G7 - F7 - C7 - G7">ブルース進行 (in C)</option>
+                    <option value="Cm7 - Fm7 - Cm7 - C7(b9) - Fm7 - F#dim7 - Cm7 - Ab7 - Dm7b5 - G7(b9,b13) - Cm7 - G7(b9,b13)">Jazz Minor Blues (in C)</option>
+                    <option value="BbM7 - BbM7 - Bbm7 - Eb7 - FM7 - FM7 - Abm7 - Db7 - Gm7 - C7 - Am7 - Dm7 - G7 - G7 - Gm7 - C7">Just Friends (Aセクション)</option>
+                </select>
+            </div>
+            <div>
+                <label for="music-style" class="block text-sm font-medium text-gray-300 mb-2">スタイル</label>
+                <select id="music-style" class="w-full bg-gray-700 rounded-md p-3">
+                    <option>JAZZ風</option>
+                    <option>POP風</option>
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <button id="generate-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md text-lg">
+                    1. フレーズをAIに生成させる
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-gray-900/50 p-6 rounded-lg space-y-4">
+            <div class="flex items-center justify-center gap-6">
+                <div class="flex items-center gap-2">
+                    <span id="beat-1" class="beat-indicator downbeat"></span>
+                    <span id="beat-2" class="beat-indicator"></span>
+                    <span id="beat-3" class="beat-indicator"></span>
+                    <span id="beat-4" class="beat-indicator"></span>
+                </div>
+
+                <div>
+                    <label for="bpm-slider" class="block text-sm text-center font-medium text-gray-300 mb-1">BPM</label>
+                    <div class="flex items-center gap-3">
+                        <input id="bpm-slider" type="range" min="60" max="180" value="120" class="w-48">
+                        <span id="bpm-value" class="font-mono text-lg w-10">120</span>
+                    </div>
+                </div>
+                <button id="play-stop-button" class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-md text-lg" disabled>
+                    2. 演奏開始
+                </button>
+            </div>
+            <div class="flex justify-end items-center pr-2">
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="checkbox" id="mute-backing-track" class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    伴奏をミュート
+                </label>
+            </div>
+            <div id="progression-display" class="flex flex-wrap justify-center gap-2 p-3 bg-black/30 rounded-md min-h-[52px]">
+            </div>
+        </div>
+
+        <div class="bg-gray-900/50 p-4 rounded-lg space-y-3">
+            <div id="piano-roll-container" class="relative h-48 bg-black/30 rounded-md border border-gray-700">
+                <div id="piano-roll-content" class="relative h-full w-full">
+                    <div id="playhead" class="playhead"></div>
+                </div>
+            </div>
+            <div class="bg-black/30 p-3 rounded-md">
+                <p class="text-sm text-gray-400 mb-1">現在のフレーズ (音名)</p>
+                <div id="note-display-area" class="font-mono text-lg text-indigo-300 break-all">...</div>
+            </div>
+        </div>
+
+        <div id="status-area" class="text-center text-gray-400 p-3 bg-gray-900/50 rounded-lg min-h-[48px]">
+            MIDIデバイスを接続、またはスペースキーで演奏
+        </div>
+    </div>
+
+    <script src="/static/main.js?v=20"></script>
+</body>
+</html>
