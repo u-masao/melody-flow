@@ -14,7 +14,7 @@ export MODEL_NAME:=models/llama-midi.pth/
 ## run ui and api
 ui:
 api:
-	uv run uvicorn src.api:app --reload --host 0.0.0.0 --port $(PORT)
+	uv run uvicorn src.api.main:app --reload --host 0.0.0.0 --port $(PORT)
 
 ## test api
 test_api:
@@ -49,15 +49,15 @@ PIPELINE.md: dvc.yaml params.yaml
 	git commit $@ -m 'update pipeline' || true
 
 
-## inferance
-inferance:
-	uv run python -m src.inferance models/llama-midi.pth/ \
-    'Title: Anthropology Chords:  Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7'
+## inference
+inference:
+	uv run python -m src.model.inference models/llama-midi.pth/ \
+    '{"chord_progression": "Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7"}'
 
-## inferance
-inferance-llama32:
-	uv run python -m src.inferance models/llama-3.2-1b.pth/ \
-    'Title: Anthropology Chords:  Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7'
+## inference
+inference-llama32:
+	uv run python -m src.model.inference models/llama-3.2-1b.pth/ \
+    '{"chord_progression": "Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7"}'
 
 
 ##############################################################################
