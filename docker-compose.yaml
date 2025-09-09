@@ -1,0 +1,43 @@
+services:
+  # FastAPI アプリケーション
+  api:
+    build: .
+    restart: always
+    environment:
+      - MODEL_NAME=/app/models/llama-midi.pth/
+    volumes:
+      - ./models:/app/models:ro # モデルをRead-Onlyでマウント
+    expose:
+      - "8000" # コンテナ間の通信用にポートを公開
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Nginx リバースプロキシ
+  nginx:
+    image: nginx:1.27-alpine
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf # Nginx設定ファイルをマウント
+      - certbot_www:/var/www/certbot # Certbotとの共有ボリューム
+      - certbot_conf:/etc/letsencrypt # SSL証明書の永続化用
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+
+  # Certbot (SSL証明書取得用)
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+
+volumes:
+  certbot_www:
+  certbot_conf:
