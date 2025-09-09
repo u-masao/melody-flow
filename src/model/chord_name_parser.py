@@ -187,28 +187,5 @@ def parse_chord_name(chord_name: str) -> dict:
     }
 
 
-# --- 使用例 (Example Usage) ---
-if __name__ == "__main__":
-    test_chords = [
-        "C",
-        "Cm7",
-        "C7(b9)",
-        "Fm7",
-        "F#dim7",
-        "Ab7",
-        "Dm7b5",
-        "G7(b9,b13)",
-    ]
-
-    print("--- Chord Analysis Examples ---")
-    for chord in test_chords:
-        try:
-            result = parse_chord_name(chord)
-            print(f"'{chord}':")
-            print(f"  Root Note (int): {result['root']}")
-            print(f"  Code Tones: {result['code_tone']}")
-            print(f"  Available Scales: {result['scales']}")
-            print("-" * 20)
-        except ValueError as e:
-            print(f"Error parsing '{chord}': {e}")
-            print("-" * 20)
+# This file is intended to be used as a module.
+# Example usage has been moved to the test suite in tests/test_chord_name_parser.py

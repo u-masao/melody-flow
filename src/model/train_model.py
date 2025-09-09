@@ -17,10 +17,10 @@ class MidiFinetuningExperiment:
 
     def __init__(self, config: dict):
         """
-        実験の設定を初期化します。
+        設定を用いて実験を初期化します。
 
         Args:
-            config (dict): 実験のハイパーパラメータやパスを含む設定辞書。
+            config (dict): ハイパーパラメータやパスを含む設定辞書。
         """
         self.config = config
         self.model = None
@@ -33,26 +33,26 @@ class MidiFinetuningExperiment:
         """
         logger.remove()
         logger.add(sys.stdout, level="INFO")
-        logger.info("ロガーをセットアップしました。")
+        logger.info("ロガーのセットアップが完了しました。")
 
     def _load_model_and_tokenizer(self):
         """
-        事前学習済みモデルとトークナイザーを読み込みます。
+        事前学習済みモデルとトークナイザーをロードします。
         """
-        logger.info(f"モデル '{self.config['model_name']}' を読み込んでいます...")
+        logger.info(f"モデル '{self.config['model_name']}' をロード中...")
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
             model_name=self.config["model_name"],
             max_seq_length=self.config["max_seq_length"],
             dtype=None,  # 自動選択
             load_in_4bit=self.config.get("load_in_4bit", True),
         )
-        logger.success("モデルとトークナイザーの読み込みが完了しました。")
+        logger.success("モデルとトークナイザーのロードが成功しました。")
 
     def _apply_lora(self):
         """
         モデルにLoRAを適用します。
         """
-        logger.info("モデルにLoRAアダプターを適用しています...")
+        logger.info("モデルにLoRAアダプターを適用中...")
         lora_config = self.config["lora"]
         self.model = FastLanguageModel.get_peft_model(
             self.model,
@@ -64,21 +64,21 @@ class MidiFinetuningExperiment:
             use_gradient_checkpointing=True,
             random_state=self.config.get("seed", 42),
         )
-        logger.success("LoRAの適用が完了しました。")
+        logger.success("LoRAの適用が成功しました。")
 
     def _load_dataset(self):
         """
-        学習用データセットを読み込みます。
+        学習用データセットをロードします。
         """
-        logger.info(f"データセットを '{self.config['input_data_path']}' から読み込んでいます...")
+        logger.info(f"データセットを '{self.config['input_data_path']}' からロード中...")
         try:
             dataset = load_dataset(
                 "json", data_files=self.config["input_data_path"], split="train"
             )
-            logger.success("データセットの読み込みが完了しました。")
+            logger.success("データセットのロードが成功しました。")
             return dataset
         except Exception:
-            logger.exception("データセットの読み込みに失敗しました。パスを確認してください。")
+            logger.exception("データセットのロードに失敗しました。パスを確認してください。")
             raise
 
     def _run_training(self, train_dataset):
@@ -109,7 +109,7 @@ class MidiFinetuningExperiment:
             if torch.cuda.is_available():
                 gpu_stats = torch.cuda.get_device_properties(0)
                 max_memory = round(gpu_stats.total_memory / 1024**3, 2)
-                logger.info(f"GPU: {gpu_stats.name}, Max Memory: {max_memory} GB")
+                logger.info(f"GPU: {gpu_stats.name}, 最大メモリ: {max_memory} GB")
 
             logger.info("トレーニングを開始します...")
             trainer_stats = trainer.train()
@@ -126,11 +126,11 @@ class MidiFinetuningExperiment:
         ファインチューニングされたモデルを保存します。
         """
         output_path = self.config["output_model_path"]
-        logger.info(f"モデルを '{output_path}' に保存しています...")
+        logger.info(f"モデルを '{output_path}' に保存中...")
         self.model.save_pretrained(output_path)
         self.tokenizer.save_pretrained(output_path)
         mlflow.log_artifacts(output_path, artifact_path="model")
-        logger.success("モデルの保存が完了しました。")
+        logger.success("モデルの保存が成功しました。")
 
     def run(self):
         """
@@ -141,16 +141,16 @@ class MidiFinetuningExperiment:
         train_dataset = self._load_dataset()
         self._run_training(train_dataset)
         self._save_model()
-        logger.info("実験は正常に終了しました。")
+        logger.info("実験が正常に終了しました。")
 
 
 class Args(Tap):
     """
-    LLMをLoRAでファインチューニングするスクリプトの設定。
+    LLMのLoRAファインチューニングスクリプトの設定。
     """
 
-    # --- 必須の引数 ---
-    input_data_path: str  # 入力となる学習データ（JSONファイル）のパス
+    # --- 必須引数 ---
+    input_data_path: str  # 入力学習データ（JSONファイル）のパス
     output_model_path: str  # ファインチューニング済みモデルの保存先パス
 
     # --- モデル設定 ---
@@ -185,15 +185,11 @@ class Args(Tap):
         self.add_argument("output_model_path")
 
 
-def main():
+def create_config_from_args(args: Args) -> dict:
     """
-    スクリプトのエントリーポイント。
-    typed-argument-parserを使って引数を解析し、実験クラスをインスタンス化して実行します。
+    パースされた引数からMidiFinetuningExperimentが必要とする設定辞書を構築します。
     """
-    args = Args(description="LLMをLoRAでファインチューニングするスクリプト").parse_args()
-
-    # ArgsオブジェクトからMidiFinetuningExperimentが期待するconfig辞書を構築
-    config = {
+    return {
         "input_data_path": args.input_data_path,
         "output_model_path": args.output_model_path,
         "model_name": args.model_name,
@@ -231,6 +227,14 @@ def main():
         },
     }
 
+
+def main():
+    """
+    スクリプトのエントリーポイント。引数をパースし、設定を作成し、
+    ファインチューニング実験を実行します。
+    """
+    args = Args(description="LLMをMIDI生成用にLoRAでファインチューニングするスクリプト。").parse_args()
+    config = create_config_from_args(args)
     experiment = MidiFinetuningExperiment(config)
     experiment.run()
 
