@@ -80,20 +80,20 @@ CHORD_DEFINITIONS = {
         "scales": {"mixolydian_pentatonic": [0, 2, 5, 7, 10]},
     },
     "7b9": {
-        "code_tone": [0, 4, 7, 10], # b9はテンションとしてスケールで制御
+        "code_tone": [0, 4, 7, 10],  # b9はテンションとしてスケールで制御
         "scales": {
             # Cハーモニックマイナースケール由来のペンタトニック (G7b9に対して)
-            "harmonic_minor_subset": [0, 1, 4, 7, 8], # G, Ab, B, D, Eb
+            "harmonic_minor_subset": [0, 1, 4, 7, 8],  # G, Ab, B, D, Eb
             # G Alteredスケール由来のペンタトニック (Ab melodic minor)
-            "altered_pentatonic": [1, 3, 4, 6, 10] # Ab, Bb, B, Db, F
-        }
+            "altered_pentatonic": [1, 3, 4, 6, 10],  # Ab, Bb, B, Db, F
+        },
     },
-    "7b9b13": { # G7(b9,b13)のようなオルタードコード用
+    "7b9b13": {  # G7(b9,b13)のようなオルタードコード用
         "code_tone": [0, 4, 7, 10],
         "scales": {
-             # G Alteredスケール由来のペンタトニック (Ab melodic minor)
-            "altered_pentatonic": [1, 3, 4, 6, 10] # Ab, Bb, B, Db, F
-        }
+            # G Alteredスケール由来のペンタトニック (Ab melodic minor)
+            "altered_pentatonic": [1, 3, 4, 6, 10]  # Ab, Bb, B, Db, F
+        },
     },
     # Diminished and Half-Diminished
     "dim": {"code_tone": [0, 3, 6], "scales": {"locrian_pentatonic": [0, 3, 5, 6, 10]}},
@@ -142,7 +142,6 @@ def parse_chord_name(chord_name: str) -> dict:
     # 例: G7(b9,b13) -> G7b9b13, C7(b9) -> C7b9
     s = s.replace("(b9,b13)", "7b9b13").replace("(b9)", "7b9")
 
-
     # 1. ルート音を特定する (Find the root note)
     root_note_str = None
     root_val = -1
@@ -168,14 +167,13 @@ def parse_chord_name(chord_name: str) -> dict:
         chord_type_str = "M7"
     elif chord_type_str.lower() == "min" or chord_type_str.lower() == "minor":
         chord_type_str = "m"
-    
+
     # "7b9b13" を "7b9b13" として扱うための例外処理
     if chord_type_str == "7b9b13":
         pass
     # "7b9" を "7b9" として扱うための例外処理
     elif "7b9" in chord_type_str:
-         chord_type_str = "7b9"
-
+        chord_type_str = "7b9"
 
     if chord_type_str not in CHORD_DEFINITIONS:
         raise ValueError(f"Invalid chord type '{chord_type_str}' in '{chord_name}'")
@@ -192,8 +190,14 @@ def parse_chord_name(chord_name: str) -> dict:
 # --- 使用例 (Example Usage) ---
 if __name__ == "__main__":
     test_chords = [
-        "C", "Cm7", "C7(b9)", "Fm7", "F#dim7",
-        "Ab7", "Dm7b5", "G7(b9,b13)",
+        "C",
+        "Cm7",
+        "C7(b9)",
+        "Fm7",
+        "F#dim7",
+        "Ab7",
+        "Dm7b5",
+        "G7(b9,b13)",
     ]
 
     print("--- Chord Analysis Examples ---")
@@ -208,4 +212,3 @@ if __name__ == "__main__":
         except ValueError as e:
             print(f"Error parsing '{chord}': {e}")
             print("-" * 20)
-

@@ -1,9 +1,10 @@
 import re
 
 from loguru import logger
-from .chord_name_parser import parse_chord_name
 import torch
 from transformers import AutoTokenizer, LogitsProcessor
+
+from .chord_name_parser import parse_chord_name
 
 
 def is_arabic_numerals_only(s: str) -> bool:
