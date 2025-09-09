@@ -1,4 +1,4 @@
-# src/api.py
+import unsloth  # noqa: F401
 import base64
 import os
 import re
@@ -9,12 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
 from unsloth import FastLanguageModel
 import uvicorn
-
-from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 MODEL_NAME = os.getenv("MODEL_NAME", "models/llama-midi.pth/")
 print(f"Loading model: {MODEL_NAME}...")
@@ -50,7 +49,6 @@ app = FastAPI(title="Melody Flow API")
 
 origins = [
     "https://melody-flow.click",
-    "https://melody-flow.nano-button.click",
     "http://localhost:7860",
     "http://127.0.0.1:7860",
 ]
@@ -65,7 +63,7 @@ app.add_middleware(
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-static_dir = os.path.join(current_dir, "..", "static")
+static_dir = os.path.join(current_dir, "..", "..", "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
