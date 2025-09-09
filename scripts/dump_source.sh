@@ -10,9 +10,9 @@ src/model/chord_name_parser.py
 src/model/melody_processor.py
 src/api/main.py
 static/index.html
+static/presentation.html
 static/app.html
 static/main.js
-static/presentation.html
 )
 
 for ((i=0; i<${#FILES[@]}; i++))
