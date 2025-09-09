@@ -7,8 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         //
         // 本番環境のバックエンドURLに適宜変更してください
-        // return "https://api.melody-flow.click/generate";
-        return "http://localhost:7860/generate";
+        return "https://api.melody-flow.click/generate";
     };
     const API_ENDPOINT = getApiEndpoint();
 
