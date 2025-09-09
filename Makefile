@@ -72,3 +72,7 @@ lint:
 ## test
 test:
 	uv run pytest tests
+
+## generate requirements.txt
+requirements.txt:
+	uv pip compile pyproject.toml -o requirements.txt --generate-hashes
