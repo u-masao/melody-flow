@@ -8,37 +8,37 @@ stages:
 
   make_dataset:
     cmd: >-
-      uv run python -m src.make_dataset
+      uv run python -m src.model.make_dataset
       data/raw/wjazzd.db
       data/interim/train.json
     deps:
-      - src/make_dataset.py
+      - src/model/make_dataset.py
       - data/raw/wjazzd.db
     outs:
       - data/interim/train.json
 
   train_model_llama-midi:
     cmd: >-
-      uv run python -m src.train_model
+      uv run python -m src.model.train_model
       --model_name 'dx2102/llama-midi'
       --num_train_epochs ${train_epochs}
       data/interim/train.json
       models/llama-midi.pth/
     deps:
-      - src/train_model.py
+      - src/model/train_model.py
       - data/interim/train.json
     outs:
       - models/llama-midi.pth/
 
   train_model_llama_3.2-1b:
     cmd: >-
-      uv run python -m src.train_model
+      uv run python -m src.model.train_model
       --model_name 'unsloth/Llama-3.2-1B-bnb-4bit'
       --num_train_epochs ${train_epochs}
       data/interim/train.json
       models/llama-3.2-1b.pth/
     deps:
-      - src/train_model.py
+      - src/model/train_model.py
       - data/interim/train.json
     outs:
       - models/llama-3.2-1b.pth/
