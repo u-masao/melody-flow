@@ -9,6 +9,8 @@ services:
       - ./models:/app/models:ro # モデルをRead-Onlyでマウント
     expose:
       - "8000" # コンテナ間の通信用にポートを公開
+    logging:
+      driver: "journald"
     deploy:
       resources:
         reservations:
@@ -28,6 +30,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    logging:
+      driver: "journald"
     depends_on:
       - api
 
@@ -37,6 +41,8 @@ services:
     volumes:
       - certbot_www:/var/www/certbot
       - certbot_conf:/etc/letsencrypt
+    logging:
+      driver: "journald"
 
 volumes:
   certbot_www:
