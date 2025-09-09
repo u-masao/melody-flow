@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Melody Flow | リズムで遊ぼう、AIとセッション。</title>
-    <meta name="description" content="Melody Flowは、あなたの叩いたリズムにAIがリアルタイムで応答する新しい音楽体験。楽器の経験は不要。必要なのはリズム感だけ。さあ、AIとセッションしよう。">
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <title>Melody Flow | リズムで遊ぼう、AI とセッション。</title>
+    <meta name="description" content="Melody Flow は、あなたの叩いたリズムにAI がリアルタイムで応答する新しい音楽体験。楽器の経験は不要。必要なのはリズム感だけ。さあ、AI とセッションしよう。">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,11 +60,19 @@
             opacity: 1;
             transform: translateY(0);
         }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary svg {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="antialiased">
 
-    <!-- Header -->
     <header id="header" class="fixed top-0 left-0 right-0 z-50 bg-opacity-30 backdrop-blur-md transition-all duration-300">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="#" class="flex items-center gap-2">
@@ -77,35 +85,34 @@
             <nav class="hidden md:flex items-center gap-8">
                 <a href="#concept" class="nav-link text-gray-300 hover:text-white">想い</a>
                 <a href="#features" class="nav-link text-gray-300 hover:text-white">できること</a>
-                <a href="#roadmap" class="nav-link text-gray-300 hover:text-white">未来の機能</a>
-                <a href="#donation" class="nav-link text-gray-300 hover:text-white">応援する</a>
+                <a href="#how-it-works" class="nav-link text-gray-300 hover:text-white">仕組み</a>
                 <a href="#faq" class="nav-link text-gray-300 hover:text-white">FAQ</a>
             </nav>
-            <a href="#" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold px-5 py-2 rounded-lg hover:scale-105 transition-transform">
+            <a href="static/app.html" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold px-5 py-2 rounded-lg hover:scale-105 transition-transform">
                 アプリを試す
             </a>
         </div>
     </header>
 
     <main>
-        <!-- Hero Section -->
         <section class="relative min-h-screen flex items-center justify-center text-center overflow-hidden pt-20">
             <div class="glow-effect"></div>
             <div class="z-10 px-6">
                 <h1 class="text-5xl md:text-7xl font-black mb-4 leading-tight reveal">
-                    リズムで遊ぼう、<br><span class="gradient-text">AIとセッション。</span>
+                    リズムで遊ぼう、<br><span class="gradient-text">AI とセッション。</span>
                 </h1>
                 <p class="max-w-2xl mx-auto text-lg md:text-xl text-gray-300 mb-8 reveal" style="transition-delay: 0.2s;">
-                    Melody Flowは、あなたの叩いたリズムにAIがリアルタイムで応答する新しい音楽体験。
+                    <br>Melody Flow は、<br>
+                    あなたの叩いたリズムに AI がリアルタイムに応答する
+                    新しい音楽体験。<br><br>
                     楽器の経験も、音楽理論も、もういらない。
                 </p>
-                <a href="#" class="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl px-12 py-4 rounded-lg my-4 hover:scale-105 transition-transform reveal" style="transition-delay: 0.4s;">
+                <a href="static/app.html" class="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl px-12 py-4 rounded-lg my-4 hover:scale-105 transition-transform reveal" style="transition-delay: 0.4s;">
                     今すぐセッションを始める
                 </a>
             </div>
         </section>
 
-        <!-- Concept Section -->
         <section id="concept" class="py-20 md:py-32">
             <div class="container mx-auto px-6 text-center">
                 <div class="max-w-3xl mx-auto">
@@ -113,156 +120,138 @@
                     <p class="text-lg text-gray-400 leading-relaxed reveal" style="transition-delay: 0.2s;">
                         「楽器が弾けたらなあ」「作曲なんて難しそう」<br>
                         そんな風に感じたことはありませんか？<br><br>
-                        私たちは、音楽の楽しさの原点は、もっとシンプルで、誰にでも開かれているものだと信じています。それは、リズムに合わせて体を動かしたり、仲間と音を交わしたりする、あの原始的な興奮です。<br><br>
-                        Melody Flowは、その「楽しい！」という感情だけをテクノロジーで増幅させるために生まれました。難しい理屈はAIにまかせて、あなたはただ、心に浮かんだリズムを叩くだけ。さあ、音楽を「聴く」から「遊ぶ」へ。
+                        私たちは、音楽の楽しさの原点は、もっとシンプルで、誰にでも開かれているものだと<br>
+                        信じています。<br>
+                        それは、リズムに合わせて体を動かしたり、<br>
+                        仲間と音を交わしたりする、あの原始的な興奮です。<br><br>
+                        Melody Flow は、<br>
+                        その「楽しい！」という感情だけをテクノロジーで増幅させるために生まれました。<br>
+                        難しい理屈は AI にまかせて、あなたはただ、心に浮かんだリズムを叩くだけ。<br><br>
+                        さあ、音楽を「聴く」から「遊ぶ」へ。
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- Features Section -->
         <section id="features" class="py-20 md:py-32 bg-white/5">
             <div class="container mx-auto px-6 text-center">
                 <h2 class="text-4xl md:text-5xl font-bold mb-16 reveal">できることは、とてもシンプル。</h2>
                 <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     <div class="bg-gray-800 p-8 rounded-2xl text-center reveal">
-                        <svg class="mx-auto mb-4" width="64" height="64" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="78" height="78" rx="39" stroke="#4B5563" stroke-width="2" stroke-dasharray="4 4"/><path d="M40 15 L 45 35 L 65 37 L 50 50 L 55 70 L 40 58 L 25 70 L 30 50 L 15 37 L 35 35 Z" stroke="#818cf8" stroke-width="4" fill="none" stroke-linejoin="round"/></svg>
+                        <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M25 60H55V65H25V60Z" fill="#4B5563"/>
+                            <rect x="28" y="55" width="24" height="5" fill="#E5E7EB"/>
+                            <path d="M31 55V45H34V55H31Z" fill="#374151"/><path d="M35 55V45H38V55H35Z" fill="#E5E7EB"/><path d="M39 55V45H42V55H39Z" fill="#374151"/><path d="M43 55V45H46V55H43Z" fill="#E5E7EB"/><path d="M47 55V45H50V55H47Z" fill="#374151"/>
+                            <path d="M20 25C20 15, 30 15, 40 25S60 35, 60 25" stroke="#c084fc" stroke-width="4" fill="none" stroke-linecap="round"/>
+                            <circle cx="60" cy="25" r="4" fill="#c084fc"/>
+                        </svg>
                         <h3 class="text-xl font-bold mb-2 text-white">楽器できなくても、主役に。</h3>
-                        <p class="text-gray-400 text-sm leading-relaxed">PCのキーを叩くだけで、AIがあなた専属のメロディを演奏。必要なのはリズム感だけです。</p>
+                        <p class="text-gray-400 text-sm leading-relaxed">必要なのはリズム感だけ。PCのキーボードやMIDIコントローラーを叩けば、AI があなたのメロディを奏でます。</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-2xl text-center reveal" style="transition-delay: 0.2s;">
-                        <svg class="mx-auto mb-4" width="64" height="64" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="78" height="78" rx="39" stroke="#4B5563" stroke-width="2" stroke-dasharray="4 4"/><path d="M25 25 H 55 V 55 H 25 Z" fill="#4B5563"/><path d="M30 60 L 50 20" stroke="#c084fc" stroke-width="4" fill="none"/><path d="M30 20 L 50 60" stroke="#c084fc" stroke-width="4" fill="none"/></svg>
-                        <h3 class="text-xl font-bold mb-2 text-white">偶然のメロディと出会う。</h3>
+                        <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="40" cy="40" r="25" fill="#4B5563"/>
+                            <path d="M40 30C50 30 55 40 50 50S30 50 35 40S50 30 40 30" stroke="#818cf8" stroke-width="4" fill="none"/>
+                            <path d="M40 10V20" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M40 60V70" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M10 40H20" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M60 40H70" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                        <h3 class="text-xl font-bold mb-2 text-white">AI のメロディが創作を刺激。</h3>
                         <p class="text-gray-400 text-sm leading-relaxed">気分に合わせて叩いたリズムから、想像もしなかったメロディが生まれる。新しいインスピレーションの源泉になります。</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-2xl text-center reveal" style="transition-delay: 0.4s;">
-                        <svg class="mx-auto mb-4" width="64" height="64" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="78" height="78" rx="39" stroke="#4B5563" stroke-width="2" stroke-dasharray="4 4"/><path d="M25 55C30 45, 50 45, 55 55" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/><path d="M25 35L35 30" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/><path d="M55 35L45 30" stroke="#F9FAFB" stroke-width="4" stroke-linecap="round"/></svg>
+                        <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 45 C 25 65, 55 65, 65 45" stroke="#F9FAFB" stroke-width="4" fill="none" stroke-linecap="round"/>
+                            <circle cx="30" cy="30" r="5" fill="#818cf8"/>
+                            <circle cx="50" cy="30" r="5" fill="#c084fc"/>
+                            <path d="M20 20L40 10L60 20" stroke="#F9FAFB" stroke-width="4" fill="none" stroke-linecap="round"/>
+                        </svg>
                         <h3 class="text-xl font-bold mb-2 text-white">ただ、楽しさに没頭する。</h3>
-                        <p class="text-gray-400 text-sm leading-relaxed">コード進行やスケールはAIにおまかせ。あなたは「リズムとメロディの対話」という音楽の根源的な楽しさに集中できます。</p>
+                        <p class="text-gray-400 text-sm leading-relaxed">コード進行やスケールは AI におまかせ。<br>あなたは「リズムとメロディの対話」という<br>音楽の根源的な楽しさに集中できます。</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- How it works Section -->
         <section id="how-it-works" class="py-20 md:py-32">
             <div class="container mx-auto px-6">
                 <div class="text-center">
-                     <h2 class="text-4xl md:text-5xl font-bold mb-6 reveal">まるで、AIが<span class="gradient-text">聴いてる</span>みたいに。</h2>
-                     <p class="max-w-3xl mx-auto text-lg text-gray-400 mb-16 reveal" style="transition-delay: 0.2s;">
-                        あなたの演奏にAIが即座に応答できるのは、独自の「メロディトレンド制御技術」があるから。あなたのリズムの意図やメロディの方向性をAIがリアルタイムに予測し、次に来るべき音を音楽的に判断しています。
-                     </p>
-                </div>
-
-                <div class="max-w-4xl mx-auto reveal" style="transition-delay: 0.4s;">
-                    <div class="border-2 border-gray-700 rounded-2xl p-8 bg-gray-900/50">
-                        <div class="flex flex-col md:flex-row items-center justify-between gap-8">
-                            <div class="text-center md:text-left">
-                                <h3 class="text-2xl font-bold text-white mb-2">セッションは3ステップ</h3>
-                                <ol class="list-decimal list-inside text-gray-300 space-y-2">
-                                    <li>好きなコード進行を選ぶ</li>
-                                    <li>リズムを自由に叩く</li>
-                                    <li>AIがメロディで応答！セッション開始</li>
-                                </ol>
-                            </div>
-                            <svg class="w-full max-w-sm" viewBox="0 0 600 338" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="1" y="1" width="598" height="336" rx="15" fill="#1f2937" stroke="#4B5563" stroke-width="2"/>
-                                <circle cx="300" cy="169" r="40" fill="#374151"/>
-                                <path d="M285 149 L 325 169 L 285 189 Z" fill="#F9FAFB"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Roadmap Section -->
-        <section id="roadmap" class="py-20 md:py-32 bg-white/5">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="text-4xl md:text-5xl font-bold mb-6 reveal">未来のMelody Flow</h2>
-                <p class="max-w-3xl mx-auto text-lg text-gray-400 mb-16 reveal" style="transition-delay: 0.2s;">
-                    皆さんの応援で、音楽の遊び方はもっと広がります。こんな機能を追加したいと考えています。
-                </p>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-                    <div class="bg-gray-800 p-6 rounded-2xl text-center reveal">
-                        <h3 class="text-lg font-bold text-white mb-2">ジャンルの追加</h3>
-                        <p class="text-gray-400 text-sm">EDM、ロック、オーケストラなど、セッションできる音楽の幅を広げます。</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded-2xl text-center reveal" style="transition-delay: 0.1s;">
-                        <h3 class="text-lg font-bold text-white mb-2">セッションの保存</h3>
-                        <p class="text-gray-400 text-sm">最高のプレイをMIDIファイルで保存・共有できるようにします。</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded-2xl text-center reveal" style="transition-delay: 0.2s;">
-                        <h3 class="text-lg font-bold text-white mb-2">高度なコントロール</h3>
-                        <p class="text-gray-400 text-sm">AIの応答の複雑さや意外性を調整できる機能を追加します。</p>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded-2xl text-center reveal" style="transition-delay: 0.3s;">
-                        <h3 class="text-lg font-bold text-white mb-2">楽器の追加</h3>
-                        <p class="text-gray-400 text-sm">ピアノだけでなく、様々な楽器の音色でセッションを楽しめるようにします。</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Donation Section -->
-        <section id="donation" class="py-20 md:py-32">
-            <div class="container mx-auto px-6 text-center">
-                <div class="max-w-3xl mx-auto bg-gray-800/50 p-10 rounded-2xl border border-gray-700 reveal">
-                    <h2 class="text-4xl md:text-5xl font-bold mb-6">このプロジェクトを<span class="gradient-text">応援</span>しませんか？</h2>
-                    <p class="text-lg text-gray-400 leading-relaxed mb-8">
-                        Melody Flowは、音楽を愛する個人が開発・運営しています。<br>
-                        もしこのツールを気に入っていただけたら、コーヒー一杯分のご支援をいただけると、サーバー代の維持や、さらなる開発の大きな力になります。
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6 reveal">AI が<span class="gradient-text">最高の相棒</span>になるヒミツ。</h2>
+                    <p class="max-w-3xl mx-auto text-lg text-gray-400 mb-16 reveal" style="transition-delay: 0.2s;">
+                        あなたのリズムや内なるグルーヴを汲み取り、音楽的なメロディを奏でます。
                     </p>
-                    <a href="#" class="inline-flex items-center gap-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-lg px-8 py-3 rounded-lg hover:scale-105 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M10 3.5a.75.75 0 01.75.75V7h3.5a.75.75 0 010 1.5h-3.5v2.75a.75.75 0 01-1.5 0V8.5H5.75a.75.75 0 010-1.5H9V4.25A.75.75 0 0110 3.5z" />
-                          <path fill-rule="evenodd" d="M8.21 16.21a.75.75 0 01.29-1.06l4.25-2.5a.75.75 0 01.75 1.32l-4.25 2.5a.75.75 0 01-1.06-.26zM4.79 12.21a.75.75 0 01.29-1.06l4.25-2.5a.75.75 0 11.75 1.32l-4.25 2.5a.75.75 0 01-1.06-.26z" clip-rule="evenodd" />
-                        </svg>
-                        開発者にコーヒーを奢る
-                    </a>
+                </div>
+                <div class="flex flex-col md:flex-row gap-8 justify-center items-center max-w-5xl mx-auto reveal" style="transition-delay: 0.4s;">
+                    <svg class="w-full max-w-md rounded-2xl bg-gray-900/50 p-4" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#c084fc;stop-opacity:1" />
+                            </linearGradient>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                                <polygon points="0 0, 7 3.5, 0 7" fill="url(#grad1)" />
+                            </marker>
+                        </defs>
+                        <circle cx="50" cy="100" r="10" fill="#E5E7EB"/><text x="50" y="105" font-family="monospace" font-size="12" fill="#111827" text-anchor="middle">C4</text>
+                        <circle cx="200" cy="80" r="10" fill="#E5E7EB"/><text x="200" y="85" font-family="monospace" font-size="12" fill="#111827" text-anchor="middle">E4</text>
+                        <circle cx="350" cy="70" r="10" fill="#E5E7EB"/><text x="350" y="75" font-family="monospace" font-size="12" fill="#111827" text-anchor="middle">G4</text>
+                        <path d="M100 150 C 110 90, 140 90, 150 150" stroke="url(#grad1)" stroke-width="2" stroke-opacity="0.5" fill="none"/>
+                        <text x="125" y="165" font-family="sans-serif" font-size="9" fill="#9CA3AF" text-anchor="middle">次の音の確率分布</text>
+                        <path d="M250 150 C 260 70, 290 70, 300 150" stroke="url(#grad1)" stroke-width="2" stroke-opacity="0.5" fill="none"/>
+                        <text x="275" y="165" font-family="sans-serif" font-size="9" fill="#9CA3AF" text-anchor="middle">トレンドを反映</text>
+                        <path d="M60 100 Q 125 90 175 84" stroke="url(#grad1)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                        <path d="M210 80 Q 275 75 325 71" stroke="url(#grad1)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    </svg>
+                    <div class="text-left">
+                        <h3 class="text-2xl font-bold mb-4 text-white">独自の『メロディトレンド制御』</h3>
+                        <p class="text-base text-gray-300">直前の数音の流れ（トレンド）を AI が計算。極端な音の跳躍を抑え、次に来る音を自然な範囲に誘導することで、人間らしい滑らかなメロディをその場で生成します。</p>
+                        <div class="mt-4 space-x-2">
+                            <span class="bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full">LLM</span>
+                            <span class="bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">LogitsProcessor</span>
+                        </div>
+                   </div>
                 </div>
             </div>
         </section>
-        
-        <!-- FAQ Section -->
+
         <section id="faq" class="py-20 md:py-32 bg-white/5">
              <div class="container mx-auto px-6">
                  <div class="text-center">
-                    <h2 class="text-4xl md:text-5xl font-bold mb-12 reveal">よくある質問</h2>
+                     <h2 class="text-4xl md:text-5xl font-bold mb-12 reveal">よくある質問</h2>
                  </div>
                  <div class="max-w-3xl mx-auto space-y-6">
                      <div class="bg-gray-800 rounded-lg reveal">
-                         <details class="p-6 cursor-pointer">
+                         <details class="p-6 cursor-pointer group">
                              <summary class="font-bold text-lg text-white list-none flex justify-between items-center">
                                  料金はかかりますか？
-                                 <svg class="w-5 h-5 transition-transform transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                 <svg class="w-5 h-5 transition-transform transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                              </summary>
-                             <p class="text-gray-400 mt-4">基本機能はすべて無料でご利用いただけます。将来的に、より高度な機能や音色を追加する有料プランを検討していますが、皆さんのご支援があれば、より多くの機能を無料で提供し続けることができます。</p>
+                             <p class="text-gray-400 mt-4">基本機能はすべて無料でご利用いただけます。</p>
                          </details>
                      </div>
                      <div class="bg-gray-800 rounded-lg reveal">
-                          <details class="p-6 cursor-pointer">
+                          <details class="p-6 cursor-pointer group">
                              <summary class="font-bold text-lg text-white list-none flex justify-between items-center">
                                  何が必要ですか？
-                                  <svg class="w-5 h-5 transition-transform transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                  <svg class="w-5 h-5 transition-transform transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                              </summary>
                              <p class="text-gray-400 mt-4">Google Chromeがインストールされたパソコンがあれば、すぐに始められます。PCのキーボードでも演奏できますが、より楽しむためにはMIDIキーボードの接続を推奨します。</p>
                          </details>
                      </div>
                      <div class="bg-gray-800 rounded-lg reveal">
-                          <details class="p-6 cursor-pointer">
+                          <details class="p-6 cursor-pointer group">
                              <summary class="font-bold text-lg text-white list-none flex justify-between items-center">
                                  生成したメロディは自由に使えますか？
-                                  <svg class="w-5 h-5 transition-transform transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                  <svg class="w-5 h-5 transition-transform transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                              </summary>
-                             <p class="text-gray-400 mt-4">現在ベータ版のため、生成されたメロディの著作権については個人利用の範囲でお願いいたします。商用利用については、今後の正式リリースでライセンスを明確化する予定です。</p>
+                             <p class="text-gray-400 mt-4">現バージョンでは商用利用ができません。</p>
                          </details>
                      </div>
                  </div>
              </div>
         </section>
 
-        <!-- Closing CTA -->
         <section class="py-20 md:py-32">
             <div class="container mx-auto px-6 text-center">
                 <div class="reveal">
@@ -271,7 +260,7 @@
                         <path d="M20 70 C 35 90, 65 90, 80 70" stroke="url(#logoGradient2)" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M30 50 C 40 65, 60 65, 70 50" stroke="url(#logoGradient2)" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M40 30 C 45 40, 55 40, 60 30" stroke="url(#logoGradient2)" stroke-width="8" fill="none" stroke-linecap="round"/>
                     </svg>
                     <h2 class="text-4xl md:text-5xl font-bold mb-6">さあ、新しい音楽の遊び方を始めよう。</h2>
-                     <a href="#" class="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl px-12 py-4 rounded-lg my-4 hover:scale-105 transition-transform">
+                    <a href="static/app.html" class="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl px-12 py-4 rounded-lg my-4 hover:scale-105 transition-transform">
                         無料でセッションを始める
                     </a>
                 </div>
@@ -279,7 +268,6 @@
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="py-8 border-t border-white/10">
         <div class="container mx-auto px-6 text-center text-gray-500">
             <p>&copy; 2025 Melody Flow. All Rights Reserved.</p>
@@ -312,22 +300,6 @@
         revealElements.forEach(el => {
             observer.observe(el);
         });
-
-        // FAQ accordion arrow rotation
-        const detailsElements = document.querySelectorAll('details');
-        detailsElements.forEach(details => {
-            details.addEventListener('toggle', event => {
-                const summary = details.querySelector('summary');
-                const arrow = summary.querySelector('svg');
-                if (details.open) {
-                    arrow.style.transform = 'rotate(180deg)';
-                } else {
-                    arrow.style.transform = 'rotate(0deg)';
-                }
-            });
-        });
-
     </script>
 </body>
 </html>
-
