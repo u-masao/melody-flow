@@ -45,9 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
             let rootMidi = notes.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
              if (rootMidi === -1) { // Fallback for sharp/flat names
-                const sharpIndex = this.NOTES.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
-                const flatIndex = this.NOTES_FLAT.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
-                rootMidi = sharpIndex !== -1 ? sharpIndex : flatIndex;
+                 const sharpIndex = this.NOTES.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+                 const flatIndex = this.NOTES_FLAT.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+                 rootMidi = sharpIndex !== -1 ? sharpIndex : flatIndex;
             }
 
             if (rootMidi === -1) return [];
@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
         envelope: { attack: 0.01, decay: 0.5, sustain: 0.2, release: 0.7 },
     }).toDestination();
     pianoSynth.volume.value = -12;
+    const notificationSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+    notificationSynth.volume.value = -12;
+
 
     const BEATS_PER_MEASURE = 4;
     const TICKS_PER_BEAT = Tone.Transport.PPQ;
@@ -132,8 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generatePhrases() {
+        await ensureAudioContext();
         generateButton.disabled = true; playStopButton.disabled = true;
-        generateButton.textContent = 'フレーズ生成中...'; statusArea.textContent = 'AIがメロディを考えています...';
+        generateButton.textContent = 'フレーズ生成中...';
+        statusArea.textContent = 'AI がメロディを考えています...(about 30 sec...)';
         stopPlayback();
         pianoRollContent.innerHTML = ''; pianoRollContent.appendChild(playhead);
 
@@ -163,12 +168,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { pitch, duration, wait, velocity, startTime: accumulatedWait - wait };
                 }).filter(note => !isNaN(note.pitch));
             }
+
+            // Play a success sound
+            notificationSynth.triggerAttackRelease(["C4", "E5"], "8n", Tone.now());
+
             updateProgressionDisplay(); drawTimingIndicators();
             playStopButton.disabled = false;
             statusArea.textContent = 'フレーズの準備ができました。さあ、MIDIデバイスや数字キー、スペースキーでセッションの始まりです！';
         } catch (error) {
             console.error('フレーズ生成に失敗:', error.message);
             statusArea.textContent = `エラー: ${error.message}`;
+            // Play an error sound
+            notificationSynth.triggerAttackRelease(["C4", "Eb4", "Gb4"], "8n", Tone.now());
         } finally {
             generateButton.disabled = false;
             generateButton.textContent = '1. フレーズをAIに生成させる';
