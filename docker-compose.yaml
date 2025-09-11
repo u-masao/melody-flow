@@ -27,6 +27,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf # Nginx設定ファイルをマウント
       - certbot_www:/var/www/certbot # Certbotとの共有ボリューム
       - certbot_conf:/etc/letsencrypt # SSL証明書の永続化用
+      - nginx_cache_data:/var/cache/nginx # Nginxキャッシュの永続化用
     ports:
       - "80:80"
       - "443:443"
@@ -47,3 +48,4 @@ services:
 volumes:
   certbot_www:
   certbot_conf:
+  nginx_cache_data:
