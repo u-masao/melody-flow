@@ -99,7 +99,7 @@ generate-warmup-data:
 	@echo "Installing dependencies from pyproject.toml..."
 	@uv pip sync pyproject.toml
 	@echo "Generating data for cache warmup..."
-	@uv run python scripts/generate_warmup_data.py
+	@uv run python -m src.warmup.generate_warmup_data
 
 warmup: generate-warmup-data
 	@echo "Warming up Nginx cache..."
