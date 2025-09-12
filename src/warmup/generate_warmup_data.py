@@ -4,20 +4,21 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-def main():
+
+def main(variations: int = 5):
     """
     Parses static/app.html to extract chord progressions and styles,
     then generates JSON files for cache warming.
     """
     # Project root is two levels up from this script's directory
-    project_root = Path(__file__).parent.parent
+    project_root = Path(__file__).parent.parent.parent
     html_path = project_root / "static" / "app.html"
-    output_dir = project_root / "data" / "pregenerated"
+    output_dir = project_root / "data" / "interim" / "pregenerated"
 
     print(f"Parsing {html_path}...")
 
     try:
-        with open(html_path, "r", encoding="utf-8") as f:
+        with open(html_path, encoding="utf-8") as f:
             soup = BeautifulSoup(f, "html.parser")
     except FileNotFoundError:
         print(f"Error: {html_path} not found.")
@@ -50,15 +51,14 @@ def main():
     file_count = 0
     for prog_idx, prog in enumerate(progressions, 1):
         for style_idx, style in enumerate(styles, 1):
-            for variation in range(1, 6):
+            for variation in range(1, 1 + variations):
                 modified_style = f"{style}_v{variation}"
 
-                data = {
-                    "chord_progression": prog,
-                    "style": modified_style
-                }
+                data = {"chord_progression": prog, "style": modified_style}
 
-                filename = output_dir / f"prog{prog_idx:02d}_style{style_idx:02d}_var{variation:02d}.json"
+                filename = output_dir / (
+                    f"prog{prog_idx:02d}_style{style_idx:02d}_var{variation:02d}.json"
+                )
 
                 with open(filename, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False)
@@ -66,5 +66,6 @@ def main():
 
     print(f"Successfully generated {file_count} JSON files in {output_dir}")
 
+
 if __name__ == "__main__":
-    main()
+    main(2)
