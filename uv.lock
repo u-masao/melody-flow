@@ -2476,6 +2476,7 @@ name = "melody-flow"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "datasets" },
     { name = "fastapi" },
     { name = "gradio" },
@@ -2499,6 +2500,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.12.3" },
     { name = "datasets", specifier = ">=4.0.0" },
     { name = "dvc", extras = ["dev", "gdrive"], marker = "extra == 'dev'", specifier = ">=3.62.0" },
     { name = "fastapi", specifier = ">=0.116.1" },
