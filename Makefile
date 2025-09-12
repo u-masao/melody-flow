@@ -86,7 +86,7 @@ requirements.txt:
 # docker-compose.yamlで定義したボリューム名を直接指定
 CACHE_VOLUME_NAME := nginx_cache_data
 EXPORT_FILE := nginx_cache.tar.gz
-REMOTE_HOST := user@remote.server.com
+REMOTE_HOST := ec2-user@api.melody-flow.click
 REMOTE_PATH := /tmp/nginx_cache_import/
 
 # --- Targets ---
@@ -96,8 +96,8 @@ cache-all: warmup cache-export cache-copy cache-import
 	@echo "All cache management tasks completed."
 
 generate-warmup-data:
-	@echo "Installing dependencies from pyproject.toml..."
-	@uv pip sync pyproject.toml
+	# @echo "Installing dependencies from pyproject.toml..."
+	# @uv pip sync pyproject.toml
 	@echo "Generating data for cache warmup..."
 	@uv run python -m src.warmup.generate_warmup_data
 
