@@ -2,13 +2,13 @@
 
 # APIのエンドポイントURL
 # docker-compose.yamlでNginxがホストの80/443ポートにマッピングされていることを前提とする
-API_URL="http://localhost/generate"
+API_URL="http://localhost:8080/generate"
 # HTTPSにリダイレクトされることを想定し、-Lオプションを有効にする
 # テスト環境の自己署名証明書を許容するために-kも追加
 CURL_OPTS="-s -L -k -o /dev/null -w %{http_code}"
 
 # 事前生成されたクエリデータが格納されているディレクトリ
-DATA_DIR="data/pregenerated"
+DATA_DIR="data/interim/pregenerated"
 
 # カウンター初期化
 SUCCESS_COUNT=0
