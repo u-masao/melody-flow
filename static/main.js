@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     
     const PRODUCTION_HOSTNAME = "melody-flow.click";
-    const CLOUDFRONT_ENDPOINT = "https://your-cloudfront-url.net";
+    const CLOUDFRONT_ENDPOINT = "https://melody-flow.click";
     const LOCAL_API_ENDPOINT = "http://localhost:8000";
     const IS_LOCALHOST = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
