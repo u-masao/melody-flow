@@ -24,7 +24,6 @@ dependencies = [
 
 [project.scripts]
 generate-cache = "src.warmup.generate_static_cache:main"
-run-api = "src.api.main:start"
 
 [build-system]
 requires = ["setuptools>=61.0"]

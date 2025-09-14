@@ -28,18 +28,11 @@ deploy-development:
 	@$(MAKE) sync-s3
 	@echo "✅ --- DEVELOPMENT deployment finished! --- ✅"
 
-## 🔒 pyproject.tomlからuv.lockを再生成する
-.PHONY: lock
-lock:
-	@echo "🔒 Locking dependencies with --all-extras..."
-	uv pip compile --all-extras pyproject.toml -o uv.lock
-	@echo "✅ uv.lock has been updated."
-
 ## 💻 ローカル開発サーバーの起動 (uv)
 .PHONY: dev-server
 dev-server:
 	@echo "🔥 --- Starting local API server on http://localhost:8000 ---"
-	@uv run run-api
+	uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir src
 
 ## 🐳 ローカル開発サーバーの起動 (Docker + Nginxキャッシュ)
 .PHONY: dev-server-docker
@@ -71,6 +64,26 @@ sync-s3:
 	@echo "📡 --- Syncing ./dist to S3 bucket: $(S3_BUCKET_NAME)... ---"
 	aws s3 sync ./dist s3://$(S3_BUCKET_NAME)/ --delete
 	@echo "✅ --- Sync to S3 complete. ---"
+
+
+# ==============================================================================
+# 依存関係管理
+# ==============================================================================
+
+## ⚙️ 開発環境のセットアップ (依存関係のインストールとプロジェクトのリンク)
+.PHONY: setup
+setup:
+	@echo "⚙️ --- Setting up development environment ---"
+	@uv sync --locked
+	@uv pip install -e .
+	@echo "✅ --- Setup complete. ---"
+
+## 🔒 pyproject.tomlからuv.lockを再生成する
+.PHONY: lock
+lock:
+	@echo "🔒 Locking dependencies with --all-extras..."
+	uv pip compile --all-extras pyproject.toml -o uv.lock
+	@echo "✅ uv.lock has been updated."
 
 
 # ==============================================================================
