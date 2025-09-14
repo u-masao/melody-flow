@@ -2,7 +2,8 @@
 # 変数
 # ==============================================================================
 
-S3_BUCKET_NAME := "melody-flow.click"
+AWS_PROFILE_NAME := melody-flow
+S3_BUCKET_NAME := melody-flow.click
 DOCKER_IMAGE_PROD := "melody-flow-generator:prod"
 DOCKER_IMAGE_DEV := "melody-flow-generator:dev"
 MODEL_NAME := models/llama-midi.pth/
@@ -14,7 +15,7 @@ MODEL_NAME := models/llama-midi.pth/
 
 ## 🚀 本番環境向けデプロイ (5 variations)
 .PHONY: deploy-production
-deploy-production:
+deploy-production: lock
 	@echo "🚀 --- Starting PRODUCTION deployment --- 🚀"
 	@$(MAKE) generate-cache-prod
 	@$(MAKE) sync-s3
@@ -22,7 +23,7 @@ deploy-production:
 
 ## 🛠️ 開発環境向けデプロイ (2 variations)
 .PHONY: deploy-development
-deploy-development:
+deploy-development: lock
 	@echo "🛠️ --- Starting DEVELOPMENT deployment --- 🛠️"
 	@$(MAKE) generate-cache-dev
 	@$(MAKE) sync-s3
@@ -36,7 +37,7 @@ dev-server:
 
 ## 🐳 ローカル開発サーバーの起動 (Docker + Nginxキャッシュ)
 .PHONY: dev-server-docker
-dev-server-docker:
+dev-server-docker: lock
 	@echo "🐳 --- Starting local API server with Docker Compose on http://localhost:8000 ---"
 	docker compose up --build
 
@@ -62,7 +63,7 @@ sync-s3:
 		exit 1; \
 	fi
 	@echo "📡 --- Syncing ./dist to S3 bucket: $(S3_BUCKET_NAME)... ---"
-	aws s3 sync ./dist s3://$(S3_BUCKET_NAME)/ --delete
+	aws s3 sync --profile $(AWS_PROFILE_NAME) ./dist s3://$(S3_BUCKET_NAME)/api/
 	@echo "✅ --- Sync to S3 complete. ---"
 
 
