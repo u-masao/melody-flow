@@ -125,8 +125,8 @@ check_commit:
 .PHONY: lint
 lint:
 	@echo "💅 --- Formatting and linting code... ---"
-	uv run ruff format src tests
-	uv run ruff check --fix src tests
+	uv run ruff format src tests/*.py
+	uv run ruff check --fix src tests/*.py
 
 ## ✅ テストの実行
 .PHONY: test
