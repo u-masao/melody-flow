@@ -1,0 +1,36 @@
+# NVIDIA公式のCUDA開発環境イメージをベースにする
+FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu24.04
+
+# 作業ディレクトリを設定
+WORKDIR /app
+
+# Pythonが/appディレクトリ内のモジュールを見つけられるようにパスを追加
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+
+# ビルド引数としてAPP_ENVを受け取り、環境変数として設定
+ARG APP_ENV=development
+ENV APP_ENV=${APP_ENV}
+
+# aptの対話を無効化し、必要なツールをインストール
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y python3.12 python3-pip git curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# uvを公式インストーラーでインストール
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# 依存関係ファイルのみを先にコピーしてキャッシュを有効活用
+COPY uv.lock pyproject.toml ./
+
+# uv でパッケージをインストール
+RUN /root/.local/bin/uv sync --locked
+
+# プロジェクトのソースコードと関連ファイルをコピー
+COPY src ./src
+COPY static/app.html ./static/app.html
+COPY models ./models
+
+# コンテナ実行時にPythonモジュールとして直接スクリプトを実行
+CMD ["uv", "run", "python", "-m", "src.warmup.generate_static_cache"]
