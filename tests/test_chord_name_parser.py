@@ -1,5 +1,6 @@
 import pytest
-from src.chord_name_parser import parse_chord_name
+
+from src.model.chord_name_parser import parse_chord_name
 
 
 # --- 正常系のテストケース ---
@@ -21,9 +22,7 @@ from src.chord_name_parser import parse_chord_name
         (" F # dim ", 6, [0, 3, 6], 1),
     ],
 )
-def test_parse_chord_name_valid(
-    chord_name, expected_root, expected_tones, expected_scales_count
-):
+def test_parse_chord_name_valid(chord_name, expected_root, expected_tones, expected_scales_count):
     """
     正常なコードネームが正しく解析されることをテストする
     """
