@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 statusArea.textContent = 'キャッシュされたフレーズを読み込んでいます...';
                 const progHash = md5(chordProgression);
-                requestUrl = `${CLOUDFRONT_ENDPOINT}/${progHash}/${style}/${variationNumber}.json`;
+                requestUrl = `${CLOUDFRONT_ENDPOINT}/api/${progHash}/${style}/${variationNumber}.json`;
                 
                 const response = await fetch(requestUrl);
                 if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
