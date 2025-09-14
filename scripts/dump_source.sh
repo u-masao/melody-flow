@@ -17,9 +17,13 @@ static/index.html
 static/presentation.html
 static/app.html
 static/main.js
-docker-compose.yaml
 pyproject.toml
 Makefile
+docker-compose.yaml
+Dockerfile
+nginx/nginx_https.conf
+nginx/nginx_http_only.conf
+nginx/nginx.conf
 )
 
 for ((i=0; i<${#FILES[@]}; i++))
