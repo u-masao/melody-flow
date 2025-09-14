@@ -1,50 +1,54 @@
 [project]
 name = "melody-flow"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
+description = "AI Music Co-creation Tool"
+authors = [
+    { name = "Your Name", email = "you@example.com" },
+]
+requires-python = ">=3.10"
+
 dependencies = [
-    "datasets>=4.0.0",
-    "fastapi>=0.116.1",
-    "gradio>=5.44.1",
-    "loguru>=0.7.3",
-    "mlflow>=3.3.2",
-    "symusic>=0.5.8",
-    "torch>=2.8.0",
-    "transformers>=4.55.4",
-    "trl<0.19.1",
-    "typed-argument-parser>=1.10.1",
-    "unsloth>=2025.7.2",
-    "uvicorn>=0.35.0",
+    "unsloth @ git+https://github.com/unslothai/unsloth.git",
+    "unsloth_zoo",
+    "torch>=2.3.0",
+    "transformers>=4.41.0",
+    "accelerate>=0.30.0",
+    "bitsandbytes>=0.43.0",
+    "loguru>=0.7.2",
     "beautifulsoup4>=4.12.3",
+    "lxml>=5.2.2",
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "python-multipart>=0.0.9",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "dvc[dev,gdrive]>=3.62.0",
-    "pytest>=8.4.1",
-    "ruff>=0.12.11",
-]
+[project.scripts]
+generate-cache = "src.warmup.generate_static_cache:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 99
-src = ["llm_classification"]
+src = ["src"]
 include = ["pyproject.toml", "src/**/*.py"]
 exclude = []
 
 [tool.ruff.lint]
-# flake8の主要なルールと一般的なプラグインのルールを選択
-# F: Pyflakes, E/W: pycodestyle, I: isort, B: flake8-bugbear, C4: flake8-comprehensions など
 select = ["A", "B", "C4", "E", "F", "I", "SIM", "UP", "W"]
 
 [tool.ruff.lint.isort]
-known-first-party = []
+known-first-party = ["src"]
 force-sort-within-sections = true
 
-# black互換のフォーマッタを有効化
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]

@@ -1,16 +1,17 @@
 services:
-  # FastAPI アプリケーション
+  # FastAPI アプリケーション (AIモデル実行)
   api:
-    build: .
-    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile # ルートにあるAPIサーバー用のDockerfile
+    restart: unless-stopped
     environment:
       - MODEL_NAME=/app/models/llama-midi.pth/
     volumes:
+      - ./src:/app/src # ソースコードの変更を即時反映
       - ./models:/app/models:ro # モデルをRead-Onlyでマウント
     expose:
-      - "8000" # コンテナ間の通信用にポートを公開
-    logging:
-      driver: "journald"
+      - "8000" # コンテナ間通信用
     deploy:
       resources:
         reservations:
@@ -19,33 +20,18 @@ services:
               count: 1
               capabilities: [gpu]
 
-  # Nginx リバースプロキシ
+  # Nginx リバースプロキシ (キャッシュ機能付き)
   nginx:
     image: nginx:1.27-alpine
-    restart: always
+    restart: unless-stopped
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf # Nginx設定ファイルをマウント
-      - certbot_www:/var/www/certbot # Certbotとの共有ボリューム
-      - certbot_conf:/etc/letsencrypt # SSL証明書の永続化用
+      # SSL関連を削除し、HTTPキャッシュ用の設定をマウント
+      - ./nginx/nginx_http_cache.conf:/etc/nginx/conf.d/default.conf:ro
       - nginx_cache_data:/var/cache/nginx # Nginxキャッシュの永続化用
     ports:
-      - "80:80"
-      - "443:443"
-    logging:
-      driver: "journald"
+      - "8000:80" # ホストの8000番ポートをNginxの80番ポートに接続
     depends_on:
       - api
 
-  # Certbot (SSL証明書取得用)
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_conf:/etc/letsencrypt
-    logging:
-      driver: "journald"
-
 volumes:
-  certbot_www:
-  certbot_conf:
   nginx_cache_data:

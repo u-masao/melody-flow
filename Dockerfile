@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 COPY uv.lock .
 COPY pyproject.toml .
 RUN pip install uv
-RUN uv sync
+RUN uv sync --locked
 
 COPY ./src /app/src
 COPY ./models /app/models
@@ -17,4 +17,4 @@ COPY ./static /app/static
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/src"]
