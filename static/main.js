@@ -1,35 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
-
-    const getApiEndpoint = () => {
-        const hostname = window.location.hostname;
-        if (hostname === "localhost" || hostname === "127.0.0.1") {
-            return "http://localhost:7860/generate";
-        }
-        //
-        // 本番環境のバックエンドURLに適宜変更してください
-        return "https://api.melody-flow.click/generate";
-    };
-    const API_ENDPOINT = getApiEndpoint();
-
+    
+    const PRODUCTION_HOSTNAME = "melody-flow.click";
+    const CLOUDFRONT_ENDPOINT = "https://your-cloudfront-url.net";
+    const LOCAL_API_ENDPOINT = "http://localhost:8000";
+    const IS_LOCALHOST = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
     class Chord {
         static NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         static NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-
         static INTERVALS = {
             '': [0, 4, 7], 'M7': [0, 4, 7, 11], '7': [0, 4, 7, 10], 'm': [0, 3, 7],
             'm7': [0, 3, 7, 10], 'mM7': [0, 3, 7, 11], 'm7b5': [0, 3, 6, 10],
             'dim': [0, 3, 6], 'dim7': [0, 3, 6, 9], 'aug': [0, 4, 8], 'sus4': [0, 5, 7],
-            '7b9': [0, 4, 7, 10] // For voicing, b9 is usually a tension
+            '7b9': [0, 4, 7, 10]
         };
-
         static midiToNoteName(midi, useFlats = false) {
             const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
             const octave = Math.floor(midi / 12) - 1;
             const noteIndex = midi % 12;
             return notes[noteIndex] + octave;
         }
-
         static getVoicing(chordName) {
             let rootStr, quality;
             if (chordName.length > 1 && (chordName[1] === '#' || chordName[1] === 'b')) {
@@ -37,23 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 rootStr = chordName.substring(0, 1); quality = chordName.substring(1);
             }
-             // Handle simple aliases
             if (quality.toLowerCase() === 'maj7') quality = 'M7';
             if (quality.toLowerCase() === 'min7') quality = 'm7';
-
+            if (quality.includes('(')) {
+                quality = quality.substring(0, quality.indexOf('('));
+            }
             const useFlats = rootStr.includes('b');
             const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
             let rootMidi = notes.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
-             if (rootMidi === -1) { // Fallback for sharp/flat names
-                 const sharpIndex = this.NOTES.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
-                 const flatIndex = this.NOTES_FLAT.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
-                 rootMidi = sharpIndex !== -1 ? sharpIndex : flatIndex;
+            if (rootMidi === -1) {
+                const sharpIndex = this.NOTES.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+                const flatIndex = this.NOTES_FLAT.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));
+                rootMidi = sharpIndex !== -1 ? sharpIndex : flatIndex;
             }
-
             if (rootMidi === -1) return [];
-
-            rootMidi += 48; // Base octave
-            const intervals = this.INTERVALS[quality] || this.INTERVALS['']; // Default to major triad
+            rootMidi += 48;
+            const intervals = this.INTERVALS[quality] || this.INTERVALS[''];
             if (!intervals) return [];
             return intervals.map(interval => this.midiToNoteName(rootMidi + interval, useFlats));
         }
@@ -90,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
     pianoSynth.volume.value = -12;
     const notificationSynth = new Tone.PolySynth(Tone.Synth).toDestination();
     notificationSynth.volume.value = -12;
-
 
     const BEATS_PER_MEASURE = 4;
     const TICKS_PER_BEAT = Tone.Transport.PPQ;
@@ -137,26 +125,56 @@ document.addEventListener('DOMContentLoaded', () => {
     async function generatePhrases() {
         await ensureAudioContext();
         generateButton.disabled = true; playStopButton.disabled = true;
-        generateButton.textContent = 'フレーズ生成中...';
-        statusArea.textContent = 'AI がメロディを考えています...(about 30 sec...)';
+        
         stopPlayback();
         pianoRollContent.innerHTML = ''; pianoRollContent.appendChild(playhead);
-
         generateButton.classList.add('animate-pulse');
-        beatIndicators.forEach((indicator, index) => {
-            indicator.style.animationDelay = `${index * 120}ms`;
-            indicator.classList.add('generating');
-        });
 
         try {
-            const response = await fetch(API_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chord_progression: chordSelect.value, style: styleSelect.value }),
-            });
-            if (!response.ok) throw new Error(`HTTP Error: ${response.status} - ${await response.text()}`);
+            const chordProgression = chordSelect.value;
+            const style = styleSelect.value;
+            const isProductionEnv = (window.location.hostname === PRODUCTION_HOSTNAME);
+            const variations = isProductionEnv ? 5 : 2;
 
-            const data = await response.json();
+            let variationNumber;
+            
+            if (IS_LOCALHOST) {
+                const combinedString = chordProgression + style;
+                let charCodeSum = 0;
+                for (let i = 0; i < combinedString.length; i++) {
+                    charCodeSum += combinedString.charCodeAt(i);
+                }
+                variationNumber = (charCodeSum % variations) + 1;
+            } else {
+                variationNumber = Math.floor(Math.random() * variations) + 1;
+            }
+
+            let requestUrl;
+            let data;
+
+            if (IS_LOCALHOST) {
+                statusArea.textContent = 'ローカルサーバーでフレーズを生成中...';
+                const params = new URLSearchParams({
+                    chord_progression: chordProgression,
+                    style: style,
+                    variation: variationNumber
+                });
+                requestUrl = `${LOCAL_API_ENDPOINT}/generate?${params.toString()}`;
+                
+                const response = await fetch(requestUrl);
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                data = await response.json();
+
+            } else {
+                statusArea.textContent = 'キャッシュされたフレーズを読み込んでいます...';
+                const progHash = md5(chordProgression);
+                requestUrl = `${CLOUDFRONT_ENDPOINT}/${progHash}/${style}/${variationNumber}.json`;
+                
+                const response = await fetch(requestUrl);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                data = await response.json();
+            }
+
             progression = Object.keys(data.chord_melodies);
             chordMelodies = {};
             for (const chord in data.chord_melodies) {
@@ -168,26 +186,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { pitch, duration, wait, velocity, startTime: accumulatedWait - wait };
                 }).filter(note => !isNaN(note.pitch));
             }
-
-            // Play a success sound
-            notificationSynth.triggerAttackRelease(["C4", "E5"], "8n", Tone.now());
-
-            updateProgressionDisplay(); drawTimingIndicators();
+            
+            notificationSynth.triggerAttackRelease(["C5", "G5"], "8n", Tone.now());
+            updateProgressionDisplay();
+            drawTimingIndicators();
             playStopButton.disabled = false;
-            statusArea.textContent = 'フレーズの準備ができました。さあ、MIDIデバイスや数字キー、スペースキーでセッションの始まりです！';
+            statusArea.textContent = 'フレーズの準備ができました！';
+
         } catch (error) {
-            console.error('フレーズ生成に失敗:', error.message);
+            console.error('フレーズの準備に失敗:', error.message);
             statusArea.textContent = `エラー: ${error.message}`;
-            // Play an error sound
-            notificationSynth.triggerAttackRelease(["C4", "Eb4", "Gb4"], "8n", Tone.now());
+            notificationSynth.triggerAttackRelease(["C4", "Eb4"], "8n", Tone.now());
         } finally {
             generateButton.disabled = false;
-            generateButton.textContent = '1. フレーズをAIに生成させる';
+            generateButton.textContent = '1. フレーズを準備する';
             generateButton.classList.remove('animate-pulse');
-            beatIndicators.forEach(indicator => {
-                indicator.classList.remove('generating');
-                indicator.style.animationDelay = '';
-            });
         }
     }
 
@@ -229,8 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function scheduleBackingTrack() {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
-        const shuffleDuration = Tone.Time('8t').toSeconds() * 2; // 8分3連符2つ分の長さ
-
+        const shuffleDuration = Tone.Time('8t').toSeconds() * 2;
         const events = progression.flatMap((chord, measureIndex) => {
             const chordName = chord.split('_')[0];
             const notes = Chord.getVoicing(chordName);
@@ -311,14 +323,12 @@ document.addEventListener('DOMContentLoaded', () => {
         pianoRollContent.querySelectorAll('.timing-indicator').forEach(ind => ind.remove());
         const totalMeasures = progression.length;
         if (totalMeasures <= 1) return;
-
-        // 小節の頭にだけ線を描画
         for (let i = 1; i < totalMeasures; i++) {
             const indicator = document.createElement('div');
             indicator.className = 'timing-indicator';
             indicator.style.left = `${(i / totalMeasures) * 100}%`;
             indicator.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-            indicator.style.width = '2px'; // 小節線を少し目立たせる
+            indicator.style.width = '2px';
             pianoRollContent.appendChild(indicator);
         }
     }
@@ -350,7 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupKeyboardListener() {
         const isPlayKey = (e) => e.code === 'Space' || e.code.startsWith('Digit') || e.code.startsWith('Numpad');
-
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e) || activeKeys.has(e.code)) return;
             e.preventDefault();
@@ -359,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 playNextLeadNote();
             }
         });
-
         document.addEventListener('keyup', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e)) return;
             activeKeys.delete(e.code);

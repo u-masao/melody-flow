@@ -1,41 +1,89 @@
-##############################################################################
-# Globals
-##############################################################################
+# ==============================================================================
+# 変数
+# ==============================================================================
 
-PORT=7860
-
-##############################################################################
-# servers
-##############################################################################
-
-# export MODEL_NAME:=dx2102/llama-midi
-export MODEL_NAME:=models/llama-midi.pth/
-
-## run ui and api
-ui:
-api:
-	uv run uvicorn src.api.main:app --reload --host 0.0.0.0 --port $(PORT)
-
-## test api
-test_api:
-	time curl -X POST "http://localhost:$(PORT)/generate" -H "Content-Type: application/json" -d '{"chord_progression": "C - G - Am - F", "style": "POP風"}'
+S3_BUCKET_NAME := "melody-flow.click"
+DOCKER_IMAGE_PROD := "melody-flow-generator:prod"
+DOCKER_IMAGE_DEV := "melody-flow-generator:dev"
+MODEL_NAME := models/llama-midi.pth/
 
 
-##############################################################################
-# finetuning
-##############################################################################
+# ==============================================================================
+# 開発 & デプロイ ワークフロー
+# ==============================================================================
 
-## run training pipeline
+## 🚀 本番環境向けデプロイ (5 variations)
+.PHONY: deploy-production
+deploy-production:
+	@echo "🚀 --- Starting PRODUCTION deployment --- 🚀"
+	@$(MAKE) generate-cache-prod
+	@$(MAKE) sync-s3
+	@echo "✅ --- PRODUCTION deployment finished! --- ✅"
+
+## 🛠️ 開発環境向けデプロイ (2 variations)
+.PHONY: deploy-development
+deploy-development:
+	@echo "🛠️ --- Starting DEVELOPMENT deployment --- 🛠️"
+	@$(MAKE) generate-cache-dev
+	@$(MAKE) sync-s3
+	@echo "✅ --- DEVELOPMENT deployment finished! --- ✅"
+
+## 🔒 pyproject.tomlからuv.lockを再生成する
+.PHONY: lock
+lock:
+	@echo "🔒 Locking dependencies with --all-extras..."
+	uv pip compile --all-extras pyproject.toml -o uv.lock
+	@echo "✅ uv.lock has been updated."
+
+## 💻 ローカル開発サーバーの起動 (uv)
+.PHONY: dev-server
+dev-server:
+	@echo "🔥 --- Starting local API server on http://localhost:8000 ---"
+	@uv run run-api
+
+## 🐳 ローカル開発サーバーの起動 (Docker + Nginxキャッシュ)
+.PHONY: dev-server-docker
+dev-server-docker:
+	@echo "🐳 --- Starting local API server with Docker Compose on http://localhost:8000 ---"
+	docker compose up --build
+
+# --- ヘルパーターゲット (デプロイ) ---
+
+.PHONY: generate-cache-prod generate-cache-dev sync-s3
+
+generate-cache-prod:
+	@echo "🏭 Building PRODUCTION Docker image..."
+	docker build --build-arg APP_ENV=production -t $(DOCKER_IMAGE_PROD) -f Dockerfile.generate .
+	@echo "🔥 Running PRODUCTION cache generation (5 variations)..."
+	docker run --gpus all --rm -v ./dist:/app/dist $(DOCKER_IMAGE_PROD)
+
+generate-cache-dev:
+	@echo "🏭 Building DEVELOPMENT Docker image..."
+	docker build --build-arg APP_ENV=development -t $(DOCKER_IMAGE_DEV) -f Dockerfile.generate .
+	@echo "🔥 Running DEVELOPMENT cache generation (2 variations)..."
+	docker run --gpus all --rm -v ./dist:/app/dist $(DOCKER_IMAGE_DEV)
+
+sync-s3:
+	@if [ ! -d "./dist" ]; then \
+		echo "❌ Error: ./dist directory not found. Run 'make deploy-...' first."; \
+		exit 1; \
+	fi
+	@echo "📡 --- Syncing ./dist to S3 bucket: $(S3_BUCKET_NAME)... ---"
+	aws s3 sync ./dist s3://$(S3_BUCKET_NAME)/ --delete
+	@echo "✅ --- Sync to S3 complete. ---"
+
+
+# ==============================================================================
+# モデル学習 & DVC
+# ==============================================================================
+
+## 🔄 DVCパイプラインの再実行
+.PHONY: repro
 repro: check_commit PIPELINE.md
 	uv run dvc repro
 	git commit dvc.lock -m 'run dvc repro' || true
 
-## check commieted
-check_commit:
-	git diff --exit-code
-	git diff --exit-code --staged
-
-## write pipeline snapshot
+## 📝 パイプラインスナップショットの更新
 PIPELINE.md: dvc.yaml params.yaml
 	echo '# pipeline' > $@
 	echo '' >> $@
@@ -48,87 +96,40 @@ PIPELINE.md: dvc.yaml params.yaml
 	uv run dvc dag --md --outs >> $@
 	git commit $@ -m 'update pipeline' || true
 
-
-## inference
-inference:
-	uv run python -m src.model.inference models/llama-midi.pth/ \
-    '{"chord_progression": "Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7"}'
-
-## inference
-inference-llama32:
-	uv run python -m src.model.inference models/llama-3.2-1b.pth/ \
-    '{"chord_progression": "Bb6 G7 C-7 F7 Bb G-7 F-7 Bb7 Eb7 Ab7 D-7 D7 C7"}'
+## 🧐 Gitのワーキングディレクトリがクリーンかチェック
+.PHONY: check_commit
+check_commit:
+	git diff --exit-code
+	git diff --exit-code --staged
 
 
-##############################################################################
-# tools 
-##############################################################################
+# ==============================================================================
+# コード品質 & テスト
+# ==============================================================================
 
-## code formatting
+## 💅 コードのフォーマットとLintチェック
+.PHONY: lint
 lint:
-	uv run ruff check --fix src tests
+	@echo "💅 --- Formatting and linting code... ---"
 	uv run ruff format src tests
+	uv run ruff check --fix src tests
 
-## test
+## ✅ テストの実行
+.PHONY: test
 test:
+	@echo "✅ --- Running tests... ---"
 	uv run pytest tests
 
-## generate requirements.txt
-requirements.txt:
-	uv pip compile pyproject.toml -o requirements.txt --generate-hashes
 
+# ==============================================================================
+# その他
+# ==============================================================================
 
-##############################################################################
-# Cache Management for LLM API (Phase 1)
-##############################################################################
-
-# --- Variables ---
-# docker-compose.yamlで定義したボリューム名を直接指定
-CACHE_VOLUME_NAME := nginx_cache_data
-EXPORT_FILE := nginx_cache.tar.gz
-REMOTE_HOST := ec2-user@api.melody-flow.click
-REMOTE_PATH := /tmp/nginx_cache_import/
-
-# --- Targets ---
-.PHONY: warmup cache-export cache-copy cache-import cache-all
-
-cache-all: warmup cache-export cache-copy cache-import
-	@echo "All cache management tasks completed."
-
-generate-warmup-data:
-	# @echo "Installing dependencies from pyproject.toml..."
-	# @uv pip sync pyproject.toml
-	@echo "Generating data for cache warmup..."
-	@uv run python -m src.warmup.generate_warmup_data
-
-warmup: generate-warmup-data
-	@echo "Warming up Nginx cache..."
-	@./scripts/warmup.sh
-	@echo "Cache warmup complete."
-
-cache-export:
-	@echo "Exporting cache data from volume [$(CACHE_VOLUME_NAME)] to [$(EXPORT_FILE)]..."
-	@docker run --rm \
-		-v $(CACHE_VOLUME_NAME):/cache_data \
-		-v $(CURDIR):/backup \
-		alpine tar czf /backup/$(EXPORT_FILE) -C /cache_data .
-	@echo "Cache data exported successfully."
-
-cache-copy:
-	@echo "Copying [$(EXPORT_FILE)] to [$(REMOTE_HOST)]..."
-	@scp $(EXPORT_FILE) $(REMOTE_HOST):/tmp/
-	@echo "File copied successfully."
-
-cache-import:
-	@echo "Importing cache data on remote machine..."
-	@ssh $(REMOTE_HOST) ' \
-		mkdir -p $(REMOTE_PATH) && \
-		tar xzf /tmp/$(EXPORT_FILE) -C $(REMOTE_PATH) && \
-		docker volume create $(CACHE_VOLUME_NAME) && \
-		docker run --rm \
-			-v $(CACHE_VOLUME_NAME):/new_cache \
-			-v $(REMOTE_PATH):/backup \
-			alpine sh -c "cp -a /backup/. /new_cache/" && \
-		rm -rf /tmp/$(EXPORT_FILE) $(REMOTE_PATH) && \
-		echo "Remote cache import complete." \
-	'
+## 🧹 生成物のクリーンアップ
+.PHONY: clean
+clean:
+	@echo "🧹 --- Cleaning up generated files and Docker images... ---"
+	rm -rf ./dist
+	@docker image rm $(DOCKER_IMAGE_PROD) || true
+	@docker image rm $(DOCKER_IMAGE_DEV) || true
+	@echo "✅ --- Cleanup complete. ---"
