@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     const PRODUCTION_HOSTNAME = "melody-flow.click";
     const CLOUDFRONT_ENDPOINT = "https://melody-flow.click";
     const LOCAL_API_ENDPOINT = "http://localhost:8000";
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function generatePhrases() {
         await ensureAudioContext();
         generateButton.disabled = true; playStopButton.disabled = true;
-        
+
         stopPlayback();
         pianoRollContent.innerHTML = ''; pianoRollContent.appendChild(playhead);
         generateButton.classList.add('animate-pulse');
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const variations = isProductionEnv ? 5 : 2;
 
             let variationNumber;
-            
+
             if (IS_LOCALHOST) {
                 const combinedString = chordProgression + style;
                 let charCodeSum = 0;
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     variation: variationNumber
                 });
                 requestUrl = `${LOCAL_API_ENDPOINT}/generate?${params.toString()}`;
-                
+
                 const response = await fetch(requestUrl);
                 if (!response.ok) throw new Error(`API Error: ${response.status}`);
                 data = await response.json();
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusArea.textContent = 'キャッシュされたフレーズを読み込んでいます...';
                 const progHash = md5(chordProgression);
                 requestUrl = `${CLOUDFRONT_ENDPOINT}/api/${progHash}/${style}/${variationNumber}.json`;
-                
+
                 const response = await fetch(requestUrl);
                 if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
                 data = await response.json();
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { pitch, duration, wait, velocity, startTime: accumulatedWait - wait };
                 }).filter(note => !isNaN(note.pitch));
             }
-            
+
             notificationSynth.triggerAttackRelease(["C5", "G5"], "8n", Tone.now());
             updateProgressionDisplay();
             drawTimingIndicators();
@@ -360,19 +360,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupKeyboardListener() {
         const isPlayKey = (e) => e.code === 'Space' || e.code.startsWith('Digit') || e.code.startsWith('Numpad');
+        
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e) || activeKeys.has(e.code)) return;
             e.preventDefault();
             activeKeys.add(e.code);
+            
+            // 変更点: playNextLeadNote()を直接呼ばず、MIDIと同じ関数を呼ぶ
             if (activeKeys.size === 1) {
-                playNextLeadNote();
+                handleMidiNoteOn();
             }
         });
+    
         document.addEventListener('keyup', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e)) return;
             activeKeys.delete(e.code);
+    
+            // 変更点: stopCurrentLeadNote()を直接呼ばず、MIDIと同じ関数を呼ぶ
             if (activeKeys.size === 0) {
-                stopCurrentLeadNote();
+                handleMidiNoteOff();
             }
         });
     }
@@ -380,8 +386,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleMidiNoteOn(velocity = 0.75) {
         if (++midiKeyDownCount === 1) playNextLeadNote(velocity);
     }
+
     function handleMidiNoteOff() {
         if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) stopCurrentLeadNote();
+    }
+
+    /**
+     * チャンネルアフタータッチを処理し、シンセのフィルター周波数と音量を変更します。
+     * @param {number} value アフタータッチの値 (0から1)
+     */
+    function handleMidiChannelAftertouch(value) {
+        // いずれかのキーが押されていることを確認
+        if (midiKeyDownCount > 0 && leadSynth) {
+            const now = Tone.now();
+            const timeConstant = 0.02; // 変化の速さ（小さいほど速い）
+
+            // 1. 音色（フィルター周波数）の制御
+            const baseFrequency = 1200;
+            const maxFrequency = 5000;
+            const newFrequency = baseFrequency + (maxFrequency - baseFrequency) * value;
+            // 変更点: rampTo -> setTargetAtTime
+            leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
+
+            // 2. 音量 (Volume) の制御
+            const minVolume = -12; // [dB]
+            const maxVolume = -2;  // [dB]
+            const newVolume = minVolume + (maxVolume - minVolume) * value;
+            // 変更点: rampTo -> setTargetAtTime
+            leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
+        }
     }
 
     async function setupMidi() {
@@ -393,6 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusArea.textContent = `MIDI In: ${midiInput.name}`;
                 midiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
                 midiInput.on("noteoff", e => handleMidiNoteOff());
+                // チャンネルアフタータッチイベントのリスナーを追加
+                midiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
             } else {
                 statusArea.textContent = 'MIDIデバイス未接続。PCのスペースキーや数字キーで演奏できます。';
             }
