@@ -48,13 +48,13 @@ generate-cache-prod:
 	@echo "🏭 Building PRODUCTION Docker image..."
 	docker build --build-arg APP_ENV=production -t $(DOCKER_IMAGE_PROD) -f Dockerfile.generate .
 	@echo "🔥 Running PRODUCTION cache generation (5 variations)..."
-	docker run --gpus all --rm -v ./dist:/app/dist $(DOCKER_IMAGE_PROD)
+	docker run --gpus all --rm -u "$(id -u):$(id -g)" -v ./dist:/app/dist $(DOCKER_IMAGE_PROD)
 
 generate-cache-dev:
 	@echo "🏭 Building DEVELOPMENT Docker image..."
 	docker build --build-arg APP_ENV=development -t $(DOCKER_IMAGE_DEV) -f Dockerfile.generate .
 	@echo "🔥 Running DEVELOPMENT cache generation (2 variations)..."
-	docker run --gpus all --rm -v ./dist:/app/dist $(DOCKER_IMAGE_DEV)
+	docker run --gpus all --rm -u "$(id -u):$(id -g)" -v ./dist:/app/dist $(DOCKER_IMAGE_DEV)
 
 sync-s3:
 	@if [ ! -d "./dist" ]; then \
