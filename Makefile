@@ -82,7 +82,7 @@ setup:
 .PHONY: lock
 lock:
 	@echo "🔒 Locking dependencies with --all-extras..."
-	uv pip compile --all-extras pyproject.toml -o uv.lock
+	uv lock
 	@echo "✅ uv.lock has been updated."
 
 
