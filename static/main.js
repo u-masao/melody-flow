@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 rootStr = chordName.substring(0, 1); quality = chordName.substring(1);
             }
-            if (quality.toLowerCase() === 'maj7') quality = 'M7';
-            if (quality.toLowerCase() === 'min7') quality = 'm7';
             if (quality.includes('(')) {
                 quality = quality.substring(0, quality.indexOf('('));
             }
+            if (quality.toLowerCase() === 'maj7') quality = 'M7';
+            if (quality.toLowerCase() === 'min7') quality = 'm7';
             const useFlats = rootStr.includes('b');
             const notes = useFlats ? this.NOTES_FLAT : this.NOTES;
             let rootMidi = notes.indexOf(rootStr.charAt(0).toUpperCase() + rootStr.slice(1));

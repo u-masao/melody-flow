@@ -68,13 +68,16 @@ def process_melid(melid: int, con: sqlite3.Connection) -> str | None:
     )
 
     # 2. プロンプト構築
-    # 'chord'カラムの非None値を連結する
+    # 'chord'カラムの非None値を連結し、プロンプトのコード部分を作成
+    prompt_chords_part = ""
     if not chords_df.empty:
         valid_chords = chords_df["chord"].dropna().unique()
-        prompt_chords = " ".join(valid_chords)
-    else:
-        prompt_chords = ""
-    prompt = f"Title: {title} Chords: {prompt_chords}".strip()
+        # 有効なコードが1つ以上ある場合のみ "Chords: " を追加
+        if len(valid_chords) > 0:
+            prompt_chords = " ".join(valid_chords)
+            prompt_chords_part = f" Chords: {prompt_chords}"
+
+    prompt = f"Title: {title}{prompt_chords_part}".strip()
 
     # 3. メロディデータ構築
     if melody_df.empty:

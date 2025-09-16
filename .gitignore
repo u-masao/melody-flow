@@ -11,3 +11,7 @@ __pycache__
 build/
 /logs/
 /dist/
+
+# node
+/node_modules/
+package-lock.json

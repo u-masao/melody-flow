@@ -4,8 +4,16 @@ import sys
 from loguru import logger
 from tap import Tap
 import torch
+
+# Unsloth must be imported before transformers
+try:
+    from unsloth import FastLanguageModel
+except NotImplementedError:
+    # Handle environments without GPU for testing purposes
+    # The tests will mock this class anyway.
+    FastLanguageModel = object
+
 import transformers
-from unsloth import FastLanguageModel
 
 from .melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
@@ -68,48 +76,96 @@ class MidiGenerator:
         logger.remove()
         logger.add(sys.stdout, level="INFO")
 
-    def generate(self, prompt: str, **kwargs) -> str:
+    def _format_prompt(self, prompt: str) -> str:
         """
-        プロンプトに基づいてMIDIテキストを生成します。
+        推論に使用する形式にプロンプトを整形します。
 
         Args:
-            prompt (str): 生成の元となるプロンプト。
-            **kwargs: `transformers.pipeline`に渡す生成パラメータ。
+            prompt (str): ユーザーからの入力プロンプト。
 
         Returns:
-            str: 生成されたMIDIテキスト。
+            str: モデル入力用の整形済みプロンプト。
         """
-        # 学習データと同じ形式のプロンプトを作成
-        formatted_prompt = f"<s>[INST] {prompt} [/INST] pitch duration wait velocity instrument\n"
+        # [INST] タグで囲み、末尾に生成開始を促すテキストを追加する
+        return f"<s>[INST] {prompt} [/INST] pitch duration wait velocity instrument\n"
 
-        logger.info("推論を開始します...")
-        logger.info(f"Prompt: {prompt}")
+    def _parse_chord_progression(self, prompt: str) -> str | None:
+        """
+        プロンプト文字列（JSON形式を想定）からコード進行を抽出します。
 
-        # プロンプトからコード進行を抽出
+        Args:
+            prompt (str): ユーザーからの入力プロンプト。
+
+        Returns:
+            str | None: 抽出されたコード進行。抽出できない場合はNone。
+        """
         try:
-            # プロンプトは末尾に ' がつくことがあるので除去
+            # プロンプトは稀に末尾に ' がつくことがあるため除去
             prompt_json_str = prompt.strip().rstrip("'")
             prompt_data = json.loads(prompt_json_str)
-            chord_progression = prompt_data.get("chord_progression")
+            return prompt_data.get("chord_progression")
         except (json.JSONDecodeError, AttributeError):
-            logger.warning(
-                "プロンプトからコード進行を抽出できませんでした。制約なしで生成します。"
-            )
-            chord_progression = None
+            logger.warning("プロンプトからコード進行を抽出できませんでした。制約なしで生成します。")
+            return None
 
-        # LogitsProcessorを準備
-        processors = []
+    def _prepare_logits_processors(self, chord_progression: str | None) -> list:
+        """
+        コード進行に基づいてLogitsProcessorのリストを準備します。
+
+        Args:
+            chord_progression (str | None): コード進行。Noneの場合は空リストを返します。
+
+        Returns:
+            list: 生成に使用するLogitsProcessorのリスト。
+        """
         if chord_progression:
             logger.info(f"コード進行 '{chord_progression}' に基づいてメロディを制約します。")
             note_tokenizer = NoteTokenizer(self.tokenizer)
             logits_processor = MelodyControlLogitsProcessor(
                 chord_progression=chord_progression, note_tokenizer=note_tokenizer
             )
-            processors.append(logits_processor)
+            return [logits_processor]
         else:
             logger.info("コード進行が指定されていないため、制約なしで生成します。")
+            return []
 
-        # パイプラインを使用してテキストを生成
+    def _extract_result(self, generated_text: str) -> str:
+        """
+        モデルの出力から、生成されたMIDIテキスト部分のみを抽出します。
+
+        Args:
+            generated_text (str): モデルからの完全な出力テキスト。
+
+        Returns:
+            str: プロンプト部分を除去した、純粋な生成結果。
+        """
+        # [/INST] タグでプロンプトと生成部分を分割し、最後の要素を取得する
+        return generated_text.split("[/INST]")[-1].strip()
+
+    def generate(self, prompt: str, **kwargs) -> str:
+        """
+        プロンプトに基づいてMIDIテキストを生成するメインの関数。
+
+        Args:
+            prompt (str): 生成の元となるプロンプト。
+            **kwargs: `transformers.pipeline`に渡す追加の生成パラメータ。
+
+        Returns:
+            str: 生成されたMIDIテキスト。
+        """
+        logger.info("推論を開始します...")
+        logger.info(f"Prompt: {prompt}")
+
+        # ステップ1: プロンプトからコード進行を抽出する
+        chord_progression = self._parse_chord_progression(prompt)
+
+        # ステップ2: コード進行に基づき、メロディを制約するプロセッサを準備する
+        processors = self._prepare_logits_processors(chord_progression)
+
+        # ステップ3: プロンプトをモデルが期待する形式に整形する
+        formatted_prompt = self._format_prompt(prompt)
+
+        # ステップ4: 整形済みプロンプトとプロセッサを使い、パイプラインでテキストを生成する
         outputs = self.pipe(
             formatted_prompt,
             do_sample=True,
@@ -119,11 +175,8 @@ class MidiGenerator:
             **kwargs,
         )
 
-        generated_text = outputs[0]["generated_text"]
-
-        # プロンプト部分を除去し、生成された部分のみを抽出
-        result = generated_text.split("[/INST]")[-1].strip()
-
+        # ステップ5: パイプラインの出力から純粋な生成結果を抽出して返す
+        result = self._extract_result(outputs[0]["generated_text"])
         logger.success("推論が完了しました。")
         return result
 

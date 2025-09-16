@@ -1,5 +1,12 @@
 import sys
 
+# Unsloth must be imported before other ML libraries to apply optimizations
+try:
+    from unsloth import FastLanguageModel
+except NotImplementedError:
+    # Handle environments without GPU for testing purposes
+    FastLanguageModel = object
+
 from datasets import load_dataset
 from loguru import logger
 import mlflow
@@ -7,7 +14,6 @@ from tap import Tap
 import torch
 from transformers import TrainingArguments
 from trl import SFTTrainer
-from unsloth import FastLanguageModel
 
 
 class MidiFinetuningExperiment:

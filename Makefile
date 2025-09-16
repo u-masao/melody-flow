@@ -128,11 +128,22 @@ lint:
 	uv run ruff format src tests/*.py
 	uv run ruff check --fix src tests/*.py
 
-## ✅ テストの実行
+## ✅ テストの実行 (Python と JavaScript)
 .PHONY: test
-test:
-	@echo "✅ --- Running tests... ---"
-	uv run pytest tests
+test: test-py test-js
+
+## 🐍 Python テストの実行
+.PHONY: test-py
+test-py:
+	@echo "🐍 --- Running Python tests... ---"
+	@pyenv exec python -m pytest
+
+## 📜 JavaScript テストの実行 (Docker内)
+.PHONY: test-js
+test-js:
+	@echo "📜 --- Running JavaScript tests in Docker... ---"
+	@sudo docker build --target node-test -t melody-flow-js-test .
+	@echo "✅ --- JavaScript tests complete. ---"
 
 
 # ==============================================================================
