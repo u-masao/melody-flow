@@ -75,7 +75,13 @@
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
 
-    <div class="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-8 space-y-6">
+    <div class="relative w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-8 space-y-6">
+        <button id="settings-button" class="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
         <header class="text-center">
             <h1 class="text-4xl font-bold tracking-tight flex items-center justify-center gap-3">
                 <img src="/static/favicon.svg" alt="Melody Flow Logo" class="h-10 w-10">
@@ -163,7 +169,20 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold">設定</h2>
+                <button id="close-modal-button" class="text-gray-400 hover:text-white text-4xl leading-none">&times;</button>
+            </div>
+            <div>
+                <label for="midi-input-select" class="block text-sm font-medium text-gray-300 mb-2">MIDI入力デバイス</label>
+                <select id="midi-input-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option>利用可能なデバイスがありません</option>
+                </select>
+            </div>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-    <script src="/static/main.js?v=20"></script>
-</body>
+    <script src="/static/main.js?v=21"></script> </body>
 </html>
