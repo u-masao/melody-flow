@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- DOM Elements ---
     const chordSelect = document.getElementById('chord-progression');
     const styleSelect = document.getElementById('music-style');
     const generateButton = document.getElementById('generate-button');
@@ -64,7 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('beat-1'), document.getElementById('beat-2'),
         document.getElementById('beat-3'), document.getElementById('beat-4')
     ];
+    // ★★★ START: 新しいDOM要素 ★★★
+    const settingsButton = document.getElementById('settings-button');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeModalButton = document.getElementById('close-modal-button');
+    const midiInputSelect = document.getElementById('midi-input-select');
+    // ★★★ END: 新しいDOM要素 ★★★
 
+    // --- Synths ---
     const leadSynth = new Tone.MonoSynth({
         oscillator: { type: 'sawtooth' },
         envelope: { attack: 0.05, decay: 0.2, sustain: 0.7, release: 0.15 },
@@ -80,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationSynth = new Tone.PolySynth(Tone.Synth).toDestination();
     notificationSynth.volume.value = -12;
 
+    // --- State Variables ---
     const BEATS_PER_MEASURE = 4;
     const TICKS_PER_BEAT = Tone.Transport.PPQ;
     const TICKS_PER_MEASURE = TICKS_PER_BEAT * BEATS_PER_MEASURE;
@@ -87,22 +96,42 @@ document.addEventListener('DOMContentLoaded', () => {
     let isPlaying = false, animationFrameId = null, activeLeadNoteInfo = null;
     let midiKeyDownCount = 0, backingPart = null, beatLoop = null;
     let activeKeys = new Set();
+    let currentMidiInput = null; // ★★★ MIDI入力デバイスの状態を保持 ★★★
 
-    setupMidi();
-    setupKeyboardListener();
-    bpmSlider.addEventListener('input', (e) => {
-        bpmValue.textContent = e.target.value;
-        Tone.Transport.bpm.value = e.target.value;
-    });
-    bpmSlider.addEventListener('click', () => {
-        bpmSlider.blur();
-    });
-    generateButton.addEventListener('click', generatePhrases);
-    playStopButton.addEventListener('click', togglePlayback);
-    muteBackingTrackCheckbox.addEventListener('change', (e) => {
-        pianoSynth.volume.value = e.target.checked ? -Infinity : -12;
-        muteBackingTrackCheckbox.blur();
-    });
+    // --- Initial Setup ---
+    setupEventListeners();
+    setupMidi(); // ★★★ MIDI設定関数を呼び出し ★★★
+
+    function setupEventListeners() {
+        bpmSlider.addEventListener('input', (e) => {
+            bpmValue.textContent = e.target.value;
+            Tone.Transport.bpm.value = e.target.value;
+        });
+        bpmSlider.addEventListener('click', () => bpmSlider.blur());
+        generateButton.addEventListener('click', generatePhrases);
+        playStopButton.addEventListener('click', togglePlayback);
+        muteBackingTrackCheckbox.addEventListener('change', (e) => {
+            pianoSynth.volume.value = e.target.checked ? -Infinity : -12;
+            muteBackingTrackCheckbox.blur();
+        });
+        setupKeyboardListener();
+        
+        // ★★★ START: モーダル用のイベントリスナー ★★★
+        settingsButton.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.add('hidden');
+            }
+        });
+        // ★★★ END: モーダル用のイベントリスナー ★★★
+    }
 
     function startBeatAnimation() {
         if (beatLoop) beatLoop.stop(0).dispose();
@@ -360,26 +389,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupKeyboardListener() {
         const isPlayKey = (e) => e.code === 'Space' || e.code.startsWith('Digit') || e.code.startsWith('Numpad');
-        
+
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e) || activeKeys.has(e.code)) return;
             e.preventDefault();
             activeKeys.add(e.code);
-            
-            // 変更点: playNextLeadNote()を直接呼ばず、MIDIと同じ関数を呼ぶ
-            if (activeKeys.size === 1) {
-                handleMidiNoteOn();
-            }
+            if (activeKeys.size === 1) handleMidiNoteOn();
         });
-    
+
         document.addEventListener('keyup', (e) => {
             if (e.target.tagName !== 'BODY' || !isPlayKey(e)) return;
             activeKeys.delete(e.code);
-    
-            // 変更点: stopCurrentLeadNote()を直接呼ばず、MIDIと同じ関数を呼ぶ
-            if (activeKeys.size === 0) {
-                handleMidiNoteOff();
-            }
+            if (activeKeys.size === 0) handleMidiNoteOff();
         });
     }
 
@@ -391,51 +412,86 @@ document.addEventListener('DOMContentLoaded', () => {
         if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) stopCurrentLeadNote();
     }
 
-    /**
-     * チャンネルアフタータッチを処理し、シンセのフィルター周波数と音量を変更します。
-     * @param {number} value アフタータッチの値 (0から1)
-     */
     function handleMidiChannelAftertouch(value) {
-        // いずれかのキーが押されていることを確認
         if (midiKeyDownCount > 0 && leadSynth) {
             const now = Tone.now();
-            const timeConstant = 0.02; // 変化の速さ（小さいほど速い）
-
-            // 1. 音色（フィルター周波数）の制御
-            const baseFrequency = 1200;
-            const maxFrequency = 5000;
-            const newFrequency = baseFrequency + (maxFrequency - baseFrequency) * value;
-            // 変更点: rampTo -> setTargetAtTime
+            const timeConstant = 0.02;
+            const newFrequency = 1200 + (3800 * value);
             leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
-
-            // 2. 音量 (Volume) の制御
-            const minVolume = -12; // [dB]
-            const maxVolume = -2;  // [dB]
-            const newVolume = minVolume + (maxVolume - minVolume) * value;
-            // 変更点: rampTo -> setTargetAtTime
+            const newVolume = -12 + (10 * value);
             leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
         }
     }
 
+    // ★★★ START: MIDIデバイスのセットアップと管理（大幅修正） ★★★
+    function attachMidiListeners(inputId) {
+        if (currentMidiInput) {
+            currentMidiInput.removeListener("noteon");
+            currentMidiInput.removeListener("noteoff");
+            currentMidiInput.removeListener("channelaftertouch");
+        }
+
+        currentMidiInput = WebMidi.getInputById(inputId);
+
+        if (currentMidiInput) {
+            statusArea.textContent = `MIDI In: ${currentMidiInput.name}`;
+            currentMidiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
+            currentMidiInput.on("noteoff", e => handleMidiNoteOff());
+            currentMidiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
+        } else {
+             statusArea.textContent = 'MIDIデバイス未接続。スペースキー等で演奏できます。';
+        }
+    }
+
+    function populateMidiDeviceList() {
+        if (WebMidi.inputs.length > 0) {
+            const previouslySelectedId = midiInputSelect.value;
+            midiInputSelect.innerHTML = '';
+            WebMidi.inputs.forEach(input => {
+                const option = document.createElement('option');
+                option.value = input.id;
+                option.textContent = input.name;
+                midiInputSelect.appendChild(option);
+            });
+            // 以前選択されていたデバイスがあれば再選択する
+            const stillExists = WebMidi.inputs.some(input => input.id === previouslySelectedId);
+            if (stillExists) {
+                midiInputSelect.value = previouslySelectedId;
+            }
+            attachMidiListeners(midiInputSelect.value);
+        } else {
+            midiInputSelect.innerHTML = '<option>利用可能なデバイスがありません</option>';
+            if(currentMidiInput) {
+                attachMidiListeners(null); // Clear listeners
+            } else {
+                statusArea.textContent = 'MIDIデバイス未接続。スペースキー等で演奏できます。';
+            }
+        }
+    }
+
     async function setupMidi() {
-        if (typeof WebMidi === 'undefined' || !navigator.requestMIDIAccess) return;
+        if (typeof WebMidi === 'undefined' || !navigator.requestMIDIAccess) {
+            settingsButton.style.display = 'none';
+            return;
+        }
+
         try {
             await WebMidi.enable();
-            const midiInput = WebMidi.inputs[0];
-            if (midiInput) {
-                statusArea.textContent = `MIDI In: ${midiInput.name}`;
-                midiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
-                midiInput.on("noteoff", e => handleMidiNoteOff());
-                // チャンネルアフタータッチイベントのリスナーを追加
-                midiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
-            } else {
-                statusArea.textContent = 'MIDIデバイス未接続。PCのスペースキーや数字キーで演奏できます。';
-            }
+            populateMidiDeviceList();
+            
+            midiInputSelect.addEventListener('change', (e) => attachMidiListeners(e.target.value));
+
+            WebMidi.addListener("connected", () => populateMidiDeviceList());
+            WebMidi.addListener("disconnected", () => populateMidiDeviceList());
+
         } catch (err) {
             console.error("Could not enable MIDI:", err);
             statusArea.textContent = 'MIDIデバイスの有効化に失敗しました。';
+            midiInputSelect.innerHTML = '<option>MIDIの有効化に失敗</option>';
+            settingsButton.style.display = 'none';
         }
     }
+    // ★★★ END: MIDIデバイスのセットアップと管理 ★★★
 
     async function ensureAudioContext() {
         if (Tone.context.state !== 'running') await Tone.start();
