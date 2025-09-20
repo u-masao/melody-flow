@@ -133,7 +133,7 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
         if sequence.endswith("\n"):
             # 各ノートのスコアを出力
             # logger.info(self.note_tokenizer.get_pitch_scores(scores))
-            logger.info(sequence)
+            logger.debug(sequence)
 
             # トレンドを計算
             def calc_trend(sequence):
@@ -148,8 +148,8 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
                 if pitchs:
                     trend_pitch = int(sum(pitchs) / len(pitchs))
 
-                logger.info(f"{trend_pitch=}")
-                logger.info(f"{last_pitch=}")
+                logger.debug(f"{trend_pitch=}")
+                logger.debug(f"{last_pitch=}")
                 return trend_pitch, last_pitch
 
             # トレンドを取得
@@ -161,7 +161,7 @@ class MelodyControlLogitsProcessor(LogitsProcessor):
                 for pitch in range(trend_pitch - 5, trend_pitch + 5):
                     if pitch != last_pitch:
                         trend_ids_set.add(self.note_tokenizer.pitch_to_token_id(pitch))
-            logger.info(f"{trend_ids_set=}")
+            logger.debug(f"{trend_ids_set=}")
 
             # ピッチトークンを取得
             all_pitch_token_ids = set(self.note_tokenizer.pitch_to_token_id_cache.values())
