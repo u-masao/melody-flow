@@ -9,6 +9,7 @@ import re
 import sys
 
 from bs4 import BeautifulSoup
+from loguru import logger
 import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
