@@ -34,6 +34,7 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
+        /* --- Mode Switching --- */
         .studio-mode-item, .studio-mode-item-flex { display: none !important; }
         body.studio-mode .studio-mode-item { display: grid !important; }
         body.studio-mode .studio-mode-item-flex { display: flex !important; }
@@ -45,7 +46,6 @@
             100% { box-shadow: 0 0 0px 0px rgba(167, 139, 250, 0); }
         }
         .feedback-glow { animation: subtle-glow 0.5s ease-out; }
-
     </style>
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
@@ -57,7 +57,7 @@
                     <img src="/static/favicon.svg" alt="Melody Flow Logo" class="h-8 w-8">
                     <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Melody Flow</h1>
                 </div>
-                <p class="text-md font-bold">リズムで遊ぼう、<span class="gradient-text">AIとセッション。</span></p>
+                 <p class="text-md font-bold">リズムで遊ぼう、<span class="gradient-text">AIとセッション。</span></p>
             </div>
             <div class="flex items-center gap-4 z-20">
                 <button id="help-button" class="text-gray-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4-1.742 0-3.223-.835-3.772-2M12 18v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
@@ -104,15 +104,14 @@
                 <div class="bg-gray-900/50 p-4 rounded-lg">
                     <h3 class="font-bold text-lg text-gray-400 mb-2">STEP 2: AIにメロディを作ってもらう</h3>
                     <button id="generate-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md text-lg transition-all flex items-center justify-center gap-2">
-                        <svg id="generate-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.636-6.364l-.707-.707M17.657 17.657l.707.707M6.343 6.343l.707.707m12.728 0l-.707.707M6.343 17.657l.707-.707" /></svg>
                         <span>メロディを作る</span>
                     </button>
                 </div>
 
                 <div class="bg-gray-900/50 p-4 rounded-lg space-y-3">
                     <h3 class="font-bold text-lg text-gray-400">STEP 3: 演奏する</h3>
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="flex items-stretch justify-center gap-4 w-full">
+                     <div class="flex flex-col items-center gap-2">
+                         <div class="flex items-stretch justify-center gap-4 w-full">
                             <button id="play-stop-button" class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold w-16 h-16 flex-shrink-0 flex items-center justify-center rounded-lg text-lg transition-colors duration-100" disabled>
                                 <svg id="play-icon" class="h-8 w-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                 <svg id="stop-icon" class="h-8 w-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
@@ -124,7 +123,6 @@
                         <span id="play-hint" class="text-xs text-gray-400 mt-2 text-center opacity-0 transition-opacity">ここを長押し or スペースキー</span>
                     </div>
                 </div>
-
             </div>
 
             <div class="md:col-span-3 space-y-4 flex flex-col h-full min-h-[350px] md:min-h-0">
@@ -133,7 +131,7 @@
                         <div class="flex items-center gap-2">
                             <span id="beat-1" class="beat-indicator downbeat"></span><span id="beat-2" class="beat-indicator"></span><span id="beat-3" class="beat-indicator"></span><span id="beat-4" class="beat-indicator"></span>
                         </div>
-                        <div class="play-mode-hide-on-play items-center gap-3 studio-mode-item-flex">
+                         <div class="studio-mode-item-flex items-center gap-3">
                             <span class="text-sm text-gray-300">伴奏</span>
                             <label for="mute-backing-track" class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="mute-backing-track" class="sr-only peer"><div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div></label>
                         </div>
@@ -156,7 +154,7 @@
                 <h2 class="text-2xl font-bold">設定</h2>
                 <button id="close-settings-button" class="text-gray-400 hover:text-white text-4xl leading-none">&times;</button>
             </div>
-            
+
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-300">表示モード</label>
                 <div class="flex items-center space-x-2 text-sm bg-gray-700 p-2 rounded-lg">
@@ -165,7 +163,7 @@
                     <span class="font-bold flex-1 text-center">Studio</span>
                 </div>
             </div>
-
+            
             <div>
                 <label for="midi-input-select" class="block text-sm font-medium text-gray-300 mb-2">MIDI入力デバイス</label>
                 <select id="midi-input-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3">
@@ -175,17 +173,17 @@
 
             <div class="pt-4 border-t border-gray-700">
                  <a href="https://forms.gle/vRgpJ2sQUMifY6Ht5" target="_blank" rel="noopener noreferrer" class="block text-center w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-md transition-colors">
-                    <div class="flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                        </svg>
-                        <span>フィードバックを送る</span>
-                    </div>
-                </a>
+                     <div class="flex items-center justify-center gap-2">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                           <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                         </svg>
+                         <span>フィードバックを送る</span>
+                     </div>
+                 </a>
             </div>
         </div>
     </div>
-    
+
     <div id="help-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
         <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md space-y-6">
             <div class="flex justify-between items-center">
@@ -202,6 +200,6 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-    <script src="/static/main.js?v=37"></script> 
+    <script src="/static/main.js?v=38"></script>
 </body>
 </html>
