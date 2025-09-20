@@ -46,10 +46,47 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!intervals) return [];
             return intervals.map(interval => this.midiToNoteName(rootMidi + interval, useFlats));
         }
+
+        static parseChord(chordName) {
+            if (!chordName) return null;
+            let rootStr, quality;
+            if (chordName.length > 1 && (chordName[1] === '#' || chordName[1] === 'b')) {
+                rootStr = chordName.substring(0, 2);
+                quality = chordName.substring(2);
+            } else {
+                rootStr = chordName.substring(0, 1);
+                quality = chordName.substring(1);
+            }
+            return { root: rootStr, quality: quality };
+        }
+
+        static transpose(chordName, semitones, preferFlats = false) {
+            const parsed = this.parseChord(chordName);
+            if (!parsed) return chordName;
+
+            const { root, quality } = parsed;
+
+            let rootIndex = this.NOTES.indexOf(root);
+            if (rootIndex === -1) {
+                rootIndex = this.NOTES_FLAT.indexOf(root);
+            }
+
+            if (rootIndex === -1) return chordName;
+
+            const newRootIndex = (rootIndex + semitones + 24) % 12;
+
+            const sharpNote = this.NOTES[newRootIndex];
+            const flatNote = this.NOTES_FLAT[newRootIndex];
+            
+            let newRoot = preferFlats && sharpNote !== flatNote ? flatNote : sharpNote;
+
+            return newRoot + quality;
+        }
     }
 
     // --- DOM Elements ---
     const chordSelect = document.getElementById('chord-progression');
+    const keySelect = document.getElementById('key-select');
     const styleSelect = document.getElementById('music-style');
     const generateButton = document.getElementById('generate-button');
     const bpmSlider = document.getElementById('bpm-slider');
@@ -101,8 +138,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Setup ---
     setupEventListeners();
     setupMidi();
+    displayTransposedPreview(); // ★★★ ページ読み込み時に初期表示を実行 ★★★
 
     function setupEventListeners() {
+        const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        ALL_KEYS.forEach(key => {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = key;
+            keySelect.appendChild(option);
+        });
+        keySelect.value = 'C'; 
+
+        // ★★★ START: イベントリスナーを追加 ★★★
+        chordSelect.addEventListener('change', displayTransposedPreview);
+        keySelect.addEventListener('change', displayTransposedPreview);
+        // ★★★ END: イベントリスナーを追加 ★★★
+
         bpmSlider.addEventListener('input', (e) => {
             bpmValue.textContent = e.target.value;
             Tone.Transport.bpm.value = e.target.value;
@@ -135,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playNoteButton.addEventListener('mousedown', () => handleMidiNoteOn());
         playNoteButton.addEventListener('mouseup', () => {
             handleMidiNoteOff();
-            playNoteButton.blur(); // ★★★ フォーカスを外す ★★★
+            playNoteButton.blur();
         });
         playNoteButton.addEventListener('mouseleave', () => handleMidiNoteOff());
         playNoteButton.addEventListener('touchstart', (e) => {
@@ -145,11 +197,49 @@ document.addEventListener('DOMContentLoaded', () => {
         playNoteButton.addEventListener('touchend', (e) => {
             e.preventDefault();
             handleMidiNoteOff();
-            playNoteButton.blur(); // ★★★ フォーカスを外す ★★★
+            playNoteButton.blur();
         });
     }
+    
+    // ★★★ START: 移調プレビュー表示用の新関数 ★★★
+    function displayTransposedPreview() {
+        const selectedValue = chordSelect.value;
+        const parts = selectedValue.split(':');
+        if (parts.length < 2) return;
 
-    // ★★★ START: HSVからRGBへ変換するヘルパー関数 ★★★
+        const originalKey = parts[0].trim();
+        const originalProgressionString = parts[1].trim();
+        const targetKey = keySelect.value;
+
+        let finalProgressionString = originalProgressionString;
+
+        let originalKeyIndex = Chord.NOTES.indexOf(originalKey);
+        if (originalKeyIndex === -1) originalKeyIndex = Chord.NOTES_FLAT.indexOf(originalKey);
+        
+        let targetKeyIndex = Chord.NOTES.indexOf(targetKey);
+        if (targetKeyIndex === -1) targetKeyIndex = Chord.NOTES_FLAT.indexOf(targetKey);
+
+        if (originalKeyIndex !== -1 && targetKeyIndex !== -1) {
+            const semitones = targetKeyIndex - originalKeyIndex;
+            const originalChords = originalProgressionString.split(' - ');
+            const FLAT_KEYS = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
+            const preferFlats = FLAT_KEYS.includes(targetKey) || targetKey.includes('b');
+            finalProgressionString = originalChords.map(chord => Chord.transpose(chord, semitones, preferFlats)).join(' - ');
+        }
+
+        const chordsToDisplay = finalProgressionString.split(' - ');
+        
+        progressionDisplay.innerHTML = '';
+        chordsToDisplay.forEach((chord) => {
+            const el = document.createElement('div');
+            el.className = 'indicator text-center p-2 rounded-md flex-shrink-0';
+            el.textContent = chord;
+            progressionDisplay.appendChild(el);
+        });
+    }
+    // ★★★ END: 移調プレビュー表示用の新関数 ★★★
+
+
     function hsvToRgb(h, s, v) {
         let r, g, b;
         let i = Math.floor(h * 6);
@@ -167,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
     }
-    // ★★★ END: HSVからRGBへ変換するヘルパー関数 ★★★
 
     function setupTapTempo() {
         let tapTimestamps = [];
@@ -177,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const now = performance.now();
             tapTimestamps.push(now);
             if (tapTimestamps.length > 4) tapTimestamps.shift();
-            
+
             clearTimeout(tapTimeout);
             tapTimeout = setTimeout(() => { tapTimestamps = []; }, 2000);
 
@@ -227,8 +316,31 @@ document.addEventListener('DOMContentLoaded', () => {
         generateButton.classList.add('animate-pulse');
 
         try {
-            const chordProgression = chordSelect.value;
+            const selectedValue = chordSelect.value;
+            const parts = selectedValue.split(':');
+            const originalKey = parts[0].trim();
+            const originalProgressionString = parts[1].trim();
+            const targetKey = keySelect.value;
             const style = styleSelect.value;
+
+            let chordProgression = originalProgressionString;
+
+            let originalKeyIndex = Chord.NOTES.indexOf(originalKey);
+            if (originalKeyIndex === -1) originalKeyIndex = Chord.NOTES_FLAT.indexOf(originalKey);
+            
+            let targetKeyIndex = Chord.NOTES.indexOf(targetKey);
+            if (targetKeyIndex === -1) targetKeyIndex = Chord.NOTES_FLAT.indexOf(targetKey);
+
+            if (originalKeyIndex !== -1 && targetKeyIndex !== -1) {
+                const semitones = targetKeyIndex - originalKeyIndex;
+                if (semitones !== 0) {
+                    const originalChords = originalProgressionString.split(' - ');
+                    const FLAT_KEYS = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
+                    const preferFlats = FLAT_KEYS.includes(targetKey) || targetKey.includes('b');
+                    chordProgression = originalChords.map(chord => Chord.transpose(chord, semitones, preferFlats)).join(' - ');
+                }
+            }
+            
             const isProductionEnv = (window.location.hostname === PRODUCTION_HOSTNAME);
             const variations = isProductionEnv ? 5 : 2;
             let variationNumber;
@@ -274,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             notificationSynth.triggerAttackRelease(["C5", "G5"], "8n", Tone.now());
-            updateProgressionDisplay();
+            updateProgressionDisplay(); // ★★★ ここでプレビューが正式な表示に上書きされる ★★★
             drawTimingIndicators();
             playStopButton.disabled = false;
             statusArea.textContent = 'フレーズの準備ができました！';
@@ -315,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (leadSynth) leadSynth.triggerRelease();
         if (pianoSynth) pianoSynth.releaseAll();
         activeLeadNoteInfo = null;
-        if (midiKeyDownCount > 0) { // ★★★ もし音が鳴りっぱなしなら、ボタンの色をリセット ★★★
+        if (midiKeyDownCount > 0) {
             midiKeyDownCount = 0;
             handleMidiNoteOff();
         }
@@ -425,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ★★★ この関数は再生中にハイライトするために、ID付きで要素を作る必要があるため、そのまま残します ★★★
     function updateProgressionDisplay() {
         progressionDisplay.innerHTML = '';
         progression.forEach((chord, index) => {
@@ -467,11 +580,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ★★★ START: Note On/Off ハンドラを修正 ★★★
     function handleMidiNoteOn(velocity = 0.75) {
         if (midiKeyDownCount === 0) {
-            // 色をアクティブ状態に変更
-            playNoteButton.style.backgroundColor = ''; // インラインスタイルをリセット
+            playNoteButton.style.backgroundColor = '';
             playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
             playNoteButton.classList.add('bg-purple-500');
         }
@@ -483,38 +594,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleMidiNoteOff() {
         if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) {
             stopCurrentLeadNote();
-            // 色を非アクティブ状態に戻す
-            playNoteButton.style.backgroundColor = ''; // インラインスタイルをリセット
+            playNoteButton.style.backgroundColor = '';
             playNoteButton.classList.remove('bg-purple-500');
             playNoteButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
         }
     }
-    // ★★★ END: Note On/Off ハンドラを修正 ★★★
-
-    // ★★★ START: アフタータッチハンドラを修正 ★★★
+    
     function handleMidiChannelAftertouch(value) {
         if (midiKeyDownCount > 0 && leadSynth) {
             const now = Tone.now();
             const timeConstant = 0.02;
 
-            // 1. シンセのパラメータを更新
             const newFrequency = 1200 + (3800 * value);
             leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
             const newVolume = -12 + (10 * value);
             leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
 
-            // 2. ボタンの彩度を更新
-            const hue = 260; // 紫系の色相
-            const saturation = 100 - (80 * value); // 0.0-1.0の値を彩度100%-20%にマッピング
-            const brightness = 80; // 明度は固定
+            const hue = 260; 
+            const saturation = 100 - (80 * value);
+            const brightness = 80;
             const [r, g, b] = hsvToRgb(hue / 360, saturation / 100, brightness / 100);
-            
-            // CSSクラスによる背景色指定を上書きするため、インラインスタイルを直接設定
+
             playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-purple-500');
             playNoteButton.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
         }
     }
-    // ★★★ END: アフタータッチハンドラを修正 ★★★
 
     function attachMidiListeners(inputId) {
         if (currentMidiInput) {
