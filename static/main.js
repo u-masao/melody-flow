@@ -145,9 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
     displayTransposedPreview();
 
     function setupEventListeners() {
-        const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const ALL_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B', 'C#', 'D#', 'F#', 'G#', 'A#'];
         if (keySelect) {
-            ALL_KEYS.forEach(key => {
+            keySelect.innerHTML = ''; // Clear existing options before populating
+            const sortedKeys = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+            sortedKeys.forEach(key => {
                 const option = document.createElement('option');
                 option.value = key; option.textContent = key;
                 keySelect.appendChild(option);
@@ -195,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playNoteButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleMidiNoteOn(); });
             playNoteButton.addEventListener('touchend', (e) => { e.preventDefault(); handleMidiNoteOff(); playNoteButton.blur(); });
         }
-        
+
         setupKeyboardListener();
     }
 
@@ -426,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function scheduleBackingTrack() {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
-        
+
         const shuffleDuration = Tone.Time('8t').toSeconds() * 2;
 
         const events = progression.flatMap((chord, measureIndex) => {
@@ -469,10 +471,10 @@ document.addEventListener('DOMContentLoaded', () => {
         leadSynth.triggerAttack(freq, Tone.now(), velocity);
         const noteStartTicks = Tone.Transport.ticks;
         const noteElement = drawPlayedNote(noteToPlay.pitch, noteStartTicks);
-        
-        activeLeadNoteInfo = { 
-            pitch: noteToPlay.pitch, 
-            startTicks: noteStartTicks, 
+
+        activeLeadNoteInfo = {
+            pitch: noteToPlay.pitch,
+            startTicks: noteStartTicks,
             element: noteElement,
             colorStops: [{
                 ticks: noteStartTicks,
@@ -509,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
         noteBlock.style.left = `${(currentLoopTicks / totalTicks) * 100}%`;
         noteBlock.style.top = `${topPercentage}%`;
         noteBlock.style.height = `${100 / PITCH_RANGE}%`;
-        noteBlock.style.width = `0.5%`; 
+        noteBlock.style.width = `0.5%`;
         noteBlock.style.backgroundColor = `rgba(99, 102, 241, 0.8)`;
         if (pianoRollContent) pianoRollContent.appendChild(noteBlock);
         return noteBlock;
@@ -549,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalTicks = progression.length * TICKS_PER_MEASURE;
         if (totalTicks > 0) {
             const currentTransportTicks = Tone.Transport.ticks;
-            
+
             if (playhead) {
                 const currentLoopTicks = currentTransportTicks % totalTicks;
                 playhead.style.left = `${(currentLoopTicks / totalTicks) * 100}%`;
@@ -644,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateNoteGradient(element, startTicks, durationTicks, colorStops) {
         if (!element || durationTicks <= 0 || colorStops.length === 0) return;
-        
+
         if (colorStops.length === 1) {
             element.style.background = colorStops[0].color;
             return;
@@ -655,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const percentage = Math.max(0, Math.min(100, (relativeTicks / durationTicks) * 100));
             return `${stop.color} ${percentage}%`;
         }).join(', ');
-        
+
         element.style.background = `linear-gradient(to right, ${gradientStops})`;
     }
 
