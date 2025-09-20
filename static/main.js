@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const helpButton = document.getElementById('help-button');
     const helpModal = document.getElementById('help-modal');
     const closeHelpButton = document.getElementById('close-help-button');
-    
+
     // --- Initial Generate Button Content ---
     const initialGenerateButtonHTML = generateButton.innerHTML;
 
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chordSelect) chordSelect.addEventListener('change', resetOptions);
         if(keySelect) keySelect.addEventListener('change', resetOptions);
         if(styleSelect) styleSelect.addEventListener('change', resetOptions);
-        
+
         if(bpmSlider) bpmSlider.addEventListener('input', (e) => {
             if(bpmValue) bpmValue.textContent = e.target.value;
             Tone.Transport.bpm.value = e.target.value;
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         generateButton.classList.add('animate-pulse');
         if (statusArea) statusArea.textContent = 'AIがあなたのためのメロディを考えています...';
-        
+
         try {
             const selectedValue = chordSelect.value;
             const parts = selectedValue.split(':');
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     chordProgression = originalChords.map(chord => Chord.transpose(chord, semitones, preferFlats)).join(' - ');
                 }
             }
-            
+
             const isProductionEnv = (window.location.hostname === PRODUCTION_HOSTNAME);
             const variations = isProductionEnv ? 5 : 2;
             let variationNumber = IS_LOCALHOST ? 1 : Math.floor(Math.random() * variations) + 1;
@@ -336,11 +336,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams({ chord_progression: chordProgression, style: style, variation: variationNumber });
             let requestUrl = IS_LOCALHOST ? `${LOCAL_API_ENDPOINT}/generate?${params.toString()}` : `${CLOUDFRONT_ENDPOINT}/api/${md5(chordProgression)}/${style}/${variationNumber}.json`;
             if(!IS_LOCALHOST && statusArea) statusArea.textContent = 'キャッシュされたフレーズを読み込んでいます...';
-            
+
             const response = await fetch(requestUrl);
             if (!response.ok) throw new Error(`API Error: ${response.status}`);
             const data = await response.json();
-            
+
             progression = Object.keys(data.chord_melodies);
             chordMelodies = {};
             for (const chord in data.chord_melodies) {
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('フレーズの準備に失敗:', error.message);
             if(statusArea) statusArea.textContent = `エラー: ${error.message}`;
             notificationSynth.triggerAttackRelease(["C4", "Eb4"], "8n", Tone.now());
-            resetGenerateButtonState(); 
+            resetGenerateButtonState();
         } finally {
             if(generateButton) {
                 generateButton.classList.remove('animate-pulse');
@@ -428,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
         
         const shuffleDuration = Tone.Time('8t').toSeconds() * 2;
-        
+
         const events = progression.flatMap((chord, measureIndex) => {
             const chordName = chord.split('_')[0];
             const notes = Chord.getVoicing(chordName);
@@ -469,19 +469,29 @@ document.addEventListener('DOMContentLoaded', () => {
         leadSynth.triggerAttack(freq, Tone.now(), velocity);
         const noteStartTicks = Tone.Transport.ticks;
         const noteElement = drawPlayedNote(noteToPlay.pitch, noteStartTicks);
-        activeLeadNoteInfo = { pitch: noteToPlay.pitch, startTicks: noteStartTicks, element: noteElement };
+        
+        activeLeadNoteInfo = { 
+            pitch: noteToPlay.pitch, 
+            startTicks: noteStartTicks, 
+            element: noteElement,
+            colorStops: [{
+                ticks: noteStartTicks,
+                color: 'rgba(99, 102, 241, 0.8)'
+            }]
+        };
         currentNoteIndex = (currentNoteIndex + 1) % notesOfCurrentChord.length;
     }
 
     function stopCurrentLeadNote() {
         if (!activeLeadNoteInfo) return;
         leadSynth.triggerRelease(Tone.now());
-        const { startTicks, element } = activeLeadNoteInfo;
+        const { startTicks, element, colorStops } = activeLeadNoteInfo;
         const durationTicks = Tone.Transport.ticks - startTicks;
         const totalTicks = progression.length * TICKS_PER_MEASURE;
         if (totalTicks > 0 && element) {
             const widthPercentage = (durationTicks / totalTicks) * 100;
             element.style.width = `${Math.max(0.5, widthPercentage)}%`;
+            updateNoteGradient(element, startTicks, durationTicks, colorStops);
         }
         activeLeadNoteInfo = null;
     }
@@ -499,7 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
         noteBlock.style.left = `${(currentLoopTicks / totalTicks) * 100}%`;
         noteBlock.style.top = `${topPercentage}%`;
         noteBlock.style.height = `${100 / PITCH_RANGE}%`;
-        noteBlock.style.width = `1%`;
+        noteBlock.style.width = `0.5%`; 
+        noteBlock.style.backgroundColor = `rgba(99, 102, 241, 0.8)`;
         if (pianoRollContent) pianoRollContent.appendChild(noteBlock);
         return noteBlock;
     }
@@ -536,9 +547,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function animatePlayhead() {
         if (!isPlaying) { animationFrameId = null; return; }
         const totalTicks = progression.length * TICKS_PER_MEASURE;
-        if (totalTicks > 0 && playhead) {
-            const currentLoopTicks = Tone.Transport.ticks % totalTicks;
-            playhead.style.left = `${(currentLoopTicks / totalTicks) * 100}%`;
+        if (totalTicks > 0) {
+            const currentTransportTicks = Tone.Transport.ticks;
+            
+            if (playhead) {
+                const currentLoopTicks = currentTransportTicks % totalTicks;
+                playhead.style.left = `${(currentLoopTicks / totalTicks) * 100}%`;
+            }
+
+            if (activeLeadNoteInfo) {
+                const { startTicks, element, colorStops } = activeLeadNoteInfo;
+                const durationTicks = currentTransportTicks - startTicks;
+                const widthPercentage = (durationTicks / totalTicks) * 100;
+                element.style.width = `${Math.max(0.5, widthPercentage)}%`;
+                updateNoteGradient(element, startTicks, durationTicks, colorStops);
+            }
         }
         animationFrameId = requestAnimationFrame(animatePlayhead);
     }
@@ -583,18 +606,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleMidiChannelAftertouch(value) {
-        if (midiKeyDownCount > 0 && leadSynth && playNoteButton) {
-            const now = Tone.now(); const timeConstant = 0.02;
-            const newFrequency = 1200 + (3800 * value);
-            leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
-            const newVolume = -12 + (10 * value);
-            leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
-            const hue = 260, saturation = 100 - (80 * value), brightness = 80;
+    function handleMidiChannelAftertouch(value) { // value is 0.0 ~ 1.0
+        let newColorRgbString = null;
+
+        if (midiKeyDownCount > 0) {
+            // シンセのパラメータを更新
+            if (leadSynth) {
+                const now = Tone.now(); const timeConstant = 0.02;
+                const newFrequency = 1200 + (3800 * value);
+                leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
+                const newVolume = -12 + (10 * value);
+                leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
+            }
+
+            // ボタンの色を計算
+            const hue = 260;
+            const saturation = 100 - (80 * value);
+            const brightness = 80;
             const [r, g, b] = hsvToRgb(hue / 360, saturation / 100, brightness / 100);
-            playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-purple-500');
-            playNoteButton.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            newColorRgbString = `rgb(${r}, ${g}, ${b})`;
+
+            // ボタンの色を更新
+            if(playNoteButton) {
+                playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-purple-500');
+                playNoteButton.style.backgroundColor = newColorRgbString;
+            }
         }
+
+        // 発音中のピアノロールノートの色を変更
+        if (activeLeadNoteInfo && activeLeadNoteInfo.element && newColorRgbString) {
+            activeLeadNoteInfo.colorStops.push({
+                ticks: Tone.Transport.ticks,
+                color: newColorRgbString
+            });
+        }
+    }
+
+    function updateNoteGradient(element, startTicks, durationTicks, colorStops) {
+        if (!element || durationTicks <= 0 || colorStops.length === 0) return;
+        
+        if (colorStops.length === 1) {
+            element.style.background = colorStops[0].color;
+            return;
+        }
+
+        const gradientStops = colorStops.map(stop => {
+            const relativeTicks = stop.ticks - startTicks;
+            const percentage = Math.max(0, Math.min(100, (relativeTicks / durationTicks) * 100));
+            return `${stop.color} ${percentage}%`;
+        }).join(', ');
+        
+        element.style.background = `linear-gradient(to right, ${gradientStops})`;
     }
 
     function attachMidiListeners(inputId) {
@@ -608,6 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentMidiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
             currentMidiInput.on("noteoff", e => handleMidiNoteOff());
             currentMidiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
+        } else {
+             if(statusArea) statusArea.textContent = 'MIDIデバイス未接続。PCのキーボードで演奏できます。';
         }
     }
 
@@ -627,9 +691,8 @@ document.addEventListener('DOMContentLoaded', () => {
             attachMidiListeners(midiInputSelect.value);
         } else {
             midiInputSelect.innerHTML = '<option>利用可能なデバイスがありません</option>';
-            if(currentMidiInput) {
-                attachMidiListeners(null);
-            }
+            if(currentMidiInput) attachMidiListeners(null);
+            else if(statusArea) statusArea.textContent = 'MIDIデバイス未接続。PCのキーボードで演奏できます。';
         }
     }
 
