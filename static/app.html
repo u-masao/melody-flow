@@ -89,22 +89,27 @@
             </h1>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-900/50 p-6 rounded-lg">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-900/50 p-6 rounded-lg">
             <div>
                 <label for="chord-progression" class="block text-sm font-medium text-gray-300 mb-2">コード進行プリセット</label>
                 <select id="chord-progression" class="w-full bg-gray-700 rounded-md p-3">
-                    <option value="Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em - Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em">枯れ葉（前半）</option>
-                    <option value="F#m7b5 - B7b9 - Em - Em - Am7 - D7 - GM7 - GM7 - F#m7b5 - B7b9 - A7 - G7 - F#m7b5 - B7b9 - Em - Em">枯れ葉（後半）</option>
-                    <option value="Cm7 - Fm7 - Cm7 - C7(b9) - Fm7 - F#dim7 - Cm7 - Ab7 - Dm7b5 - G7(b9,b13) - Cm7 - G7(b9,b13)">Jazz Minor Blues (in C)</option>
-                    <option value="C7 - F7 - C7 - C7 - F7 - F7 - C7 - C7 - G7 - F7 - C7 - G7">ブルース進行 (in C)</option>
-                    <option value="BbM7 - BbM7 - Bbm7 - Eb7 - FM7 - FM7 - Abm7 - Db7 - Gm7 - C7 - Am7 - Dm7 - G7 - G7 - Gm7 - C7">Just Friends (Aセクション)</option>
-                    <option value="Dm7 - G7 - Dm7 - G7 - Dm7 - G7 - Dm7 - G7">ツー・ファイブ（メジャー）</option>
-                    <option value="Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7">ツー・ファイブ（マイナー）</option>
-                    <option value="Dm7 - G7 - CM7 - CM7 - Dm7 - G7 - CM7 - CM7">ツー・ファイブ・ワン（メジャー）</option>
-                    <option value="Dm7b5 - G7 - Cm7 - Cm7 - Dm7b5 - G7 - Cm7 - Cm7">ツー・ファイブ・ワン（マイナー）</option>
-                    <option value="CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7">循環コード (C Am Dm G)</option>
-                    <option value="Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7">逆循環コード (Dm G C Am)</option>
+                    <option value="E:Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em - Am7 - D7 - GM7 - CM7 - F#m7b5 - B7 - Em - Em">枯れ葉（前半）</option>
+                    <option value="E:F#m7b5 - B7b9 - Em - Em - Am7 - D7 - GM7 - GM7 - F#m7b5 - B7b9 - A7 - G7 - F#m7b5 - B7b9 - Em - Em">枯れ葉（後半）</option>
+                    <option value="C:Cm7 - Fm7 - Cm7 - C7(b9) - Fm7 - F#dim7 - Cm7 - Ab7 - Dm7b5 - G7(b9,b13) - Cm7 - G7(b9,b13)">Jazz Minor Blues (in C)</option>
+                    <option value="C:C7 - F7 - C7 - C7 - F7 - F7 - C7 - C7 - G7 - F7 - C7 - G7">ブルース進行 (in C)</option>
+                    <option value="F:BbM7 - BbM7 - Bbm7 - Eb7 - FM7 - FM7 - Abm7 - Db7 - Gm7 - C7 - Am7 - Dm7 - G7 - G7 - Gm7 - C7">Just Friends (Aセクション)</option>
+                    <option value="C:Dm7 - G7 - Dm7 - G7 - Dm7 - G7 - Dm7 - G7">ツー・ファイブ（メジャー）</option>
+                    <option value="C:Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7 - Dm7b5 - G7">ツー・ファイブ（マイナー）</option>
+                    <option value="C:Dm7 - G7 - CM7 - CM7 - Dm7 - G7 - CM7 - CM7">ツー・ファイブ・ワン（メジャー）</option>
+                    <option value="C:Dm7b5 - G7 - Cm7 - Cm7 - Dm7b5 - G7 - Cm7 - Cm7">ツー・ファイブ・ワン（マイナー）</option>
+                    <option value="C:CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7">循環コード</option>
+                    <option value="C:Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7">逆循環コード</option>
                 </select>
+            </div>
+            <div>
+                <label for="key-select" class="block text-sm font-medium text-gray-300 mb-2">キー</label>
+                <select id="key-select" class="w-full bg-gray-700 rounded-md p-3">
+                    </select>
             </div>
             <div>
                 <label for="music-style" class="block text-sm font-medium text-gray-300 mb-2">スタイル</label>
@@ -113,7 +118,7 @@
                     <option>POP風</option>
                 </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="md:col-span-3">
                 <button id="generate-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md text-lg">
                     1. フレーズを準備する
                 </button>
@@ -192,5 +197,5 @@
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-    <script src="/static/main.js?v=25"></script> </body>
+    <script src="/static/main.js?v=27"></script> </body>
 </html>
