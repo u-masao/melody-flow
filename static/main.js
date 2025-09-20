@@ -69,7 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = document.getElementById('settings-modal');
     const closeModalButton = document.getElementById('close-modal-button');
     const midiInputSelect = document.getElementById('midi-input-select');
-    const tapTempoButton = document.getElementById('tap-tempo-button'); // ★★★ Tap Tempoボタンを取得 ★★★
+    const tapTempoButton = document.getElementById('tap-tempo-button');
+    const playNoteButton = document.getElementById('play-note-button');
 
     // --- Synths ---
     const leadSynth = new Tone.MonoSynth({
@@ -128,12 +129,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ★★★ START: Tap Tempoのセットアップ ★★★
         setupTapTempo();
-        // ★★★ END: Tap Tempoのセットアップ ★★★
+
+        // Play note button listeners
+        playNoteButton.addEventListener('mousedown', () => handleMidiNoteOn());
+        playNoteButton.addEventListener('mouseup', () => {
+            handleMidiNoteOff();
+            playNoteButton.blur(); // ★★★ フォーカスを外す ★★★
+        });
+        playNoteButton.addEventListener('mouseleave', () => handleMidiNoteOff());
+        playNoteButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleMidiNoteOn();
+        });
+        playNoteButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handleMidiNoteOff();
+            playNoteButton.blur(); // ★★★ フォーカスを外す ★★★
+        });
     }
 
-    // ★★★ START: Tap Tempo機能の実装 ★★★
+    // ★★★ START: HSVからRGBへ変換するヘルパー関数 ★★★
+    function hsvToRgb(h, s, v) {
+        let r, g, b;
+        let i = Math.floor(h * 6);
+        let f = h * 6 - i;
+        let p = v * (1 - s);
+        let q = v * (1 - f * s);
+        let t = v * (1 - (1 - f) * s);
+        switch (i % 6) {
+            case 0: r = v, g = t, b = p; break;
+            case 1: r = q, g = v, b = p; break;
+            case 2: r = p, g = v, b = t; break;
+            case 3: r = p, g = q, b = v; break;
+            case 4: r = t, g = p, b = v; break;
+            case 5: r = v, g = p, b = q; break;
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+    // ★★★ END: HSVからRGBへ変換するヘルパー関数 ★★★
+
     function setupTapTempo() {
         let tapTimestamps = [];
         let tapTimeout = null;
@@ -141,17 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
         tapTempoButton.addEventListener('click', () => {
             const now = performance.now();
             tapTimestamps.push(now);
-
-            // 過去のタイムスタンプを整理（最新4件を保持）
-            if (tapTimestamps.length > 4) {
-                tapTimestamps.shift();
-            }
-
-            // タイムアウトをリセット
+            if (tapTimestamps.length > 4) tapTimestamps.shift();
+            
             clearTimeout(tapTimeout);
-            tapTimeout = setTimeout(() => {
-                tapTimestamps = []; // 2秒後にリセット
-            }, 2000);
+            tapTimeout = setTimeout(() => { tapTimestamps = []; }, 2000);
 
             if (tapTimestamps.length >= 2) {
                 let totalInterval = 0;
@@ -161,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const avgInterval = totalInterval / (tapTimestamps.length - 1);
                 const newBpm = Math.round(60000 / avgInterval);
 
-                // BPMが妥当な範囲内にあるかチェック
                 if (newBpm >= 60 && newBpm <= 180) {
                     bpmSlider.value = newBpm;
                     bpmValue.textContent = newBpm;
@@ -170,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    // ★★★ END: Tap Tempo機能の実装 ★★★
 
     function startBeatAnimation() {
         if (beatLoop) beatLoop.stop(0).dispose();
@@ -192,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function generatePhrases() {
         await ensureAudioContext();
-        generateButton.disabled = true; playStopButton.disabled = true;
+        generateButton.disabled = true;
+        playStopButton.disabled = true;
+        playNoteButton.disabled = true;
 
         stopPlayback();
         pianoRollContent.innerHTML = ''; pianoRollContent.appendChild(playhead);
@@ -203,15 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const style = styleSelect.value;
             const isProductionEnv = (window.location.hostname === PRODUCTION_HOSTNAME);
             const variations = isProductionEnv ? 5 : 2;
-
             let variationNumber;
 
             if (IS_LOCALHOST) {
                 const combinedString = chordProgression + style;
                 let charCodeSum = 0;
-                for (let i = 0; i < combinedString.length; i++) {
-                    charCodeSum += combinedString.charCodeAt(i);
-                }
+                for (let i = 0; i < combinedString.length; i++) charCodeSum += combinedString.charCodeAt(i);
                 variationNumber = (charCodeSum % variations) + 1;
             } else {
                 variationNumber = Math.floor(Math.random() * variations) + 1;
@@ -222,22 +247,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (IS_LOCALHOST) {
                 statusArea.textContent = 'ローカルサーバーでフレーズを生成中...';
-                const params = new URLSearchParams({
-                    chord_progression: chordProgression,
-                    style: style,
-                    variation: variationNumber
-                });
+                const params = new URLSearchParams({ chord_progression: chordProgression, style: style, variation: variationNumber });
                 requestUrl = `${LOCAL_API_ENDPOINT}/generate?${params.toString()}`;
-
                 const response = await fetch(requestUrl);
                 if (!response.ok) throw new Error(`API Error: ${response.status}`);
                 data = await response.json();
-
             } else {
                 statusArea.textContent = 'キャッシュされたフレーズを読み込んでいます...';
                 const progHash = md5(chordProgression);
                 requestUrl = `${CLOUDFRONT_ENDPOINT}/api/${progHash}/${style}/${variationNumber}.json`;
-
                 const response = await fetch(requestUrl);
                 if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
                 data = await response.json();
@@ -260,7 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
             drawTimingIndicators();
             playStopButton.disabled = false;
             statusArea.textContent = 'フレーズの準備ができました！';
-
         } catch (error) {
             console.error('フレーズの準備に失敗:', error.message);
             statusArea.textContent = `エラー: ${error.message}`;
@@ -287,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playStopButton.textContent = '演奏停止';
         playStopButton.classList.replace('bg-teal-600', 'bg-amber-600');
         playStopButton.classList.replace('hover:bg-teal-700', 'hover:bg-amber-700');
+        playNoteButton.disabled = false;
         animatePlayhead();
         startBeatAnimation();
     }
@@ -296,7 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
         if (leadSynth) leadSynth.triggerRelease();
         if (pianoSynth) pianoSynth.releaseAll();
-        activeLeadNoteInfo = null; midiKeyDownCount = 0; activeKeys.clear();
+        activeLeadNoteInfo = null;
+        if (midiKeyDownCount > 0) { // ★★★ もし音が鳴りっぱなしなら、ボタンの色をリセット ★★★
+            midiKeyDownCount = 0;
+            handleMidiNoteOff();
+        }
+        activeKeys.clear();
         if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
         playhead.style.left = '0%';
         document.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-sky-500'));
@@ -304,6 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playStopButton.textContent = '2. 演奏開始';
         playStopButton.classList.replace('bg-amber-600', 'bg-teal-600');
         playStopButton.classList.replace('hover:bg-amber-700', 'hover:bg-teal-700');
+        playNoteButton.disabled = true;
         noteDisplayArea.textContent = '...';
         stopBeatAnimation();
     }
@@ -443,24 +467,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ★★★ START: Note On/Off ハンドラを修正 ★★★
     function handleMidiNoteOn(velocity = 0.75) {
-        if (++midiKeyDownCount === 1) playNextLeadNote(velocity);
+        if (midiKeyDownCount === 0) {
+            // 色をアクティブ状態に変更
+            playNoteButton.style.backgroundColor = ''; // インラインスタイルをリセット
+            playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            playNoteButton.classList.add('bg-purple-500');
+        }
+        if (++midiKeyDownCount === 1) {
+            playNextLeadNote(velocity);
+        }
     }
 
     function handleMidiNoteOff() {
-        if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) stopCurrentLeadNote();
+        if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) {
+            stopCurrentLeadNote();
+            // 色を非アクティブ状態に戻す
+            playNoteButton.style.backgroundColor = ''; // インラインスタイルをリセット
+            playNoteButton.classList.remove('bg-purple-500');
+            playNoteButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        }
     }
+    // ★★★ END: Note On/Off ハンドラを修正 ★★★
 
+    // ★★★ START: アフタータッチハンドラを修正 ★★★
     function handleMidiChannelAftertouch(value) {
         if (midiKeyDownCount > 0 && leadSynth) {
             const now = Tone.now();
             const timeConstant = 0.02;
+
+            // 1. シンセのパラメータを更新
             const newFrequency = 1200 + (3800 * value);
             leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
             const newVolume = -12 + (10 * value);
             leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
+
+            // 2. ボタンの彩度を更新
+            const hue = 260; // 紫系の色相
+            const saturation = 100 - (80 * value); // 0.0-1.0の値を彩度100%-20%にマッピング
+            const brightness = 80; // 明度は固定
+            const [r, g, b] = hsvToRgb(hue / 360, saturation / 100, brightness / 100);
+            
+            // CSSクラスによる背景色指定を上書きするため、インラインスタイルを直接設定
+            playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-purple-500');
+            playNoteButton.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
         }
     }
+    // ★★★ END: アフタータッチハンドラを修正 ★★★
 
     function attachMidiListeners(inputId) {
         if (currentMidiInput) {
@@ -468,7 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentMidiInput.removeListener("noteoff");
             currentMidiInput.removeListener("channelaftertouch");
         }
-
         currentMidiInput = WebMidi.getInputById(inputId);
 
         if (currentMidiInput) {
@@ -499,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             midiInputSelect.innerHTML = '<option>利用可能なデバイスがありません</option>';
             if(currentMidiInput) {
-                attachMidiListeners(null); // Clear listeners
+                attachMidiListeners(null);
             } else {
                 statusArea.textContent = 'MIDIデバイス未接続。スペースキー等で演奏できます。';
             }
@@ -515,12 +568,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await WebMidi.enable();
             populateMidiDeviceList();
-
             midiInputSelect.addEventListener('change', (e) => attachMidiListeners(e.target.value));
-
             WebMidi.addListener("connected", () => populateMidiDeviceList());
             WebMidi.addListener("disconnected", () => populateMidiDeviceList());
-
         } catch (err) {
             console.error("Could not enable MIDI:", err);
             statusArea.textContent = 'MIDIデバイスの有効化に失敗しました。';
