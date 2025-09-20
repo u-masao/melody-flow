@@ -110,6 +110,13 @@
 
                 <div class="bg-gray-900/50 p-4 rounded-lg space-y-3">
                     <h3 class="font-bold text-lg text-gray-400">STEP 3: 演奏する</h3>
+                    
+                    <div class="studio-mode-item-flex items-center gap-3">
+                        <span class="text-sm font-mono w-24 text-center text-gray-300"><span id="bpm-value">120</span> BPM</span>
+                        <input id="bpm-slider" type="range" min="60" max="180" value="120" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button id="tap-tempo-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-xs flex-shrink-0">TAP</button>
+                    </div>
+
                      <div class="flex flex-col items-center gap-2">
                          <div class="flex items-stretch justify-center gap-4 w-full">
                             <button id="play-stop-button" class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold w-16 h-16 flex-shrink-0 flex items-center justify-center rounded-lg text-lg transition-colors duration-100" disabled>
@@ -163,7 +170,7 @@
                     <span class="font-bold flex-1 text-center">Studio</span>
                 </div>
             </div>
-            
+
             <div>
                 <label for="midi-input-select" class="block text-sm font-medium text-gray-300 mb-2">MIDI入力デバイス</label>
                 <select id="midi-input-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3">
@@ -175,10 +182,10 @@
                  <a href="https://forms.gle/vRgpJ2sQUMifY6Ht5" target="_blank" rel="noopener noreferrer" class="block text-center w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-md transition-colors">
                      <div class="flex items-center justify-center gap-2">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                           <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
                          </svg>
                          <span>フィードバックを送る</span>
-                     </div>
+                    </div>
                  </a>
             </div>
         </div>
