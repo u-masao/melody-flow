@@ -155,14 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
             keySelect.value = 'C';
         }
 
-        const resetAndGuide = () => {
+        const resetOptions = () => {
             displayTransposedPreview();
             resetGenerateButtonState();
         };
 
-        if(chordSelect) chordSelect.addEventListener('change', resetAndGuide);
-        if(keySelect) keySelect.addEventListener('change', resetAndGuide);
-        if(styleSelect) styleSelect.addEventListener('change', resetAndGuide);
+        if(chordSelect) chordSelect.addEventListener('change', resetOptions);
+        if(keySelect) keySelect.addEventListener('change', resetOptions);
+        if(styleSelect) styleSelect.addEventListener('change', resetOptions);
         
         if(bpmSlider) bpmSlider.addEventListener('input', (e) => {
             if(bpmValue) bpmValue.textContent = e.target.value;
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateProgressionDisplay();
             drawTimingIndicators();
             if(playStopButton) playStopButton.disabled = false;
-            if(statusArea) statusArea.textContent = '準備完了！「演奏開始」ボタンを押してください。';
+            if(statusArea) statusArea.textContent = '準備完了！▶️演奏ボタンを押して🎵をクリックしてください';
             if(generateButton) {
                 generateButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg><span>準備完了！</span>`;
                 generateButton.disabled = true;
@@ -605,12 +605,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         currentMidiInput = WebMidi.getInputById(inputId);
         if (currentMidiInput) {
-            if(statusArea) statusArea.textContent = `MIDI In: ${currentMidiInput.name}`;
             currentMidiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
             currentMidiInput.on("noteoff", e => handleMidiNoteOff());
             currentMidiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
-        } else {
-             if(statusArea) statusArea.textContent = 'MIDIデバイス未接続。PCのキーボードで演奏できます。';
         }
     }
 
@@ -630,8 +627,9 @@ document.addEventListener('DOMContentLoaded', () => {
             attachMidiListeners(midiInputSelect.value);
         } else {
             midiInputSelect.innerHTML = '<option>利用可能なデバイスがありません</option>';
-            if(currentMidiInput) attachMidiListeners(null);
-            else if(statusArea) statusArea.textContent = 'MIDIデバイス未接続。PCのキーボードで演奏できます。';
+            if(currentMidiInput) {
+                attachMidiListeners(null);
+            }
         }
     }
 
