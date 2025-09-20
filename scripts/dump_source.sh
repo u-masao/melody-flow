@@ -8,9 +8,14 @@ FILES=(
 #LICENSE.md
 #Makefile
 #PIPELINE.md
-README.md
+#README.md
+#data/external/.gitkeep
+#data/interim/.gitkeep
+#data/processed/.gitkeep
+#data/raw/.gitignore
+#data/raw/.gitkeep
 #docker-compose.yaml
-docs/architecture.md
+#docs/architecture.md
 #docs/deplow_guide_to_aws.md
 #docs/plan_of_architecture_enhance.md
 docs/project_summary.md
@@ -43,10 +48,6 @@ static/app.html
 static/main.js
 #static/midi-test.html
 #static/presentation.html
-#tests/__init__.py
-#tests/test_chord_name_parser.py
-#tests/test_melody_processor.py
-#uv.lock
 )
 
 for ((i=0; i<${#FILES[@]}; i++))
@@ -58,3 +59,4 @@ do
     echo '```'
     echo ""
 done
+

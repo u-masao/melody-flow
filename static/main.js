@@ -65,12 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('beat-1'), document.getElementById('beat-2'),
         document.getElementById('beat-3'), document.getElementById('beat-4')
     ];
-    // ★★★ START: 新しいDOM要素 ★★★
     const settingsButton = document.getElementById('settings-button');
     const settingsModal = document.getElementById('settings-modal');
     const closeModalButton = document.getElementById('close-modal-button');
     const midiInputSelect = document.getElementById('midi-input-select');
-    // ★★★ END: 新しいDOM要素 ★★★
+    const tapTempoButton = document.getElementById('tap-tempo-button'); // ★★★ Tap Tempoボタンを取得 ★★★
 
     // --- Synths ---
     const leadSynth = new Tone.MonoSynth({
@@ -96,11 +95,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let isPlaying = false, animationFrameId = null, activeLeadNoteInfo = null;
     let midiKeyDownCount = 0, backingPart = null, beatLoop = null;
     let activeKeys = new Set();
-    let currentMidiInput = null; // ★★★ MIDI入力デバイスの状態を保持 ★★★
+    let currentMidiInput = null;
 
     // --- Initial Setup ---
     setupEventListeners();
-    setupMidi(); // ★★★ MIDI設定関数を呼び出し ★★★
+    setupMidi();
 
     function setupEventListeners() {
         bpmSlider.addEventListener('input', (e) => {
@@ -115,23 +114,63 @@ document.addEventListener('DOMContentLoaded', () => {
             muteBackingTrackCheckbox.blur();
         });
         setupKeyboardListener();
-        
-        // ★★★ START: モーダル用のイベントリスナー ★★★
+
+        // Modal listeners
         settingsButton.addEventListener('click', () => {
             settingsModal.classList.remove('hidden');
         });
-
         closeModalButton.addEventListener('click', () => {
             settingsModal.classList.add('hidden');
         });
-
         settingsModal.addEventListener('click', (e) => {
             if (e.target === settingsModal) {
                 settingsModal.classList.add('hidden');
             }
         });
-        // ★★★ END: モーダル用のイベントリスナー ★★★
+
+        // ★★★ START: Tap Tempoのセットアップ ★★★
+        setupTapTempo();
+        // ★★★ END: Tap Tempoのセットアップ ★★★
     }
+
+    // ★★★ START: Tap Tempo機能の実装 ★★★
+    function setupTapTempo() {
+        let tapTimestamps = [];
+        let tapTimeout = null;
+
+        tapTempoButton.addEventListener('click', () => {
+            const now = performance.now();
+            tapTimestamps.push(now);
+
+            // 過去のタイムスタンプを整理（最新4件を保持）
+            if (tapTimestamps.length > 4) {
+                tapTimestamps.shift();
+            }
+
+            // タイムアウトをリセット
+            clearTimeout(tapTimeout);
+            tapTimeout = setTimeout(() => {
+                tapTimestamps = []; // 2秒後にリセット
+            }, 2000);
+
+            if (tapTimestamps.length >= 2) {
+                let totalInterval = 0;
+                for (let i = 1; i < tapTimestamps.length; i++) {
+                    totalInterval += tapTimestamps[i] - tapTimestamps[i - 1];
+                }
+                const avgInterval = totalInterval / (tapTimestamps.length - 1);
+                const newBpm = Math.round(60000 / avgInterval);
+
+                // BPMが妥当な範囲内にあるかチェック
+                if (newBpm >= 60 && newBpm <= 180) {
+                    bpmSlider.value = newBpm;
+                    bpmValue.textContent = newBpm;
+                    Tone.Transport.bpm.value = newBpm;
+                }
+            }
+        });
+    }
+    // ★★★ END: Tap Tempo機能の実装 ★★★
 
     function startBeatAnimation() {
         if (beatLoop) beatLoop.stop(0).dispose();
@@ -423,7 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ★★★ START: MIDIデバイスのセットアップと管理（大幅修正） ★★★
     function attachMidiListeners(inputId) {
         if (currentMidiInput) {
             currentMidiInput.removeListener("noteon");
@@ -453,7 +491,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = input.name;
                 midiInputSelect.appendChild(option);
             });
-            // 以前選択されていたデバイスがあれば再選択する
             const stillExists = WebMidi.inputs.some(input => input.id === previouslySelectedId);
             if (stillExists) {
                 midiInputSelect.value = previouslySelectedId;
@@ -478,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await WebMidi.enable();
             populateMidiDeviceList();
-            
+
             midiInputSelect.addEventListener('change', (e) => attachMidiListeners(e.target.value));
 
             WebMidi.addListener("connected", () => populateMidiDeviceList());
@@ -491,7 +528,6 @@ document.addEventListener('DOMContentLoaded', () => {
             settingsButton.style.display = 'none';
         }
     }
-    // ★★★ END: MIDIデバイスのセットアップと管理 ★★★
 
     async function ensureAudioContext() {
         if (Tone.context.state !== 'running') await Tone.start();
