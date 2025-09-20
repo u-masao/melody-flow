@@ -9,17 +9,17 @@ stages:
       md5: 89f02b08ce00e3f46ffd466c8f3e0e5d
       size: 42512384
   make_dataset:
-    cmd: uv run python -m src.make_dataset data/raw/wjazzd.db 
+    cmd: uv run python -m src.model.make_dataset data/raw/wjazzd.db 
       data/interim/train.json
     deps:
     - path: data/raw/wjazzd.db
       hash: md5
       md5: 89f02b08ce00e3f46ffd466c8f3e0e5d
       size: 42512384
-    - path: src/make_dataset.py
+    - path: src/model/make_dataset.py
       hash: md5
-      md5: 9a1f79ba5cf72794b4437f89530ae2c5
-      size: 5982
+      md5: 818ae65b8ebf8b59b259eddd9128ea80
+      size: 7645
     outs:
     - path: data/interim/train.json
       hash: md5
