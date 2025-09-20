@@ -1,8 +1,8 @@
 # Melody Flow 🎹✨
 
-**キャッチコピー: あなたのリズムが、AIのメロディになる。**
+**リズムで遊ぼう、AIとセッション。**
 
----
+-----
 
 ## 🎵 Melody Flowとは？
 
@@ -16,28 +16,58 @@ Melody Flowは、**人間とAIがリアルタイムでセッションを行う�
 
 音楽の知識がなくても、まるでプロのミュージシャンになったかのように、アドリブ演奏や作曲の楽しさを体験できます。
 
+-----
+
 ## 🌟 主な特徴
 
 ### 1. 音楽理論からの解放
+
 メロディはすべてAIが考えてくれるので、難しい音楽理論を覚える必要はありません。あなたはただ、心の赴くままにリズムを刻むだけ。音楽の楽しさに集中できます。
 
 ### 2. 「自分が演奏している」という確かな感覚
+
 AIが生成したメロディは、あなたがキーボードを叩いたタイミング、強さ、長さで完璧に再生されます。AIが作った音楽をただ聴くだけでなく、「自分の手で音楽を奏でている」という確かな実感を得られます。
 
 ### 3. AIとのセッションが生み出す、予測不能な興奮
+
 あなたが刻むリズムと、AIが提案するメロディ。二つが組み合わさることで、一人では決して生まれなかったような、創造的で刺激的なフレーズが生まれます。AIとの音楽対話を楽しみましょう。
 
-## 🎶 仕組み：あなたとAIの役割分担
+-----
 
-Melody Flowの核は、音楽の要素をあなたとAIで分担することです。
+## 🚀 はじめ方
 
--   **ハーモニー（コード進行）**: システムが自動で伴奏を再生します。
--   **メロディ（ドレミ）**: **AI 🤖** が担当します。
--   **リズムと表現（タイミングや強弱）**: **あなた 👤** が担当します。
+Webアプリケーションで、すぐに体験できます。
 
-あなたは音階を気にする必要はありません。目の前のキーボードを打楽器のように叩くだけで、音楽が生まれます。
+**[https://melody-flow.click](https://melody-flow.click)**
 
-より詳細な処理の流れは以下の通りです。演奏中の遅延をなくすため、AIによる重い処理は演奏開始前に済ませておく「事前生成方式」を採用しているのが特徴です。
+1.  **設定**: 曲を選びます
+2.  **AI生成**: AI にメロディを作ってもらいます(キャッシュされてるので一瞬でできる)
+3.  **演奏スタート**: 再生ボタンで伴奏が始まったら、🎵ボタンやスペースバーで、伴奏に合わせて自由にリズムを叩いてみましょう！
+
+あなたが叩いたリズムで、美しいメロディがリアルタイムに響き渡ります。
+
+Google Chrome を使えば MIDI IN デバイスにも対応します！
+
+-----
+
+## ✨ 2つのUIモード
+
+Melody Flowは、目的に合わせて2つのUIモードを切り替えられます。
+
+| Play Mode (シンプル)                                         | Studio Mode (詳細)                                           |
+| :----------------------------------------------------------- | :----------------------------------------------------------- |
+| まずは気軽にセッションを楽しみたい方向けのシンプルな画面です。 | BPMやキーの変更など、より詳細な設定が可能な画面です。        |
+| <img src="docs/play-mode-ui.png" alt="Play Mode UI" width="400"> | <img src="docs/studio-mode-ui.png" alt="Studio Mode UI" width="400"> |
+
+-----
+
+## 🧠 技術的な仕組み (Technical Deep Dive)
+
+Melody Flowの魔法のような体験は、リアルタイム性を追求したアーキテクチャと、音楽に特化したカスタムAIモデルによって実現されています。
+
+### 1. システムアーキテクチャ：遅延なき演奏体験
+
+演奏体験におけるリアルタイム性を確保するため、処理を**「準備」**と**「演奏」**の2フェーズに分離しています。AIによる重い処理はすべて演奏開始前に済ませておくことで、楽器のような即時応答性を実現しました。
 
 ```mermaid
 ---
@@ -74,57 +104,118 @@ sequenceDiagram
     deactivate 🌐 Browser (JavaScript)
 ```
 
-## 🚀 はじめ方
+さらに、本番環境では事前生成した全フレーズを静的なJSONファイルとしてCDNから配信する**「静的配信アーキテクチャ」**を採用。これにより、AIの推論時間を待つことなく、常に最高のレスポンス速度とスケーラビリティを実現しています。
 
-Webアプリケーションで、すぐに体験できます。
+### 2. AIモデル：汎用モデルからジャズの専門家へ
 
-1.  **設定**: Web画面で好きな「コード進行」と「音楽スタイル（JAZZ風など）」を選びます。
-2.  **伴奏スタート**: 再生ボタンを押すと、AIによる伴奏が始まります。
-3.  **リズム入力**: MIDIキーボードやPCのキーボード（スペースキーなど）で、伴奏に合わせて自由にリズムを叩いてみましょう！
+Melody Flowの心臓部であるAIモデルは、汎用的な言語モデルに高品質なジャズ演奏データを追加学習（ファインチューニング）させた、独自のカスタムモデルです。
 
-あなたが叩いたリズムで、美しいメロディがリアルタイムに響き渡ります。
+```mermaid
+---
+title: Melody Flow AIモデルの学習プロセス
+---
+graph TD
+    subgraph "🤗 Hugging Face"
+        Base("🤖 Base Model<br/>meta-llama/Llama-3.2-8B-Instruct")
+        DS1[("🎼 amaai-lab/MidiCaps")]
+        DS2[("🎵 projectlosangeles/Los-Angeles-MIDI-Dataset")]
+    end
 
-## 動作環境 (System Requirements)
+    subgraph "🔬 dx2102/llama-midi"
+        FT1("Fine-Tuning")
+        LlamaMidi("🎹 dx2102/llama-midi")
+    end
 
-本アプリケーションをローカル環境で実行する場合、以下のスペックを推奨します。
+    subgraph "🚀 Melody Flow Project"
+        WJazzD[("🎷 Weimar Jazz Database")]
+        ProjFT("<b>✨ Fine-Tuning (本プロジェクト)</b><br/>⚡ Unslothによる高速化<br/>💡 LoRAによる効率的学習")
+        FinalModel("🏆 Melody Flow 専用モデル")
+    end
 
--   **GPU**: VRAM 6GB 程度
--   **RAM**: 8GB 程度
--   **オプション**:
-    -   MIDI IN インターフェースとMIDIキーボード: 演奏のタイミングと強弱をより直感的に入力できます。
+    Base --> FT1
+    DS1 --> FT1
+    DS2 --> FT1
+    FT1 --> LlamaMidi
 
-上記MIDIデバイスがない場合でも、PCのスペースキーや数字キーで演奏のタイミングを入力することが可能です。
+    LlamaMidi --> ProjFT
+    WJazzD --> ProjFT
+    ProjFT --> FinalModel
+```
 
-## ローカルでの実行方法 (Installation)
+### 3. 秘密兵器：`MelodyControlLogitsProcessor`
+
+AIの創造性を活かしつつ、音楽的に破綻しないメロディを生成するための「秘密兵器」が、この独自の制御システムです。LLMが次の音を決定する直前の思考プロセスに介入し、音楽理論に基づいた「ガードレール」を設ける役割を果たします。
+
+```mermaid
+---
+title: MelodyControlLogitsProcessor の処理フロー
+---
+flowchart TD
+    A[Start: LLMが次のTokenを予測] --> B{"🤔 次のNoteを予測するタイミングか？"}
+
+    B -- No --> K(✅ 処理をスキップ)
+
+    B -- Yes --> C(🎼 現在のコードと演奏履歴を取得)
+
+    subgraph "📜 音楽理論に基づく制約"
+        C --> D["<b>コード解析</b><br/>使用可能なスケール音を特定"]
+        C --> E["<b>トレンド計算</b><br/>直近の音の流れ(トレンド)を計算"]
+    end
+
+    subgraph "🔧 確率分布の操作"
+        D --> F(🎵 スケールとトレンドから<br/><b>許容する音</b>のリストを作成)
+        E --> F
+        F --> G(🚫 許容リスト外の音の<br/>出現確率をペナルティで下げる)
+    end
+
+    G --> H(🎶 補正された確率分布から<br/>次の音を決定)
+```
+
+-----
+
+## 🛠️ ローカルでの実行方法 (Installation)
 
 以下の手順で、あなたのローカルマシンにMelody Flowの環境を構築し、事前に学習されたモデルを使ってアプリケーションを実行できます。
+
+  - **GPU**: VRAM 8GB 程度
+  - **RAM**: 8GB 程度
+
+<!-- end list -->
 
 1.  **Pythonのインストール**:
     Python 3.12 以上がインストールされていることを確認してください。
 
 2.  **uvのインストール**:
-    このプロジェクトは `uv` を使ってパッケージを管理しています。`uv`が未導入の場合は、以下のコマンドでインストールしてください。
+    このプロジェクトは `uv` を使ってパッケージを管理しています。
+
     ```bash
     pip install uv
     ```
 
 3.  **リポジトリのクローン**:
-    まず、このリポジトリをローカルマシンにクローンします。
+
+    ```bash
+    git clone https://github.com/u-masao/melody-flow.git
+    cd melody-flow
+    ```
 
 4.  **依存パッケージのインストール**:
-    `uv` を使って、プロジェクトに必要なライブラリをインストールします。
+
     ```bash
     uv sync
     ```
 
 5.  **アプリケーションの起動**:
-    `Makefile` に定義されたコマンドで、バックエンドAPIサーバーを起動します。
-    ```bash
-    make api
-    ```
-    サーバーが `http://localhost:7860` で起動します。Webブラウザでこのアドレスにアクセスすると、Melody FlowのUIが表示されます。
 
-## モデルの再学習 (Model Retraining)
+    ```bash
+    make dev-server
+    ```
+
+    サーバーが `http://localhost:8000` で起動します。Webブラウザでこのアドレスにアクセスすると、Melody FlowのUIが表示されます。
+
+-----
+
+## 🎓 モデルの再学習 (Model Retraining)
 
 提供されているデータセット (`wjazzd.db`) を使ってモデルを再学習（ファインチューニング）する場合は、以下のコマンドを実行します。
 
@@ -132,24 +223,19 @@ Webアプリケーションで、すぐに体験できます。
 make repro
 ```
 
-このコマンドは [DVC](https://dvc.org/) パイプラインを実行し、以下の処理を自動的に行います。
+このコマンドは [DVC](https://dvc.org/) パイプラインを実行し、データセットのダウンロード、前処理、モデルの学習を自動的に行います。
 
-1.  データセットのダウンロード (`wjazzd.db`)
-2.  データセットの前処理
-3.  モデルの学習
+**注意**: モデルの学習には、相応のスペックを持つGPUと時間が必要です。私の環境では NVIDIA GeForce RTX4060Ti 16GB で 6 時間程度でした。
 
-**注意**: モデルの学習には、相応のスペックを持つGPUと時間が必要です。
+-----
 
-## 🔧 使用技術について
+## 🔧 使用技術
 
-この魔法のような体験は、最先端のAI技術とWeb技術によって実現されています。
+  - **バックエンド (AI)**: Python, FastAPI, PyTorch, Transformers, Unsloth
+  - **フロントエンド (Web)**: JavaScript, Tone.js, WebMidi.js, Tailwind CSS
+  - **AIモデル**: `dx2102/llama-midi` をベースに、高品質なジャズの演奏データでファインチューニングしたカスタムモデルを使用しています。
 
--   **バックエンド (AI)**: Python, FastAPI, PyTorch, Transformers
--   **フロントエンド (Web)**: JavaScript, Tone.js, WebMidi.js
--   **AIモデル**: `dx2102/llama-midi` をベースに、高品質なジャズの演奏データでファインチューニングしたカスタムモデルを使用しています。
-
-**技術的なこだわり**:
-AIが生成するメロディが音楽的に破綻しないよう、独自の制御システム（Logits Processor）を開発しました。これにより、AIの創造性と音楽理論の正確さを両立させ、高品質な音楽体験を実現しています。
+-----
 
 ## ⚖️ ライセンスと帰属 (License and Attribution)
 
@@ -161,44 +247,43 @@ AIが生成するメロディが音楽的に破綻しないよう、独自の制
 
 そのため、`dx2102/llama-midi` モデル、およびそれを組み込んだこの `Melody Flow` プロジェクト全体は、**現状では商用利用ができません**。ご注意ください。
 
-商用利用を検討される場合は、`dx2102/llama-midi` を、商用利用が明確に許可されているデータセットのみでファインチューニングしたモデルに置き換える必要があります。
-
 ### モデル
 
 1.  **`dx2102/llama-midi`**
-    -   **ライセンス**: Llama 3.2 Community License
-    -   **商用利用**: **不可** (非商用データセットで学習されているため)
-    -   **ベースモデル**: `meta-llama/Llama-3.2-1B-Instruct`
-    -   **学習データ**: `amaai-lab/MidiCaps`, `projectlosangeles/Los-Angeles-MIDI-Dataset`
+
+      - **ライセンス**: Llama 3.2 Community License
+      - **商用利用**: **不可** (非商用データセットで学習されているため)
+      - **ベースモデル**: `meta-llama/Llama-3.2-1B-Instruct`
+      - **学習データ**: `amaai-lab/MidiCaps`, `projectlosangeles/Los-Angeles-MIDI-Dataset`
 
 2.  **`unsloth/Llama-3.2-1B-bnb-4bit` (およびそのファインチューニング後モデル)**
-    -   **ライセンス**: Llama 3.2 Community License
-    -   **商用利用**: **可** (ただし、サービスの月間アクティブユーザーが7億人を超える場合はMeta社へのライセンス申請が必要)
-    -   **ファインチューニングデータ**: `wjazzd.db`
+
+      - **ライセンス**: Llama 3.2 Community License
+      - **商用利用**: **可** (ただし、サービスの月間アクティブユーザーが7億人を超える場合はMeta社へのライセンス申請が必要)
+      - **ファインチューニングデータ**: `wjazzd.db`
 
 ### データセット
 
 1.  **Weimar Jazz Database (`wjazzd.db`)**
-    -   **ライセンス**: [Open Data Commons Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1-0/)
-    -   **商用利用**: **可** (ただし、帰属表示と、派生データベースを同じライセンスで共有することが条件)
-    -   **帰属**: The Jazzomat Research Project (Hochschule für Musik FRANZ LISZT Weimar)
+
+      - **ライセンス**: [Open Data Commons Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1-0/)
+      - **商用利用**: **可** (帰属表示と派生データベースの同ライセンス共有が条件)
+      - **帰属**: The Jazzomat Research Project (Hochschule für Musik FRANZ LISZT Weimar)
 
 2.  **MidiCaps (`amaai-lab/MidiCaps`)**
-    -   **ライセンス**: [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
-    -   **商用利用**: **可** (ただし、帰属表示と、派生作品を同じライセンスで共有することが条件)
-    -   **帰属**: Jan Melechovsky, Abhinaba Roy, Dorien Herremans. 2024. MidiCaps: A large-scale MIDI dataset with text captions.
-    -   *注: このデータセットは、CC-BY 4.0ライセンスの Lakh MIDI Dataset を元に作成されています。*
+
+      - **ライセンス**: [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+      - **商用利用**: **可** (帰属表示と派生作品の同ライセンス共有が条件)
 
 3.  **Los-Angeles-MIDI-Dataset (`projectlosangeles/Los-Angeles-MIDI-Dataset`)**
-    -   **ライセンス**: [Creative Commons Attribution-**NonCommercial**-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-    -   **商用利用**: **不可**
+
+      - **ライセンス**: [Creative Commons Attribution-**NonCommercial**-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+      - **商用利用**: **不可**
+
+-----
 
 ## 🌱 今後の開発
 
--   演奏したメロディをMIDIファイルとして書き出す機能
--   ユーザーが自由にコード進行を作成できる機能
--   対応音楽スタイルの追加（クラシック、Lo-fi Hip Hopなど）
-
----
-
-Melody Flowが、あなたの日常に新しい創造性とインスピレーションをもたらすことを願っています。
+  - 演奏したメロディをMIDIファイルとして書き出す機能
+  - ユーザーが自由にコード進行を作成できる機能
+  - 対応音楽スタイルの追加（クラシック、Lo-fi Hip Hopなど）
