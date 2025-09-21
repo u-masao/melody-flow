@@ -1,4 +1,3 @@
-import unsloth  # noqa: F401
 import base64
 import os
 import re
@@ -8,12 +7,12 @@ from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
+import unsloth  # noqa: F401
 from unsloth import FastLanguageModel
 import uvicorn
-
-from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 # --- 環境変数に応じてWeaveの有効/無効を切り替える ---
 APP_ENV = os.getenv("APP_ENV", "production")  # デフォルトは安全な 'production'

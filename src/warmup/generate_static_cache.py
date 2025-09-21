@@ -1,4 +1,3 @@
-import unsloth  # noqa: F401
 import base64
 import hashlib
 import itertools
@@ -10,13 +9,13 @@ import sys
 
 from bs4 import BeautifulSoup
 from loguru import logger
+from src.model.melody_processor import MelodyControlLogitsProcessor
+from src.model.utils import load_model_and_tokenizer  # 共通関数をインポート
 import torch
 from tqdm import tqdm
 from transformers import LogitsProcessorList
+import unsloth  # noqa: F401
 import weave
-
-from src.model.melody_processor import MelodyControlLogitsProcessor
-from src.model.utils import load_model_and_tokenizer  # 共通関数をインポート
 
 # デフォルトのハンドラを削除
 logger.remove()

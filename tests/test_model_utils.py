@@ -1,15 +1,17 @@
-import unsloth  # noqa: F401
-from unittest.mock import patch, MagicMock
-import pytest
 import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
+import unsloth  # noqa: F401
 
 
 @pytest.fixture
 def mock_transformers():
     """transformersライブラリのモデル読み込みをモックするフィクスチャ"""
-    with patch("src.model.utils.AutoModelForCausalLM.from_pretrained") as mock_lm, patch(
-        "src.model.utils.AutoTokenizer.from_pretrained"
-    ) as mock_tok:
+    with (
+        patch("src.model.utils.AutoModelForCausalLM.from_pretrained") as mock_lm,
+        patch("src.model.utils.AutoTokenizer.from_pretrained") as mock_tok,
+    ):
         mock_lm.return_value.to.return_value = MagicMock()
         mock_tok.return_value = MagicMock()
         yield mock_lm, mock_tok
@@ -27,6 +29,7 @@ def test_load_model_and_tokenizer_local_path(mock_unsloth, monkeypatch):
     """ローカルパスが指定された場合にUnslothが使用されることをテストする"""
     monkeypatch.setattr("os.path.isdir", lambda path: True)
     from src.model import utils
+
     utils.load_model_and_tokenizer("/fake/local/path")
     mock_unsloth.assert_called_once_with(
         model_name="/fake/local/path", max_seq_length=4096, dtype=None, load_in_4bit=True
@@ -37,6 +40,7 @@ def test_load_model_and_tokenizer_hub_path(mock_transformers, monkeypatch):
     """Hugging Face Hubのパスが指定された場合にtransformersが使用されることをテストする"""
     monkeypatch.setattr("os.path.isdir", lambda path: False)
     from src.model import utils
+
     utils.load_model_and_tokenizer("hf/some-model")
     mock_transformers[0].assert_called_once()
     mock_transformers[1].assert_called_once_with("hf/some-model")
@@ -47,6 +51,7 @@ def test_load_model_and_tokenizer_load_error(mock_unsloth, monkeypatch):
     monkeypatch.setattr("os.path.isdir", lambda path: True)
     mock_unsloth.side_effect = Exception("Test error")
     from src.model import utils
+
     result = utils.load_model_and_tokenizer("any/path")
     assert result == (None, None, None, None)
 
@@ -71,4 +76,3 @@ def test_get_op_decorator_switches_by_env(monkeypatch):
     # 返されたものがモックではなく、'dummy_op'という名前の関数であることを確認
     assert prod_op is not mock_weave.op
     assert prod_op.__name__ == "dummy_op"
-

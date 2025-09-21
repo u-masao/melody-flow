@@ -2,15 +2,15 @@ import sys
 
 from datasets import load_dataset
 from loguru import logger
+
+# 共通のモデル読み込み関数をインポート
+from src.model.utils import load_model_and_tokenizer
 from tap import Tap
 import torch
 from transformers import TrainingArguments
 from trl import SFTTrainer
 from unsloth import FastLanguageModel
 import wandb
-
-# 共通のモデル読み込み関数をインポート
-from src.model.utils import load_model_and_tokenizer
 
 
 class MidiFinetuningExperiment:

@@ -4,13 +4,12 @@ import tempfile
 
 from midi2audio import FluidSynth
 import mido
+from src.model.melody_processor import MelodyControlLogitsProcessor
+from src.model.utils import generate_midi_from_model, load_model_and_tokenizer
 from tap import Tap
 from tqdm import tqdm
 import wandb
 import weave
-
-from src.model.melody_processor import MelodyControlLogitsProcessor
-from src.model.utils import generate_midi_from_model, load_model_and_tokenizer
 
 
 class MelodyEvaluator:
