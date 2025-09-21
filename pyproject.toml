@@ -1,30 +1,14 @@
+# original
 [project]
 name = "melody-flow"
 version = "0.1.0"
 description = "AI Music Co-creation Tool"
+readme = "README.md"
 authors = [
-    { name = "Your Name", email = "you@example.com" },
+    { name = "u-masao", email = "4973920+u-masao@users.noreply.github.com" },
 ]
-requires-python = ">=3.10"
-
+requires-python = ">=3.12"
 dependencies = [
-    "unsloth @ git+https://github.com/unslothai/unsloth.git",
-    "unsloth_zoo",
-    "torch>=2.3.0",
-    "transformers>=4.41.0",
-    "accelerate>=0.30.0",
-    "bitsandbytes>=0.43.0",
-    "loguru>=0.7.2",
-    "beautifulsoup4>=4.12.3",
-    "lxml>=5.2.2",
-    "fastapi>=0.111.0",
-    "uvicorn[standard]>=0.29.0",
-    "python-multipart>=0.0.9",
-    "weave>=0.52.8",
-    "wandb>=0.22.0",
-    "mido>=1.3.3",
-    "midi2audio>=0.1.1",
-    "soundfile>=0.13.1",
     "datasets>=4.0.0",
     "fastapi>=0.116.1",
     "gradio>=5.44.1",
@@ -38,36 +22,38 @@ dependencies = [
     "unsloth>=2025.7.2",
     "uvicorn>=0.35.0",
     "beautifulsoup4>=4.12.3",
+    "wandb>=0.22.0",
+    "weave>=0.52.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "dvc>=3.63.0",
+    "pytest>=8.4.1",
+    "ruff>=0.12.11",
 ]
 
 [project.scripts]
 generate-cache = "src.warmup.generate_static_cache:main"
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [tool.ruff]
 line-length = 99
-src = ["src"]
+src = ["llm_classification"]
 include = ["pyproject.toml", "src/**/*.py"]
 exclude = []
 
 [tool.ruff.lint]
+# flake8の主要なルールと一般的なプラグインのルールを選択
+# F: Pyflakes, E/W: pycodestyle, I: isort, B: flake8-bugbear, C4: flake8-comprehensions など
 select = ["A", "B", "C4", "E", "F", "I", "SIM", "UP", "W"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["src"]
+known-first-party = []
 force-sort-within-sections = true
 
+# black互換のフォーマッタを有効化
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
-[dependency-groups]
-dev = [
-    "dvc>=3.63.0",
-    "pytest>=8.4.2",
-]
