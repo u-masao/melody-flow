@@ -1,18 +1,18 @@
-import unsloth  # noqa: F401
 import os
-import sys
-
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
-from unsloth import FastLanguageModel
 
 from src.model.melody_processor import NoteTokenizer
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
+import unsloth  # noqa: F401
+from unsloth import FastLanguageModel
+
 
 def _get_op_decorator():
     """環境変数に応じて、weave.opまたは何もしないダミーデコレータを返す"""
     if os.getenv("APP_ENV", "production") != "production":
         try:
             import weave
+
             return weave.op
         except ImportError:
             print("⚠️  weave is not installed. Running without it.")
@@ -21,17 +21,20 @@ def _get_op_decorator():
     def dummy_op(*args, **kwargs):
         def decorator(f):
             return f
+
         if args and callable(args[0]):
             return decorator(args[0])
         return decorator
+
     return dummy_op
+
 
 # --- グローバル変数としてデコレータを定義 ---
 op = _get_op_decorator()
 APP_ENV = os.getenv("APP_ENV", "production")
 
 
-def load_model_and_tokenizer(model_path: str | None):
+def load_model_and_tokenizer(model_path: str | None, disable_unsloth: bool = False):
     """
     モデルとトークナイザーをパスから読み込みます。
     ローカルパスの場合はUnslothを、Hubのパスの場合はTransformersを使用します。
@@ -44,7 +47,7 @@ def load_model_and_tokenizer(model_path: str | None):
 
     try:
         model, tokenizer = None, None
-        if os.path.isdir(model_path):
+        if disable_unsloth is False:
             print("-> Loading as local Unsloth model (4-bit)...")
             model, tokenizer = FastLanguageModel.from_pretrained(
                 model_name=model_path, max_seq_length=4096, dtype=None, load_in_4bit=True
@@ -65,9 +68,7 @@ def load_model_and_tokenizer(model_path: str | None):
 
 
 @op()
-def generate_midi_from_model(
-    model, tokenizer, device, prompt: str, processor, seed: int
-) -> str:
+def generate_midi_from_model(model, tokenizer, device, prompt: str, processor, seed: int) -> str:
     """
     プロンプトとLogitsProcessorを使用してMIDIテキストを生成します。
     """
@@ -85,9 +86,14 @@ def generate_midi_from_model(
         # 'weave'がインポートされている場合のみ実行
         try:
             import weave
-            weave.summary({"allowed_notes": processor.note_tokenizer.ids_to_string(processor.allowed_token_ids)})
+
+            weave.summary(
+                {
+                    "allowed_notes": processor.note_tokenizer.ids_to_string(
+                        processor.allowed_token_ids
+                    )
+                }
+            )
         except ImportError:
-            pass # weaveがなければ何もしない
+            pass  # weaveがなければ何もしない
     return tokenizer.decode(output[0])
-
-
