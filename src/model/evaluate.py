@@ -144,13 +144,13 @@ class MelodyEvaluator:
 
 class Args(Tap):
     model_paths: list[str]
-    wandb_project: str = "melody-flow"
+    wandb_project: str = "melody-flow-model-manage"
     evaluation_name: str = "default-evaluation"
 
 
 def main():
     args = Args().parse_args()
-    weave.init(project=args.wandb_project)
+    weave.init(args.wandb_project)
     base_evaluation_set = [
         {"chord_progression": "Dm7 - G7 - Cmaj7", "style": "JAZZ風"},
         {"chord_progression": "Am - G - C - F", "style": "POP風"},
@@ -170,7 +170,6 @@ def main():
         _ = weave.Evaluation(
             dataset=full_evaluation_set,
             scorers=[evaluator.run_single_evaluation],
-            project_name=args.wandb_project,
             name=f"{args.evaluation_name}-{model_name_safe}",
         )
     print("\n🎉 Evaluation finished! Check the results on the WandB dashboard.")
