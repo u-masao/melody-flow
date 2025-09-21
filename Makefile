@@ -2,10 +2,11 @@
 # 変数
 # ==============================================================================
 
+include .env
+
 AWS_PROFILE_NAME := melody-flow
 S3_BUCKET_NAME := melody-flow.click
-DOCKER_IMAGE_PROD := "melody-flow-generator:prod"
-DOCKER_IMAGE_DEV := "melody-flow-generator:dev"
+GENERATOR_DOCKER_IMAGE := "melody-flow-generator"
 MODEL_NAME := models/llama-midi.pth/
 
 
@@ -43,19 +44,21 @@ dev-server-docker: lock
 
 # --- ヘルパーターゲット (デプロイ) ---
 
-.PHONY: generate-cache-prod generate-cache-dev sync-s3
+.PHONY: generate-build-image generate-cache-prod generate-cache-dev sync-s3
 
-generate-cache-prod:
+generate-build-image:
 	@echo "🏭 Building PRODUCTION Docker image..."
-	docker build --build-arg APP_ENV=production -t $(DOCKER_IMAGE_PROD) -f Dockerfile.generate .
-	@echo "🔥 Running PRODUCTION cache generation (5 variations)..."
-	docker run --gpus all --rm -u "$(id -u):$(id -g)" -v ./dist:/app/dist $(DOCKER_IMAGE_PROD)
+	docker build -t $(GENERATOR_DOCKER_IMAGE) -f Dockerfile.generate .
 
-generate-cache-dev:
-	@echo "🏭 Building DEVELOPMENT Docker image..."
-	docker build --build-arg APP_ENV=development -t $(DOCKER_IMAGE_DEV) -f Dockerfile.generate .
+generate-cache-prod: generate-build-image
+	@echo "🔥 Running PRODUCTION cache generation (5 variations)..."
+	docker run --gpus all --rm -v ./dist:/app/dist \
+    -e APP_ENV=production --env-file .env $(GENERATOR_DOCKER_IMAGE)
+
+generate-cache-dev: generate-build-image
 	@echo "🔥 Running DEVELOPMENT cache generation (2 variations)..."
-	docker run --gpus all --rm -u "$(id -u):$(id -g)" -v ./dist:/app/dist $(DOCKER_IMAGE_DEV)
+	docker run --gpus all --rm -v ./dist:/app/dist \
+    -e APP_ENV=development --env-file .env $(GENERATOR_DOCKER_IMAGE)
 
 sync-s3:
 	@if [ ! -d "./dist" ]; then \
