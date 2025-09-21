@@ -1,3 +1,4 @@
+import unsloth  # noqa: F401
 import base64
 import hashlib
 import itertools
@@ -14,13 +15,19 @@ from src.model.utils import load_model_and_tokenizer  # 共通関数をインポ
 import torch
 from tqdm import tqdm
 from transformers import LogitsProcessorList
-import unsloth  # noqa: F401
+import wandb
 import weave
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # デフォルトのハンドラを削除
 logger.remove()
 # 標準出力にINFOレベル以上を出力するハンドラを追加
 logger.add(sys.stdout, level="INFO")
+
+wandb.init(entity=os.environ["WANDB_ENTITY"], project=os.environ["WANDB_PROJECT"])
 
 
 # --- パス設定 ---
@@ -153,10 +160,12 @@ def generate_midi_from_model(
         pad_token_id=tokenizer.eos_token_id,
         logits_processor=logits_processors,
     )
-    # どの音を許可したかをWeaveのサマリーに記録
-    weave.summary(
-        {"allowed_notes": processor.note_tokenizer.ids_to_string(processor.allowed_token_ids)}
-    )
+    # どの音を許可したかをWandBサマリーに記録
+    if wandb.run:
+        wandb.summary["allowd_notes"] = processor.note_tokenizer.ids_to_string(
+            processor.allowed_token_ids
+        )
+        wandb.summary.update()
     return tokenizer.decode(output[0])
 
 
@@ -169,7 +178,7 @@ def parse_and_encode_midi(decoded_text: str) -> str:
 # --- メイン処理 ---
 def main():
     # Weaveを初期化
-    weave.init("melody-flow-cache-generator")
+    weave.init(os.environ["WANDB_PROJECT"])
 
     # 共通関数でモデルを読み込む
     model, tokenizer, note_tokenizer_helper, device = load_model_and_tokenizer(MODEL_NAME)
