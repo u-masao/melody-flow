@@ -1,12 +1,8 @@
-# original
 [project]
 name = "melody-flow"
 version = "0.1.0"
-description = "AI Music Co-creation Tool"
+description = "Add your description here"
 readme = "README.md"
-authors = [
-    { name = "u-masao", email = "4973920+u-masao@users.noreply.github.com" },
-]
 requires-python = ">=3.12"
 dependencies = [
     "datasets>=4.0.0",
@@ -28,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "dvc>=3.63.0",
+    "dvc[dev,gdrive]>=3.62.0",
     "pytest>=8.4.1",
     "ruff>=0.12.11",
 ]
