@@ -9,7 +9,6 @@ dependencies = [
     "fastapi>=0.116.1",
     "gradio>=5.44.1",
     "loguru>=0.7.3",
-    "mlflow>=3.3.2",
     "symusic>=0.5.8",
     "torch>=2.8.0",
     "transformers==4.55.4",
