@@ -45,7 +45,7 @@ stages:
 
   evaluate_model:
     cmd: >-
-      uv run python -m src.model.evaluate models/llama-midi.pth/ models/llama-3.2-1b.pth/
+      uv run python -m src.model.evaluate --model_paths models/llama-midi.pth/ models/llama-3.2-1b.pth/
       && date > data/interim/flag_evaluate_model.txt
     deps:
       - src/model/evaluate.py
