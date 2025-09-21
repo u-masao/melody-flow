@@ -1,3 +1,4 @@
+import unsloth  # noqa: F401
 import sys
 
 from datasets import load_dataset
