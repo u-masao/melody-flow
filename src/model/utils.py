@@ -64,7 +64,10 @@ def load_model_and_tokenizer(model_path: str | None, disable_unsloth: bool = Fal
         return model, tokenizer, note_tokenizer_helper, device
     except Exception as e:
         print(f"❌ Fatal: Error loading model: {e}")
-        return None, None, None, None
+        import traceback
+
+        traceback.print_exc()
+        raise e
 
 
 @op()
