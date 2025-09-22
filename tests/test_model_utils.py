@@ -30,9 +30,9 @@ def test_load_model_and_tokenizer_local_path(mock_unsloth, monkeypatch):
     monkeypatch.setattr("os.path.isdir", lambda path: True)
     from src.model import utils
 
-    utils.load_model_and_tokenizer("/fake/local/path")
+    utils.load_model_and_tokenizer("./models/llama-midi.pth/")
     mock_unsloth.assert_called_once_with(
-        model_name="/fake/local/path", max_seq_length=4096, dtype=None, load_in_4bit=True
+        model_name="./models/llama-midi.pth/", max_seq_length=4096, dtype=None, load_in_4bit=True
     )
 
 
@@ -41,9 +41,9 @@ def test_load_model_and_tokenizer_hub_path(mock_transformers, monkeypatch):
     monkeypatch.setattr("os.path.isdir", lambda path: False)
     from src.model import utils
 
-    utils.load_model_and_tokenizer("hf/some-model")
+    utils.load_model_and_tokenizer("dx2102/llama-midi", disable_unsloth=True)
     mock_transformers[0].assert_called_once()
-    mock_transformers[1].assert_called_once_with("hf/some-model")
+    mock_transformers[1].assert_called_once_with("dx2102/llama-midi")
 
 
 def test_load_model_and_tokenizer_load_error(mock_unsloth, monkeypatch):
