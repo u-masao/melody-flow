@@ -1,7 +1,12 @@
+import unsloth # noqa: F401
+import sys
+import asyncio
 import os
 from pathlib import Path
 import tempfile
+from typing import Any
 
+from loguru import logger
 from midi2audio import FluidSynth
 import mido
 from src.model.melody_processor import MelodyControlLogitsProcessor
@@ -11,27 +16,18 @@ from tqdm import tqdm
 import wandb
 import weave
 
-
-class MelodyEvaluator:
-    """
-    生成されたメロディを評価し、WandB Weaveに記録するためのクラス。
-    """
-
-    def __init__(self, model, tokenizer, note_tokenizer_helper, device):
+class MelodyGenerator:
+    def __init__(self, model: Any, tokenizer: Any, note_tokenizer_helper: Any, device: Any):
         self.model = model
         self.tokenizer = tokenizer
         self.note_tokenizer_helper = note_tokenizer_helper
         self.device = device
-        self.soundfont_path = None  # 自動検索に任せる
 
     def _parse_full_melody(self, midi_text: str) -> list[dict]:
-        """生成されたMIDIテキストをノート情報の辞書のリストにパースする。"""
         notes = []
         lines = midi_text.strip().split("\n")
-        # ヘッダー行をスキップ
         if lines and "pitch" in lines[0]:
             lines = lines[1:]
-
         for line in lines:
             parts = line.strip().split()
             if len(parts) == 5:
@@ -50,20 +46,12 @@ class MelodyEvaluator:
         return notes
 
     def _calculate_metrics(self, parsed_notes: list[dict], allowed_pitches: set[int]) -> dict:
-        """パースされたノート情報から定量的メトリクスを計算する。"""
         if not parsed_notes:
-            return {
-                "total_notes": 0,
-                "unique_pitch_count": 0,
-                "out_of_scale_ratio": 0.0,
-                "average_interval": 0.0,
-            }
-
+            return {"total_notes": 0, "unique_pitch_count": 0, "out_of_scale_ratio": 0.0, "average_interval": 0.0}
         pitches = [note["pitch"] for note in parsed_notes]
         out_of_scale_count = sum(1 for p in pitches if p % 12 not in allowed_pitches)
         intervals = [abs(pitches[i] - pitches[i - 1]) for i in range(1, len(pitches))]
         average_interval = sum(intervals) / len(intervals) if intervals else 0.0
-
         return {
             "total_notes": len(pitches),
             "unique_pitch_count": len(set(pitches)),
@@ -72,7 +60,6 @@ class MelodyEvaluator:
         }
 
     def _create_wav_from_notes(self, parsed_notes: list[dict]) -> str | None:
-        """ノート情報のリストからWAVファイルを生成し、一時ファイルのパスを返す。"""
         if not parsed_notes:
             return None
         mid = mido.MidiFile()
@@ -86,37 +73,33 @@ class MelodyEvaluator:
         for note in parsed_notes:
             delay_ticks = int(note["wait"] / ms_per_tick)
             duration_ticks = int(note["duration"] / ms_per_tick)
-            track.append(
-                mido.Message(
-                    "note_on", note=note["pitch"], velocity=note["velocity"], time=delay_ticks
-                )
-            )
-            track.append(
-                mido.Message(
-                    "note_off", note=note["pitch"], velocity=note["velocity"], time=duration_ticks
-                )
-            )
+            track.append(mido.Message("note_on", note=note["pitch"], velocity=note["velocity"], time=delay_ticks))
+            track.append(mido.Message("note_off", note=note["pitch"], velocity=note["velocity"], time=duration_ticks))
+
         with tempfile.NamedTemporaryFile(suffix=".mid", delete=False) as mid_file:
             mid.save(mid_file.name)
             mid_path = mid_file.name
+
         wav_path = tempfile.mktemp(suffix=".wav")
+        logger.info(f"{mid_path=}")
+        logger.info(f"{wav_path=}")
         try:
-            fs = FluidSynth(self.soundfont_path)
+            fs = FluidSynth()
             fs.midi_to_audio(mid_path, wav_path)
             return wav_path
         except Exception as e:
-            print(f"Error creating WAV file: {e}")
+            logger.error(f"Error creating WAV file: {e}")
             return None
         finally:
             if os.path.exists(mid_path):
                 os.remove(mid_path)
 
-    @weave.op()
-    def run_single_evaluation(self, chord_progression: str, style: str, variation: int) -> dict:
-        """単一のテストケースで評価を実行し、結果を返す。"""
+    def run_single_prediction(self, chord_progression: str, style: str, variation: int) -> dict:
+        logger.info(f"Running prediction for: {style} - {chord_progression} - var{variation}")
         all_notes_text = ""
         allowed_pitches_union = set()
         chords = [chord.strip() for chord in chord_progression.split("-")]
+
         for chord in chords:
             processor = MelodyControlLogitsProcessor(chord, self.note_tokenizer_helper)
             prompt = (
@@ -127,26 +110,28 @@ class MelodyEvaluator:
                 decoded = self.tokenizer.decode([token_id])
                 if decoded.strip().isdigit():
                     allowed_pitches_union.add(int(decoded.strip()) % 12)
+
             raw_output = generate_midi_from_model(
                 self.model, self.tokenizer, self.device, prompt, processor, seed=variation
             )
             midi_text_part = raw_output.split("instrument\n")[-1]
             all_notes_text += midi_text_part.strip() + "\n"
+
         parsed_notes = self._parse_full_melody(all_notes_text)
         metrics = self._calculate_metrics(parsed_notes, allowed_pitches_union)
         wav_path = self._create_wav_from_notes(parsed_notes)
+
         results = {"output_text": all_notes_text.strip(), "scores": metrics}
         if wav_path:
             results["audio"] = wandb.Audio(wav_path, caption=f"{style} - var{variation}")
             os.remove(wav_path)
-        return results
 
+        return results
 
 class Args(Tap):
     model_paths: list[str]
     wandb_project: str = "melody-flow-model-manage"
     evaluation_name: str = "default-evaluation"
-
 
 def main():
     args = Args().parse_args()
@@ -159,21 +144,51 @@ def main():
     full_evaluation_set = [
         {**case, "variation": var} for case in base_evaluation_set for var in variations
     ]
+
     for model_path in tqdm(args.model_paths, desc="Evaluating Models"):
         model_name_safe = Path(model_path).name
-        print(f"\n--- Evaluating Model: {model_name_safe} ---")
-        model, tokenizer, note_helper, device = load_model_and_tokenizer(model_path)
-        if model is None:
-            print(f"Skipping model {model_path} due to loading error.")
-            continue
-        evaluator = MelodyEvaluator(model, tokenizer, note_helper, device)
-        _ = weave.Evaluation(
-            dataset=full_evaluation_set,
-            scorers=[evaluator.run_single_evaluation],
-            name=f"{args.evaluation_name}-{model_name_safe}",
-        )
-    print("\n🎉 Evaluation finished! Check the results on the WandB dashboard.")
+        logger.info(f"--- Evaluating Model: {model_name_safe} ---")
+        
+        model, tokenizer, note_helper, device = load_model_and_tokenizer(model_path, disable_unsloth=False)
 
+        if model is None:
+            logger.info(f"Skipping model {model_path} due to loading error.")
+            continue
+
+        melody_generator = MelodyGenerator(
+            model=model,
+            tokenizer=tokenizer,
+            note_tokenizer_helper=note_helper,
+            device=device
+        )
+        
+        # --- ▼▼▼ 【ここからがドキュメントに沿った正しい実装】 ▼▼▼ ---
+        evaluation_name = f"{args.evaluation_name}-{model_name_safe}"
+        eval_logger = weave.EvaluationLogger(name=evaluation_name)
+        
+        for example in tqdm(full_evaluation_set, desc=f"Running {evaluation_name}"):
+            # 1. 1サンプルずつ順番に実行
+            output = melody_generator.run_single_prediction(**example)
+            
+            # 2. 予測結果をログに記録
+            pred_logger = eval_logger.log_prediction(inputs=example, output=output)
+            
+            # 3. スコアを個別に記録
+            if "scores" in output:
+                for score_name, score_value in output["scores"].items():
+                    pred_logger.log_score(scorer=score_name, score=score_value)
+            
+            # 4. この予測のロギングを完了
+            pred_logger.finish()
+        
+        # 5. 全体の評価を完了
+        eval_logger.log_summary()
+        # --- ▲▲▲ 【ここまで】 ▲▲▲ ---
+
+    logger.info("🎉 All evaluations finished! Check the results on the WandB dashboard.")
+    wandb.finish()
 
 if __name__ == "__main__":
+    logger.remove()
+    logger.add(sys.stdout, level="INFO")
     main()
