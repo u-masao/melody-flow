@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 import torch
 
 
@@ -13,6 +14,7 @@ def test_load_model_and_tokenizer_local_unsloth_success(mock_from_pretrained):
     mock_from_pretrained.return_value = (mock_model, mock_tokenizer)
 
     from src.model import utils
+
     model, tokenizer, note_helper, device = utils.load_model_and_tokenizer(
         model_path="local/path", disable_unsloth=False
     )
@@ -39,6 +41,7 @@ def test_load_model_and_tokenizer_hub_success(mock_model_loader, mock_tokenizer_
     mock_tokenizer_loader.return_value = mock_tokenizer
 
     from src.model import utils
+
     model, tokenizer, note_helper, device = utils.load_model_and_tokenizer(
         model_path="hf/some-model", disable_unsloth=True
     )
@@ -58,6 +61,7 @@ def test_load_model_and_tokenizer_load_error(mock_from_pretrained):
     mock_from_pretrained.side_effect = Exception("Test error")
 
     from src.model import utils
+
     # 例外がraiseされることを確認
     with pytest.raises(Exception, match="Test error"):
         utils.load_model_and_tokenizer(model_path="any/path", disable_unsloth=False)
@@ -84,6 +88,7 @@ def test_generate_midi_from_model():
     mock_model.generate.return_value = torch.tensor([[1, 2, 3, 4, 5]])
 
     from src.model import utils
+
     result = utils.generate_midi_from_model(
         model=mock_model,
         tokenizer=mock_tokenizer,
