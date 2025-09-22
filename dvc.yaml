@@ -43,9 +43,19 @@ stages:
     outs:
       - models/llama-3.2-1b.pth/
 
+  download_soundfont:
+    cmd: >-
+      wget -q
+      https://github.com/mrbumpy409/GeneralUser-GS/raw/refs/heads/main/GeneralUser-GS.sf2
+      -O data/raw/FluidR3_GM.sf2
+    outs:
+      - data/raw/FluidR3_GM.sf2
+
   evaluate_model:
     cmd: >-
-      uv run python -m src.model.evaluate --model_paths models/llama-midi.pth/ models/llama-3.2-1b.pth/
+      uv run python -m src.model.evaluate
+      --model_paths models/llama-midi.pth/ models/llama-3.2-1b.pth/
+      --soundfont_path data/raw/FluidR3_GM.sf2
       && date > data/interim/flag_evaluate_model.txt
     deps:
       - src/model/evaluate.py
@@ -54,5 +64,6 @@ stages:
       - src/model/chord_name_parser.py
       - models/llama-3.2-1b.pth/
       - models/llama-midi.pth/
+      - data/raw/FluidR3_GM.sf2
     outs:
       - data/interim/flag_evaluate_model.txt
