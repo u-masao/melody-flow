@@ -49,8 +49,9 @@ stages:
       && date > data/interim/flag_evaluate_model.txt
     deps:
       - src/model/evaluate.py
-      - src/api/main.py
+      - src/model/utils.py
       - src/model/melody_processor.py
+      - src/model/chord_name_parser.py
       - models/llama-3.2-1b.pth/
       - models/llama-midi.pth/
     outs:
