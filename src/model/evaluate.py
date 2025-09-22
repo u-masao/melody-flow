@@ -1,14 +1,12 @@
-import unsloth # noqa: F401
-import sys
+# src/model/evaluate.py
 import asyncio
 import os
 from pathlib import Path
 import tempfile
-from typing import Any
+from typing import Any, Dict, List
 
 from loguru import logger
-from midi2audio import FluidSynth
-import mido
+from src.model.audio import AudioUtility #  নতুন লাইব্রেরি আমদানি করা হচ্ছে
 from src.model.melody_processor import MelodyControlLogitsProcessor
 from src.model.utils import generate_midi_from_model, load_model_and_tokenizer
 from tap import Tap
@@ -16,14 +14,20 @@ from tqdm import tqdm
 import wandb
 import weave
 
+SOUNDFONT_PATH = "data/raw/FluidR3_GM.sf2"
+
 class MelodyGenerator:
     def __init__(self, model: Any, tokenizer: Any, note_tokenizer_helper: Any, device: Any):
         self.model = model
         self.tokenizer = tokenizer
         self.note_tokenizer_helper = note_tokenizer_helper
         self.device = device
+        # ▼▼▼ 【変更点1】AudioUtilityを初期化 ▼▼▼
+        self.audio_util = AudioUtility(soundfont_path=SOUNDFONT_PATH)
+        # ▲▲▲ 【ここまで】 ▲▲▲
 
-    def _parse_full_melody(self, midi_text: str) -> list[dict]:
+    def _parse_full_melody(self, midi_text: str) -> List[Dict[str, int]]:
+        # このメソッドは変更なし
         notes = []
         lines = midi_text.strip().split("\n")
         if lines and "pitch" in lines[0]:
@@ -45,7 +49,8 @@ class MelodyGenerator:
                     continue
         return notes
 
-    def _calculate_metrics(self, parsed_notes: list[dict], allowed_pitches: set[int]) -> dict:
+    def _calculate_metrics(self, parsed_notes: List[Dict[str, int]], allowed_pitches: set[int]) -> Dict[str, float]:
+        # このメソッドは変更なし
         if not parsed_notes:
             return {"total_notes": 0, "unique_pitch_count": 0, "out_of_scale_ratio": 0.0, "average_interval": 0.0}
         pitches = [note["pitch"] for note in parsed_notes]
@@ -59,42 +64,54 @@ class MelodyGenerator:
             "average_interval": average_interval,
         }
 
-    def _create_wav_from_notes(self, parsed_notes: list[dict]) -> str | None:
+    # ▼▼▼ 【変更点2】AudioUtilityを使うように音声生成メソッドをリファクタリング ▼▼▼
+    def _create_mp3_from_notes(self, parsed_notes: List[Dict[str, int]]) -> str | None:
         if not parsed_notes:
             return None
-        mid = mido.MidiFile()
-        track = mido.MidiTrack()
-        mid.tracks.append(track)
-        track.append(mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(120)))
-        instrument = parsed_notes[0].get("instrument", 0)
-        track.append(mido.Message("program_change", program=instrument, time=0))
-        ticks_per_beat = mid.ticks_per_beat
-        ms_per_tick = 500 / ticks_per_beat
-        for note in parsed_notes:
-            delay_ticks = int(note["wait"] / ms_per_tick)
-            duration_ticks = int(note["duration"] / ms_per_tick)
-            track.append(mido.Message("note_on", note=note["pitch"], velocity=note["velocity"], time=delay_ticks))
-            track.append(mido.Message("note_off", note=note["pitch"], velocity=note["velocity"], time=duration_ticks))
 
-        with tempfile.NamedTemporaryFile(suffix=".mid", delete=False) as mid_file:
-            mid.save(mid_file.name)
-            mid_path = mid_file.name
+        # AudioUtilityが期待する形式にノート情報を変換
+        # ('pitch' -> 'note', 'wait'は新しいMIDI生成ロジックでは使われない)
+        utility_notes = [
+            {"note": n["pitch"], "duration": n["duration"], "velocity": n["velocity"]}
+            for n in parsed_notes
+        ]
+        
+        # 一時ファイルパスを管理
+        temp_dir = tempfile.mkdtemp()
+        mid_path = Path(temp_dir) / "temp.mid"
+        wav_path = Path(temp_dir) / "temp.wav"
+        mp3_path = Path(temp_dir) / "output.mp3"
 
-        wav_path = tempfile.mktemp(suffix=".wav")
-        logger.info(f"{mid_path=}")
-        logger.info(f"{wav_path=}")
         try:
-            fs = FluidSynth()
-            fs.midi_to_audio(mid_path, wav_path)
-            return wav_path
+            # 1. MIDIファイルを作成
+            self.audio_util.create_midi_file(notes=utility_notes, output_path=mid_path)
+            # 2. MIDIをWAVに変換
+            self.audio_util.midi_to_wav(midi_path=mid_path, output_path=wav_path)
+            # 3. WAVをMP3に変換し、音量を上げる
+            self.audio_util.wav_to_mp3(wav_path=wav_path, output_path=mp3_path, volume_change_db=10.0)
+
+            # 最終的なMP3ファイルのデータを読み込んで返す
+            with open(mp3_path, "rb") as f:
+                mp3_data = f.read()
+            
+            # 一時ファイルをクリーンアップするために新しい一時ファイルに書き込む
+            final_mp3_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            final_mp3_file.write(mp3_data)
+            final_mp3_file.close()
+
+            return final_mp3_file.name
+
         except Exception as e:
-            logger.error(f"Error creating WAV file: {e}")
+            logger.error(f"Error creating MP3 file: {e}")
             return None
         finally:
-            if os.path.exists(mid_path):
-                os.remove(mid_path)
+            # 一時ディレクトリ内のファイルをすべて削除
+            for f in os.listdir(temp_dir):
+                os.remove(os.path.join(temp_dir, f))
+            os.rmdir(temp_dir)
+    # ▲▲▲ 【ここまで】 ▲▲▲
 
-    def run_single_prediction(self, chord_progression: str, style: str, variation: int) -> dict:
+    def run_single_prediction(self, chord_progression: str, style: str, variation: int) -> Dict[str, Any]:
         logger.info(f"Running prediction for: {style} - {chord_progression} - var{variation}")
         all_notes_text = ""
         allowed_pitches_union = set()
@@ -119,15 +136,16 @@ class MelodyGenerator:
 
         parsed_notes = self._parse_full_melody(all_notes_text)
         metrics = self._calculate_metrics(parsed_notes, allowed_pitches_union)
-        wav_path = self._create_wav_from_notes(parsed_notes)
+        mp3_path = self._create_mp3_from_notes(parsed_notes)
 
         results = {"output_text": all_notes_text.strip(), "scores": metrics}
-        if wav_path:
-            results["audio"] = weave.Audio(wav_path)
-            # os.remove(wav_path)
+        if mp3_path and os.path.exists(mp3_path):
+            results["audio"] = weave.Audio(mp3_path, format="mp3")
+            os.remove(mp3_path)
 
         return results
 
+# Argsクラスとmain関数は変更なし
 class Args(Tap):
     model_paths: list[str]
     wandb_project: str = "melody-flow-model-manage"
@@ -162,33 +180,24 @@ def main():
             device=device
         )
         
-        # --- ▼▼▼ 【ここからがドキュメントに沿った正しい実装】 ▼▼▼ ---
         evaluation_name = f"{args.evaluation_name}-{model_name_safe}"
         eval_logger = weave.EvaluationLogger(name=evaluation_name)
         
         for example in tqdm(full_evaluation_set, desc=f"Running {evaluation_name}"):
-            # 1. 1サンプルずつ順番に実行
             output = melody_generator.run_single_prediction(**example)
             
-            # 2. 予測結果をログに記録
             pred_logger = eval_logger.log_prediction(inputs=example, output=output)
             
-            # 3. スコアを個別に記録
             if "scores" in output:
                 for score_name, score_value in output["scores"].items():
                     pred_logger.log_score(scorer=score_name, score=score_value)
             
-            # 4. この予測のロギングを完了
             pred_logger.finish()
         
-        # 5. 全体の評価を完了
         eval_logger.log_summary()
-        # --- ▲▲▲ 【ここまで】 ▲▲▲ ---
 
     logger.info("🎉 All evaluations finished! Check the results on the WandB dashboard.")
     wandb.finish()
 
 if __name__ == "__main__":
-    logger.remove()
-    logger.add(sys.stdout, level="INFO")
     main()
