@@ -103,6 +103,7 @@ class MelodyGenerator:
             logger.error(f"Error creating MP3 file: {e}")
             return None
         finally:
+            pass
             # 一時ディレクトリ内のファイルをすべて削除
             #for f in os.listdir(temp_dir):
                 #os.remove(os.path.join(temp_dir, f))
