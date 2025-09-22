@@ -45,7 +45,8 @@ exclude = []
 [tool.ruff.lint]
 # flake8の主要なルールと一般的なプラグインのルールを選択
 # F: Pyflakes, E/W: pycodestyle, I: isort, B: flake8-bugbear, C4: flake8-comprehensions など
-select = ["A", "B", "C4", "E", "F", "I", "SIM", "UP", "W"]
+# select = ["A", "B", "C4", "E", "F", "I", "SIM", "UP", "W"]
+select = ["A", "B", "C4", "E", "F", "SIM", "UP", "W"]
 
 [tool.ruff.lint.isort]
 known-first-party = []
