@@ -33,6 +33,7 @@ docs/project_summary.md
 #src/model/__init__.py
 #src/model/chord_name_parser.py
 src/model/evaluate.py
+src/model/audio.py
 #src/model/inference.py
 #src/model/make_dataset.py
 #src/model/melody_processor.py
@@ -48,8 +49,8 @@ src/model/utils.py
 #static/presentation.html
 #tests/__init__.py
 #tests/test_chord_name_parser.py
-tests/test_melody_processor.py
-tests/test_model_evaluate.py
+#tests/test_melody_processor.py
+#tests/test_model_evaluate.py
 #tests/test_model_utils.py
 #uv.lock
 )
