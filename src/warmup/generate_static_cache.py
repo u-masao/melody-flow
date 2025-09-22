@@ -9,6 +9,7 @@ import re
 import sys
 
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from loguru import logger
 from src.model.melody_processor import MelodyControlLogitsProcessor
 from src.model.utils import load_model_and_tokenizer  # 共通関数をインポート
@@ -17,8 +18,6 @@ from tqdm import tqdm
 from transformers import LogitsProcessorList
 import wandb
 import weave
-
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -192,10 +191,7 @@ def main():
     print("🚀 Starting static cache generation for all keys...")
     all_combinations = list(itertools.product(chord_progressions, ALL_KEYS, STYLES, VARIATIONS))
 
-    with tqdm(
-            all_combinations, desc="Generating Cache", unit="file"
-
-    ) as pbar:
+    with tqdm(all_combinations, desc="Generating Cache", unit="file") as pbar:
         for prog_info, target_key, style, var in pbar:
             original_prog = prog_info["progression"]
             original_key = prog_info["original_key"]
