@@ -1451,6 +1451,12 @@ wheels = [
 ]
 
 [[package]]
+name = "fluidsynth"
+version = "0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/db/471488e0ac26ffd0b73e49f1fedc3b557195f45aa0d1e6e9193c510024d3/fluidsynth-0.2.tar.gz", hash = "sha256:734948f8ebb1753fba741205d079c136c647a3a657400c61d33c8328166719eb", size = 3729, upload-time = "2012-02-28T11:33:33.052Z" }
+
+[[package]]
 name = "frozenlist"
 version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2323,6 +2329,7 @@ dependencies = [
     { name = "beautifulsoup4" },
     { name = "datasets" },
     { name = "fastapi" },
+    { name = "fluidsynth" },
     { name = "gradio" },
     { name = "loguru" },
     { name = "lxml" },
@@ -2353,6 +2360,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=4.0.0" },
     { name = "dvc", extras = ["dev", "gdrive"], marker = "extra == 'dev'", specifier = ">=3.62.0" },
     { name = "fastapi", specifier = ">=0.116.1" },
+    { name = "fluidsynth", specifier = ">=0.2" },
     { name = "gradio", specifier = ">=5.44.1" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "lxml", specifier = ">=6.0.1" },
