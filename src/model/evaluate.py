@@ -102,6 +102,7 @@ class MelodyGenerator:
             # 最終的なWAVファイルのデータを読み込んで返す
             with open(wav_path, "rb") as f:
                 wav_data = f.read()
+                return wav_data
 
             # 一時ファイルをクリーンアップするために新しい一時ファイルに書き込む
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as final_wav_file:
@@ -109,7 +110,7 @@ class MelodyGenerator:
                 return final_wav_file.name
 
         except Exception as e:
-            logger.error(f"Error creating MP3 file: {e}")
+            logger.error(f"Error creating WAV file: {e}")
             return None
         finally:
             # 一時ディレクトリ内のファイルをすべて削除
@@ -146,12 +147,11 @@ class MelodyGenerator:
 
         parsed_notes = self._parse_full_melody(all_notes_text)
         metrics = self._calculate_metrics(parsed_notes, allowed_pitches_union)
-        wav_path = self._create_wav_from_notes(parsed_notes)
+        wav_data = self._create_wav_from_notes(parsed_notes)
 
         results = {"output_text": all_notes_text.strip(), "scores": metrics}
-        if wav_path and os.path.exists(wav_path):
-            results["audio"] = weave.Audio(wav_path, format="wav")
-            os.remove(wav_path)
+        if wav_data:
+            results["audio"] = weave.Audio(wav_data, format="wav")
 
         return results
 
