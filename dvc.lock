@@ -87,8 +87,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 05921bdbd50d125007e76033ee6ef997
-      size: 8415
+      md5: 715636d601cc8f88df1dacaa01939738
+      size: 8391
     - path: src/model/melody_processor.py
       hash: md5
       md5: 59be6753782ec198a7b51b3565505d24
@@ -100,7 +100,7 @@ stages:
     outs:
     - path: data/interim/flag_evaluate_model.txt
       hash: md5
-      md5: 4e4fa54a9129e97c654f29464a643af9
+      md5: f795595027d17372a24b30d94cddd0b0
       size: 43
   download_soundfont:
     cmd: wget -q 
