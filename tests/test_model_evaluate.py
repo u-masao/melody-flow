@@ -1,5 +1,3 @@
-import os
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import mido
@@ -74,7 +72,9 @@ def test_create_wav_from_notes_success(
     mock_miditrack.assert_called_once()
     mock_tracks_list.append.assert_called_once_with(mock_track_instance)
     assert mock_track_instance.append.call_count == 6
-    mock_track_instance.append.assert_any_call(mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(120)))
+    mock_track_instance.append.assert_any_call(
+        mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(120))
+    )
     mock_track_instance.append.assert_any_call(mido.Message("program_change", program=0, time=0))
     mock_mid_instance.save.assert_called_once_with("/tmp/fake_midi_file.mid")
     mock_fluidsynth.assert_called_once()
@@ -109,7 +109,8 @@ def test_create_wav_from_notes_fluidsynth_error(
     sample_parsed_notes,
 ):
     """
-    異常系テスト: FluidSynthで例外が発生した場合にNoneを返し、ファイルをクリーンアップすることを確認
+    異常系テスト: FluidSynthで例外が発生した場合にNoneを返し、
+    ファイルをクリーンアップすることを確認
     """
     mock_mid_instance = MagicMock()
     mock_midifile.return_value = mock_mid_instance
