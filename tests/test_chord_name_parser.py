@@ -1,5 +1,4 @@
 import pytest
-
 from src.model.chord_name_parser import parse_chord_name
 
 

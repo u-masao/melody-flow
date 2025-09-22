@@ -9,44 +9,48 @@ FILES=(
 #Makefile
 #PIPELINE.md
 #README.md
-#data/external/.gitkeep
-#data/interim/.gitkeep
-#data/processed/.gitkeep
-#data/raw/.gitignore
-#data/raw/.gitkeep
 #docker-compose.yaml
 #docs/architecture.md
-#docs/deplow_guide_to_aws.md
+#docs/deploy_guide_to_aws.md
 #docs/plan_of_architecture_enhance.md
+#docs/play-mode-ui.png
 docs/project_summary.md
+#docs/studio-mode-ui.png
 #dvc.lock
-#dvc.yaml
+dvc.yaml
 #nginx/nginx.conf
 #nginx/nginx_http_cache.conf
 #nginx/nginx_http_only.conf
 #nginx/nginx_https.conf
-#params.yaml
-#pyproject.toml
+params.yaml
+pyproject.toml
 #scripts/dump_source.sh
 #scripts/warmup.sh
 #src/api/__init__.py
-src/api/main.py
+#src/api/main.py
 #src/eda/__init__.py
 #src/eda/data_viewer.py
-#src/model/__init__.py
-#src/model/chord_name_parser.py
-#src/model/inference.py
-#src/model/make_dataset.py
-#src/model/melody_processor.py
-#src/model/train_model.py
+src/model/__init__.py
+src/model/chord_name_parser.py
+src/model/evaluate.py
+src/model/inference.py
+src/model/make_dataset.py
+src/model/melody_processor.py
+src/model/train_model.py
+src/model/utils.py
 #src/warmup/__init__.py
-src/warmup/generate_static_cache.py
-static/app.html
+#src/warmup/generate_static_cache.py
+#static/app.html
 #static/favicon.svg
 #static/index.html
-static/main.js
+#static/main.js
 #static/midi-test.html
 #static/presentation.html
+#tests/__init__.py
+#tests/test_chord_name_parser.py
+#tests/test_melody_processor.py
+#tests/test_model_utils.py
+#uv.lock
 )
 
 for ((i=0; i<${#FILES[@]}; i++))
@@ -59,4 +63,4 @@ do
     echo ""
 done
 
-echo 'コードを修正したら必ず全文を表示して'
+echo 'ファイルを修正したら、必ず修正したファイルの全文を表示して'

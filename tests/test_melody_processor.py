@@ -2,10 +2,9 @@ import re
 
 from loguru import logger
 import pytest
+from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 import torch
 from transformers import AutoTokenizer
-
-from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 
 
 def is_arabic_numerals_only(s: str) -> bool:

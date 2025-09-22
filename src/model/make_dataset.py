@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 
 import pandas as pd
+import wandb
 
 
 def get_all_melids(con: sqlite3.Connection) -> list[int]:
@@ -145,6 +146,39 @@ def main(db_path: Path, output_path: Path):
         json.dump(results, f, indent=2, ensure_ascii=False)
 
     print("Dataset creation complete.")
+
+    print("Logging dataset to WandB Artifacts...")
+    try:
+        # 1. WandBのRunを初期化します。
+        #    - project: プロジェクト名を指定します。
+        #    - job_type: このRunが何をするものかを示します。
+        run = wandb.init(project="melody-flow-model-manage", job_type="dataset-creation")
+
+        # 2. Artifact（成果物）を作成します。
+        #    - name: アーティファクトの名前です。UIで表示されます。
+        #    - type: アーティファクトの種類（'dataset', 'model'など）です。
+        #    - description: このアーティファクトが何かを説明します。
+        #    - metadata: データセットに関する追加情報（ソースや件数など）を記録します。
+        artifact = wandb.Artifact(
+            "wjazzd-sft-dataset",
+            type="dataset",
+            description="Fine-tuning dataset for Melody Flow, created from the WJazzD database.",
+            metadata={"source": "WJazzD", "melid_count": len(melids)},
+        )
+
+        # 3. 生成したデータセットファイルをArtifactに追加します。
+        artifact.add_file(str(output_path))
+
+        # 4. ArtifactをWandBに記録（アップロード）します。
+        run.log_artifact(artifact)
+
+        # 5. Runを終了します。
+        run.finish()
+        print("✅ Successfully logged dataset to WandB.")
+
+    except Exception as e:
+        print(f"❌ Failed to log dataset to WandB: {e}")
+        print("Please ensure you are logged into WandB (run 'wandb login' in your terminal).")
 
 
 if __name__ == "__main__":

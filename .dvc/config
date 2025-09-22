@@ -1,4 +1,4 @@
 [core]
-    remote = remote_storage
-['remote "remote_storage"']
-    url = gdrive://root/dataset/melody-flow/dvc/
+    remote = local_storage
+['remote "local_storage"']
+    url = /home/masao/dvc_storage/melody-flow/

@@ -11,3 +11,6 @@ __pycache__
 build/
 /logs/
 /dist/
+/wandb/
+/dist*/
+.env

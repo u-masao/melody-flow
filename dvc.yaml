@@ -42,3 +42,16 @@ stages:
       - data/interim/train.json
     outs:
       - models/llama-3.2-1b.pth/
+
+  evaluate_model:
+    cmd: >-
+      uv run python -m src.model.evaluate --model_paths models/llama-midi.pth/ models/llama-3.2-1b.pth/
+      && date > data/interim/flag_evaluate_model.txt
+    deps:
+      - src/model/evaluate.py
+      - src/api/main.py
+      - src/model/melody_processor.py
+      - models/llama-3.2-1b.pth/
+      - models/llama-midi.pth/
+    outs:
+      - data/interim/flag_evaluate_model.txt

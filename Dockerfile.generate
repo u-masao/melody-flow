@@ -7,10 +7,6 @@ WORKDIR /app
 # Pythonが/appディレクトリ内のモジュールを見つけられるようにパスを追加
 ENV PYTHONPATH="/app:${PYTHONPATH}"
 
-# ビルド引数としてAPP_ENVを受け取り、環境変数として設定
-ARG APP_ENV=development
-ENV APP_ENV=${APP_ENV}
-
 # aptの対話を無効化し、必要なツールをインストール
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
@@ -33,4 +29,4 @@ COPY static/app.html ./static/app.html
 COPY models ./models
 
 # コンテナ実行時にPythonモジュールとして直接スクリプトを実行
-CMD ["uv", "run", "python", "-m", "src.warmup.generate_static_cache"]
+CMD ["/root/.local/bin/uv", "run", "python", "-m", "src.warmup.generate_static_cache"]

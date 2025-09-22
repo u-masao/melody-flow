@@ -1,4 +1,3 @@
-import unsloth  # noqa: F401
 import base64
 import os
 import re
@@ -8,13 +7,50 @@ from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
+import unsloth  # noqa: F401
 from unsloth import FastLanguageModel
 import uvicorn
 
-from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
+# --- 環境変数に応じてWeaveの有効/無効を切り替える ---
+APP_ENV = os.getenv("APP_ENV", "production")  # デフォルトは安全な 'production'
 
+if APP_ENV != "production":
+    print("🚀 Running in DEVELOPMENT mode. Weave is enabled.")
+    try:
+        import weave
+
+        weave.init("melody-flow-api-dev")
+        op = weave.op  # 開発モードでは実際のweave.opを使用
+    except ImportError:
+        print("⚠️  weave is not installed. Running without it.")
+
+        # weaveがない場合は何もしないダミーデコレータを定義
+        def op(*args, **kwargs):
+            def decorator(f):
+                return f
+
+            if args and callable(args[0]):
+                return decorator(args[0])
+            return decorator
+
+else:
+    print("✅ Running in PRODUCTION mode. Weave is disabled.")
+
+    # 本番モードでは何もしないダミーデコレータを定義
+    def op(*args, **kwargs):
+        def decorator(f):
+            return f
+
+        # @op と @op() の両方の構文に対応
+        if args and callable(args[0]):
+            return decorator(args[0])
+        return decorator
+
+
+# --- モデル読み込み (変更なし) ---
 MODEL_NAME = os.getenv("MODEL_NAME", "models/llama-midi.pth/")
 print(f"🧠 Loading model: {MODEL_NAME}...")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -51,6 +87,8 @@ app.add_middleware(
 )
 
 
+# --- Weaveのデコレータを条件付きで適用 ---
+@op()  # APP_ENVに応じて本物のデコレータかダミーが使われる
 def generate_midi_from_model(
     prompt: str, processor: MelodyControlLogitsProcessor, seed: int
 ) -> str:
@@ -66,6 +104,11 @@ def generate_midi_from_model(
         pad_token_id=TOKENIZER.eos_token_id,
         logits_processor=logits_processors,
     )
+    # 開発モードの時だけWeaveに情報を記録
+    if APP_ENV != "production" and "weave" in globals():
+        weave.summary(
+            {"allowed_notes": processor.note_tokenizer.ids_to_string(processor.allowed_token_ids)}
+        )
     return TOKENIZER.decode(output[0])
 
 
@@ -75,6 +118,7 @@ def parse_and_encode_midi(decoded_text: str) -> str:
     return base64.b64encode(midi_note_data.encode("utf-8")).decode("utf-8")
 
 
+@op()  # APP_ENVに応じて本物のデコレータかダミーが使われる
 @app.get("/generate")
 def generate_melody(
     response: Response,

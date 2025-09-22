@@ -9,42 +9,42 @@ stages:
       md5: 89f02b08ce00e3f46ffd466c8f3e0e5d
       size: 42512384
   make_dataset:
-    cmd: uv run python -m src.make_dataset data/raw/wjazzd.db 
+    cmd: uv run python -m src.model.make_dataset data/raw/wjazzd.db 
       data/interim/train.json
     deps:
     - path: data/raw/wjazzd.db
       hash: md5
       md5: 89f02b08ce00e3f46ffd466c8f3e0e5d
       size: 42512384
-    - path: src/make_dataset.py
+    - path: src/model/make_dataset.py
       hash: md5
-      md5: 9a1f79ba5cf72794b4437f89530ae2c5
-      size: 5982
+      md5: 818ae65b8ebf8b59b259eddd9128ea80
+      size: 7645
     outs:
     - path: data/interim/train.json
       hash: md5
       md5: 19832914ba9f4e183cb51740531c5754
       size: 3560985
   train_model_llama-midi:
-    cmd: uv run python -m src.train_model --model_name 'dx2102/llama-midi' 
+    cmd: uv run python -m src.model.train_model --model_name 'dx2102/llama-midi'
       --num_train_epochs 5 data/interim/train.json models/llama-midi.pth/
     deps:
     - path: data/interim/train.json
       hash: md5
       md5: 19832914ba9f4e183cb51740531c5754
       size: 3560985
-    - path: src/train_model.py
+    - path: src/model/train_model.py
       hash: md5
-      md5: 9bda275ae79273a0ea5390593a9ab8e4
-      size: 8592
+      md5: 32ccd869d9464d9b0ee1728dda2a6bfb
+      size: 9099
     outs:
     - path: models/llama-midi.pth/
       hash: md5
-      md5: d7c97bc50d0da7739fb99fa914572fe3.dir
+      md5: 51d1dd7534a594d30c5696401e0995c2.dir
       size: 62389352
       nfiles: 7
   train_model_llama_3.2-1b:
-    cmd: uv run python -m src.train_model --model_name 
+    cmd: uv run python -m src.model.train_model --model_name 
       'unsloth/Llama-3.2-1B-bnb-4bit' --num_train_epochs 5 
       data/interim/train.json models/llama-3.2-1b.pth/
     deps:
@@ -52,13 +52,45 @@ stages:
       hash: md5
       md5: 19832914ba9f4e183cb51740531c5754
       size: 3560985
-    - path: src/train_model.py
+    - path: src/model/train_model.py
       hash: md5
-      md5: 9bda275ae79273a0ea5390593a9ab8e4
-      size: 8592
+      md5: 32ccd869d9464d9b0ee1728dda2a6bfb
+      size: 9099
     outs:
     - path: models/llama-3.2-1b.pth/
       hash: md5
-      md5: 00920d1bcf586bad16275d09ec447e87.dir
+      md5: 841ec966712afa7dc0eb4c2845f247a3.dir
       size: 62385622
       nfiles: 6
+  evaluate_model:
+    cmd: uv run python -m src.model.evaluate --model_paths 
+      models/llama-midi.pth/ models/llama-3.2-1b.pth/ && date > 
+      data/interim/flag_evaluate_model.txt
+    deps:
+    - path: models/llama-3.2-1b.pth/
+      hash: md5
+      md5: 841ec966712afa7dc0eb4c2845f247a3.dir
+      size: 62385622
+      nfiles: 6
+    - path: models/llama-midi.pth/
+      hash: md5
+      md5: 51d1dd7534a594d30c5696401e0995c2.dir
+      size: 62389352
+      nfiles: 7
+    - path: src/api/main.py
+      hash: md5
+      md5: 9e75421f26332ea66117c8f38711f8cb
+      size: 5789
+    - path: src/model/evaluate.py
+      hash: md5
+      md5: 1ebd95282ca68268d7c23fe89602a2e5
+      size: 7291
+    - path: src/model/melody_processor.py
+      hash: md5
+      md5: 59be6753782ec198a7b51b3565505d24
+      size: 7869
+    outs:
+    - path: data/interim/flag_evaluate_model.txt
+      hash: md5
+      md5: 7edf2686b0be4ccd6fb7013bb4041a92
+      size: 43
