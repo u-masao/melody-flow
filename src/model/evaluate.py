@@ -150,7 +150,10 @@ class Args(Tap):
 
 def main():
     args = Args().parse_args()
-    weave.init(args.wandb_project)
+    weave.init(
+        project=args.wandb_project,
+        job_type="evaluate",
+    )
     base_evaluation_set = [
         {"chord_progression": "Dm7 - G7 - Cmaj7", "style": "JAZZ風"},
         {"chord_progression": "Am - G - C - F", "style": "POP風"},
