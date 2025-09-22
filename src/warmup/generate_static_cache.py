@@ -27,7 +27,7 @@ logger.remove()
 # 標準出力にINFOレベル以上を出力するハンドラを追加
 logger.add(sys.stdout, level="INFO")
 
-wandb.init(entity=os.environ["WANDB_ENTITY"], project=os.environ["WANDB_PROJECT"])
+run = wandb.init(entity=os.environ["WANDB_ENTITY"], project=os.environ["WANDB_PROJECT"])
 
 
 # --- パス設定 ---
@@ -165,7 +165,6 @@ def generate_midi_from_model(
         wandb.summary["allowd_notes"] = processor.note_tokenizer.ids_to_string(
             processor.allowed_token_ids
         )
-        wandb.summary.update()
     return tokenizer.decode(output[0])
 
 
@@ -193,48 +192,50 @@ def main():
     print("🚀 Starting static cache generation for all keys...")
     all_combinations = list(itertools.product(chord_progressions, ALL_KEYS, STYLES, VARIATIONS))
 
-    for prog_info, target_key, style, var in tqdm(
-        all_combinations, desc="Generating Cache", unit="file"
-    ):
-        original_prog = prog_info["progression"]
-        original_key = prog_info["original_key"]
+    with tqdm(
+            all_combinations, desc="Generating Cache", unit="file"
 
-        transposed_prog = transpose_progression(original_prog, original_key, target_key)
+    ) as pbar:
+        for prog_info, target_key, style, var in pbar:
+            original_prog = prog_info["progression"]
+            original_key = prog_info["original_key"]
+            transposed_prog = transpose_progression(original_prog, original_key, target_key)
+            prog_hash = hashlib.md5(transposed_prog.encode()).hexdigest()
 
-        prog_hash = hashlib.md5(transposed_prog.encode()).hexdigest()
-        output_path = OUTPUT_DIR / prog_hash / style
-        os.makedirs(output_path, exist_ok=True)
-        output_file = output_path / f"{var}.json"
+            pbar.set_description(f"Hash: {prog_hash}, Style: {style}, Variation: {var}")
+            output_path = OUTPUT_DIR / prog_hash / style
+            os.makedirs(output_path, exist_ok=True)
+            output_file = output_path / f"{var}.json"
 
-        if os.path.exists(output_file):
-            continue
+            if os.path.exists(output_file):
+                continue
 
-        chords = [chord.strip() for chord in transposed_prog.split("-")]
-        melodies = {}
-        try:
-            for chord in chords:
-                processor = MelodyControlLogitsProcessor(chord, note_tokenizer_helper)
-                prompt = (
-                    f"style={style}, chord_progression={chord}\n"
-                    "pitch duration wait velocity instrument\n"
-                )
-                raw_output = generate_midi_from_model(
-                    model, tokenizer, device, prompt, processor, seed=var
-                )
-                encoded_midi = parse_and_encode_midi(raw_output)
+            chords = [chord.strip() for chord in transposed_prog.split("-")]
+            melodies = {}
+            try:
+                for chord in chords:
+                    processor = MelodyControlLogitsProcessor(chord, note_tokenizer_helper)
+                    prompt = (
+                        f"style={style}, chord_progression={chord}\n"
+                        "pitch duration wait velocity instrument\n"
+                    )
+                    raw_output = generate_midi_from_model(
+                        model, tokenizer, device, prompt, processor, seed=var
+                    )
+                    encoded_midi = parse_and_encode_midi(raw_output)
 
-                key = chord
-                count = 2
-                while key in melodies:
-                    key = f"{chord}_{count}"
-                    count += 1
-                melodies[key] = encoded_midi
+                    key = chord
+                    count = 2
+                    while key in melodies:
+                        key = f"{chord}_{count}"
+                        count += 1
+                    melodies[key] = encoded_midi
 
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump({"chord_melodies": melodies}, f)
+                with open(output_file, "w", encoding="utf-8") as f:
+                    json.dump({"chord_melodies": melodies}, f)
 
-        except Exception as e:
-            tqdm.write(f"❌ FAILED to generate {output_file}: {e}")
+            except Exception as e:
+                tqdm.write(f"❌ FAILED to generate {output_file}: {e}")
 
     print("🎉 Static cache generation finished!")
 
