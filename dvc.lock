@@ -64,9 +64,13 @@ stages:
       nfiles: 6
   evaluate_model:
     cmd: uv run python -m src.model.evaluate --model_paths 
-      models/llama-midi.pth/ models/llama-3.2-1b.pth/ && date > 
-      data/interim/flag_evaluate_model.txt
+      models/llama-midi.pth/ models/llama-3.2-1b.pth/ --soundfont_path 
+      data/raw/FluidR3_GM.sf2 && date > data/interim/flag_evaluate_model.txt
     deps:
+    - path: data/raw/FluidR3_GM.sf2
+      hash: md5
+      md5: 1cc160a92fadb6a43eb1695563524982
+      size: 32322864
     - path: models/llama-3.2-1b.pth/
       hash: md5
       md5: 841ec966712afa7dc0eb4c2845f247a3.dir
@@ -83,8 +87,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 80fc53be95545e4470533f24dc84f97a
-      size: 7864
+      md5: 74ffae373a9a9ae0f3c96a670e235649
+      size: 9086
     - path: src/model/melody_processor.py
       hash: md5
       md5: 59be6753782ec198a7b51b3565505d24
@@ -96,5 +100,14 @@ stages:
     outs:
     - path: data/interim/flag_evaluate_model.txt
       hash: md5
-      md5: cfbcc1b5ffcf58d612d4f8aa62857aa5
+      md5: 5e585e9f73fd20e339f119e6c05e4059
       size: 43
+  download_soundfont:
+    cmd: wget -q 
+      https://github.com/mrbumpy409/GeneralUser-GS/raw/refs/heads/main/GeneralUser-GS.sf2
+      -O data/raw/FluidR3_GM.sf2
+    outs:
+    - path: data/raw/FluidR3_GM.sf2
+      hash: md5
+      md5: 1cc160a92fadb6a43eb1695563524982
+      size: 32322864
