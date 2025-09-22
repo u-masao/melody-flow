@@ -26,8 +26,8 @@ flowchart TD
 	node2["data/interim/train.json"]
 	node3["data/raw/FluidR3_GM.sf2"]
 	node4["data/raw/wjazzd.db"]
-	node5["models/llama-3.2-1b.pth"]
-	node6["models/llama-midi.pth"]
+	node5["models/llama-3.2-1b-e10.pth"]
+	node6["models/llama-midi-e10.pth"]
 	node2-->node5
 	node2-->node6
 	node3-->node1
