@@ -1,78 +1,101 @@
-import sys
-from unittest.mock import MagicMock, patch
-
 import pytest
-import unsloth  # noqa: F401
+from unittest.mock import patch, MagicMock
+import torch
 
 
-@pytest.fixture
-def mock_transformers():
-    """transformersライブラリのモデル読み込みをモックするフィクスチャ"""
-    with (
-        patch("src.model.utils.AutoModelForCausalLM.from_pretrained") as mock_lm,
-        patch("src.model.utils.AutoTokenizer.from_pretrained") as mock_tok,
-    ):
-        mock_lm.return_value.to.return_value = MagicMock()
-        mock_tok.return_value = MagicMock()
-        yield mock_lm, mock_tok
+@patch("src.model.utils.FastLanguageModel.from_pretrained")
+def test_load_model_and_tokenizer_local_unsloth_success(mock_from_pretrained):
+    """
+    ローカルパスからUnslothモデルが正常に読み込まれることをテストする
+    """
+    mock_model = MagicMock()
+    mock_tokenizer = MagicMock()
+    mock_from_pretrained.return_value = (mock_model, mock_tokenizer)
 
-
-@pytest.fixture
-def mock_unsloth():
-    """unslothライブラリのモデル読み込みをモックするフィクスチャ"""
-    with patch("src.model.utils.FastLanguageModel.from_pretrained") as mock_fast:
-        mock_fast.return_value = (MagicMock(), MagicMock())
-        yield mock_fast
-
-
-def test_load_model_and_tokenizer_local_path(mock_unsloth, monkeypatch):
-    """ローカルパスが指定された場合にUnslothが使用されることをテストする"""
-    monkeypatch.setattr("os.path.isdir", lambda path: True)
     from src.model import utils
-
-    utils.load_model_and_tokenizer("./models/llama-midi.pth/")
-    mock_unsloth.assert_called_once_with(
-        model_name="./models/llama-midi.pth/", max_seq_length=4096, dtype=None, load_in_4bit=True
+    model, tokenizer, note_helper, device = utils.load_model_and_tokenizer(
+        model_path="local/path", disable_unsloth=False
     )
 
+    mock_from_pretrained.assert_called_once()
+    assert model is mock_model
+    assert tokenizer is mock_tokenizer
+    assert note_helper is not None
+    assert device is not None
 
-def test_load_model_and_tokenizer_hub_path(mock_transformers, monkeypatch):
-    """Hugging Face Hubのパスが指定された場合にtransformersが使用されることをテストする"""
-    monkeypatch.setattr("os.path.isdir", lambda path: False)
+
+@patch("src.model.utils.AutoTokenizer.from_pretrained")
+@patch("src.model.utils.AutoModelForCausalLM.from_pretrained")
+def test_load_model_and_tokenizer_hub_success(mock_model_loader, mock_tokenizer_loader):
+    """
+    Hugging Face Hubからモデルが正常に読み込まれることをテストする
+    """
+    mock_model_to_device = MagicMock()
+    mock_model_instance = MagicMock()
+    mock_model_loader.return_value = mock_model_instance
+    mock_model_instance.to.return_value = mock_model_to_device
+
+    mock_tokenizer = MagicMock()
+    mock_tokenizer_loader.return_value = mock_tokenizer
+
     from src.model import utils
+    model, tokenizer, note_helper, device = utils.load_model_and_tokenizer(
+        model_path="hf/some-model", disable_unsloth=True
+    )
 
-    utils.load_model_and_tokenizer("dx2102/llama-midi", disable_unsloth=True)
-    mock_transformers[0].assert_called_once()
-    mock_transformers[1].assert_called_once_with("dx2102/llama-midi")
+    mock_model_loader.assert_called_once_with("hf/some-model", torch_dtype=torch.bfloat16)
+    mock_tokenizer_loader.assert_called_once_with("hf/some-model")
+    assert model is mock_model_to_device
+    assert tokenizer is mock_tokenizer
 
 
-def test_load_model_and_tokenizer_load_error(mock_unsloth, monkeypatch):
-    """モデル読み込み中に例外が発生した場合にNoneが返されることをテストする"""
-    monkeypatch.setattr("os.path.isdir", lambda path: True)
-    mock_unsloth.side_effect = Exception("Test error")
+@patch("src.model.utils.FastLanguageModel.from_pretrained")
+def test_load_model_and_tokenizer_load_error(mock_from_pretrained):
+    """
+    モデル読み込み中に例外が発生した場合に、その例外が再送出されることをテストする
+    """
+    # from_pretrainedが例外を投げるように設定
+    mock_from_pretrained.side_effect = Exception("Test error")
+
     from src.model import utils
+    # 例外がraiseされることを確認
+    with pytest.raises(Exception, match="Test error"):
+        utils.load_model_and_tokenizer(model_path="any/path", disable_unsloth=False)
 
-    result = utils.load_model_and_tokenizer("any/path")
-    assert result == (None, None, None, None)
+    # モックが呼び出されたことを確認
+    mock_from_pretrained.assert_called_once()
 
 
-# 失敗していたテストを、より安定した方法に修正
-def test_get_op_decorator_switches_by_env(monkeypatch):
-    """_get_op_decoratorが環境変数に応じて正しい関数を返すかテストする"""
-    from src.model.utils import _get_op_decorator
+def test_generate_midi_from_model():
+    """
+    generate_midi_from_modelが正しく呼び出されることをテストする
+    """
+    mock_model = MagicMock()
+    mock_tokenizer = MagicMock()
+    mock_processor = MagicMock()
 
-    # --- 開発モードのテスト ---
-    monkeypatch.setenv("APP_ENV", "development")
-    mock_weave = MagicMock()
-    # sys.modulesにモックを挿入して、`import weave`が成功するようにする
-    monkeypatch.setitem(sys.modules, "weave", mock_weave)
+    # tokenizer() の戻り値が .to() メソッドを持つようにする
+    mock_inputs = MagicMock()
+    mock_inputs.to.return_value = mock_inputs
+    mock_tokenizer.return_value = mock_inputs
 
-    dev_op = _get_op_decorator()
-    assert dev_op is mock_weave.op
+    mock_tokenizer.eos_token_id = 0
+    mock_tokenizer.decode.return_value = "decoded_output"
+    mock_model.generate.return_value = torch.tensor([[1, 2, 3, 4, 5]])
 
-    # --- 本番モードのテスト ---
-    monkeypatch.setenv("APP_ENV", "production")
-    prod_op = _get_op_decorator()
-    # 返されたものがモックではなく、'dummy_op'という名前の関数であることを確認
-    assert prod_op is not mock_weave.op
-    assert prod_op.__name__ == "dummy_op"
+    from src.model import utils
+    result = utils.generate_midi_from_model(
+        model=mock_model,
+        tokenizer=mock_tokenizer,
+        device="cpu",
+        prompt="test prompt",
+        processor=mock_processor,
+        seed=42,
+    )
+
+    assert result == "decoded_output"
+    mock_tokenizer.assert_called_once_with("test prompt", return_tensors="pt")
+    mock_inputs.to.assert_called_once_with("cpu")
+    mock_model.generate.assert_called_once()
+    generate_kwargs = mock_model.generate.call_args.kwargs
+    assert "logits_processor" in generate_kwargs
