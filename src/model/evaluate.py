@@ -78,26 +78,23 @@ class MelodyGenerator:
         temp_dir = tempfile.mkdtemp()
         mid_path = Path(temp_dir) / "temp.mid"
         wav_path = Path(temp_dir) / "temp.wav"
-        mp3_path = Path(temp_dir) / "output.mp3"
 
         try:
             # 1. MIDIファイルを作成
             self.audio_util.create_midi_file(notes=utility_notes, output_path=mid_path)
             # 2. MIDIをWAVに変換
-            self.audio_util.midi_to_wav(midi_path=mid_path, output_path=wav_path)
-            # 3. WAVをMP3に変換し、音量を上げる
-            self.audio_util.wav_to_mp3(wav_path=wav_path, output_path=mp3_path, volume_change_db=10.0)
+            self.audio_util.midi_to_wav(midi_path=mid_path, output_path=wav_path, gain=0.9)
 
-            # 最終的なMP3ファイルのデータを読み込んで返す
-            with open(mp3_path, "rb") as f:
-                mp3_data = f.read()
+            # 最終的なWAVファイルのデータを読み込んで返す
+            with open(wav_path, "rb") as f:
+                wav_data = f.read()
             
             # 一時ファイルをクリーンアップするために新しい一時ファイルに書き込む
-            final_mp3_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-            final_mp3_file.write(mp3_data)
-            final_mp3_file.close()
+            final_wav_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            final_wav_file.write(mp3_data)
+            final_wav_file.close()
 
-            return final_mp3_file.name
+            return final_wav_file.name
 
         except Exception as e:
             logger.error(f"Error creating MP3 file: {e}")
