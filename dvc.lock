@@ -83,8 +83,8 @@ stages:
       size: 5789
     - path: src/model/evaluate.py
       hash: md5
-      md5: 1ebd95282ca68268d7c23fe89602a2e5
-      size: 7291
+      md5: 80fc53be95545e4470533f24dc84f97a
+      size: 7864
     - path: src/model/melody_processor.py
       hash: md5
       md5: 59be6753782ec198a7b51b3565505d24
@@ -92,5 +92,5 @@ stages:
     outs:
     - path: data/interim/flag_evaluate_model.txt
       hash: md5
-      md5: 7edf2686b0be4ccd6fb7013bb4041a92
+      md5: 6618961492b621085d461fd176300792
       size: 43
