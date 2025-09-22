@@ -123,8 +123,8 @@ class MelodyGenerator:
 
         results = {"output_text": all_notes_text.strip(), "scores": metrics}
         if wav_path:
-            results["audio"] = wandb.Audio(wav_path, caption=f"{style} - var{variation}")
-            os.remove(wav_path)
+            results["audio"] = weave.Audio(wav_path)
+            # os.remove(wav_path)
 
         return results
 
