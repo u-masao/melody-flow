@@ -14,16 +14,14 @@ from tqdm import tqdm
 import wandb
 import weave
 
-SOUNDFONT_PATH = "data/raw/FluidR3_GM.sf2"
-
 class MelodyGenerator:
-    def __init__(self, model: Any, tokenizer: Any, note_tokenizer_helper: Any, device: Any):
+    def __init__(self, model: Any, tokenizer: Any, note_tokenizer_helper: Any, device: Any, soundfont_path: str):
         self.model = model
         self.tokenizer = tokenizer
         self.note_tokenizer_helper = note_tokenizer_helper
         self.device = device
         # ▼▼▼ 【変更点1】AudioUtilityを初期化 ▼▼▼
-        self.audio_util = AudioUtility(soundfont_path=SOUNDFONT_PATH)
+        self.audio_util = AudioUtility(soundfont_path=soundfont_path)
         # ▲▲▲ 【ここまで】 ▲▲▲
 
     def _parse_full_melody(self, midi_text: str) -> List[Dict[str, int]]:
@@ -150,6 +148,7 @@ class Args(Tap):
     model_paths: list[str]
     wandb_project: str = "melody-flow-model-manage"
     evaluation_name: str = "default-evaluation"
+    soundfont_path: str = "data/raw/FluidR3_GM.sf2"
 
 def main():
     args = Args().parse_args()
@@ -177,7 +176,8 @@ def main():
             model=model,
             tokenizer=tokenizer,
             note_tokenizer_helper=note_helper,
-            device=device
+            device=device,
+            soundfont_path=args.soundfont_path,
         )
         
         evaluation_name = f"{args.evaluation_name}-{model_name_safe}"
