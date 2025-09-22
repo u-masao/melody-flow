@@ -1,4 +1,4 @@
-# src/model/evaluate.py
+import unsloth  # noqa: F401
 import os
 from pathlib import Path
 import tempfile
