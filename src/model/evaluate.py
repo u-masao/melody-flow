@@ -104,9 +104,9 @@ class MelodyGenerator:
             return None
         finally:
             # 一時ディレクトリ内のファイルをすべて削除
-            for f in os.listdir(temp_dir):
-                os.remove(os.path.join(temp_dir, f))
-            os.rmdir(temp_dir)
+            #for f in os.listdir(temp_dir):
+                #os.remove(os.path.join(temp_dir, f))
+            #os.rmdir(temp_dir)
     # ▲▲▲ 【ここまで】 ▲▲▲
 
     def run_single_prediction(self, chord_progression: str, style: str, variation: int) -> Dict[str, Any]:
