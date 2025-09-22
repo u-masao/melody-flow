@@ -77,10 +77,10 @@ stages:
       md5: 51d1dd7534a594d30c5696401e0995c2.dir
       size: 62389352
       nfiles: 7
-    - path: src/api/main.py
+    - path: src/model/chord_name_parser.py
       hash: md5
-      md5: 9e75421f26332ea66117c8f38711f8cb
-      size: 5789
+      md5: c0a22f1515f985e7c595dbfbe2221d3b
+      size: 7068
     - path: src/model/evaluate.py
       hash: md5
       md5: 80fc53be95545e4470533f24dc84f97a
@@ -89,8 +89,12 @@ stages:
       hash: md5
       md5: 59be6753782ec198a7b51b3565505d24
       size: 7869
+    - path: src/model/utils.py
+      hash: md5
+      md5: f2aae8438bb47b9edd4fd3d85f970d2f
+      size: 3468
     outs:
     - path: data/interim/flag_evaluate_model.txt
       hash: md5
-      md5: 6618961492b621085d461fd176300792
+      md5: cfbcc1b5ffcf58d612d4f8aa62857aa5
       size: 43
