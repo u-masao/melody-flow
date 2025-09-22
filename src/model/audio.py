@@ -1,15 +1,15 @@
-import subprocess
 from pathlib import Path
-from typing import List, Dict, Union
+import subprocess
 
-import mido
 from loguru import logger
+import mido
 from pydub import AudioSegment
+
 
 class AudioUtility:
     # __init__ と create_midi_file は変更なし
-    
-    def __init__(self, soundfont_path: Union[str, Path]):
+
+    def __init__(self, soundfont_path: str | Path):
         """AudioUtilityのインスタンスを初期化します。"""
         self.soundfont = Path(soundfont_path)
         if not self.soundfont.is_file():
@@ -17,8 +17,8 @@ class AudioUtility:
 
     def create_midi_file(
         self,
-        notes: List[Dict[str, int]],
-        output_path: Union[str, Path],
+        notes: list[dict[str, int]],
+        output_path: str | Path,
         program: int = 1,
     ) -> Path:
         """
@@ -39,26 +39,40 @@ class AudioUtility:
         output_path = Path(output_path)
         if output_path.is_file():
             logger.warning(f"ファイルが既に存在するため上書きします: '{output_path}'")
-        
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
         mid = mido.MidiFile()
         track = mido.MidiTrack()
         mid.tracks.append(track)
         track.append(mido.Message("program_change", program=program, time=0))
         for note_info in notes:
-            track.append(mido.Message("note_on", note=note_info["note"], velocity=note_info.get("velocity", 64), time=0))
-            track.append(mido.Message("note_off", note=note_info["note"], velocity=note_info.get("velocity", 64), time=note_info["duration"]))
+            track.append(
+                mido.Message(
+                    "note_on",
+                    note=note_info["note"],
+                    velocity=note_info.get("velocity", 64),
+                    time=0,
+                )
+            )
+            track.append(
+                mido.Message(
+                    "note_off",
+                    note=note_info["note"],
+                    velocity=note_info.get("velocity", 64),
+                    time=note_info["duration"],
+                )
+            )
         mid.save(str(output_path))
 
         if not output_path.is_file():
-             raise RuntimeError(f"MIDIファイルの作成に失敗しました: '{output_path}'")
+            raise RuntimeError(f"MIDIファイルの作成に失敗しました: '{output_path}'")
         logger.success(f"MIDIファイルを作成しました: '{output_path}'")
         return output_path
 
     def midi_to_wav(
         self,
-        midi_path: Union[str, Path],
-        output_path: Union[str, Path],
+        midi_path: str | Path,
+        output_path: str | Path,
         gain: float = 0.75,
         sampling_rate: int = 44100,
     ) -> Path:
@@ -74,16 +88,27 @@ class AudioUtility:
         try:
             subprocess.run(
                 [
-                    "fluidsynth", "-ni",
-                    "-g", str(gain), str(self.soundfont), str(midi_path),
-                    "-F", str(output_path), "-r", str(sampling_rate),
+                    "fluidsynth",
+                    "-ni",
+                    "-g",
+                    str(gain),
+                    str(self.soundfont),
+                    str(midi_path),
+                    "-F",
+                    str(output_path),
+                    "-r",
+                    str(sampling_rate),
                 ],
-                check=True, capture_output=True, text=True
+                check=True,
+                capture_output=True,
+                text=True,
             )
-        except FileNotFoundError:
-            raise RuntimeError("FluidSynthがインストールされていないか、パスが通っていません。")
+        except FileNotFoundError as e:
+            raise RuntimeError(
+                "FluidSynthがインストールされていないか、パスが通っていません。"
+            ) from e
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"FluidSynthの実行に失敗しました。\nError: {e.stderr}")
+            raise RuntimeError(f"FluidSynthの実行に失敗しました。\nError: {e.stderr}") from e
 
         # --- 生成後の実在チェック ---
         if not output_path.is_file():
@@ -94,8 +119,8 @@ class AudioUtility:
 
     def wav_to_mp3(
         self,
-        wav_path: Union[str, Path],
-        output_path: Union[str, Path],
+        wav_path: str | Path,
+        output_path: str | Path,
         volume_change_db: float = 0.0,
     ) -> Path:
         """WAVファイルをMP3ファイルに変換します。"""
@@ -116,13 +141,12 @@ class AudioUtility:
         # --- 生成後の実在チェック ---
         if not output_path.is_file():
             raise RuntimeError(f"MP3ファイルの作成に失敗しました: '{output_path}'")
-        
+
         logger.success(f"MP3ファイルを作成しました: '{output_path}'")
         return output_path
 
 
 if __name__ == "__main__":
-
     # --- 設定 ---
     SOUNDFONT_PATH = "data/raw/FluidR3_GM.sf2"
     OUTPUT_DIR = "data/interim"
@@ -142,24 +166,20 @@ if __name__ == "__main__":
         audio_util = AudioUtility(soundfont_path=SOUNDFONT_PATH)
 
         midi_file = audio_util.create_midi_file(
-            notes=song_notes,
-            output_path=Path(OUTPUT_DIR) / f"{BASE_FILENAME}.mid"
+            notes=song_notes, output_path=Path(OUTPUT_DIR) / f"{BASE_FILENAME}.mid"
         )
 
         wav_file = audio_util.midi_to_wav(
-            midi_path=midi_file,
-            output_path=Path(OUTPUT_DIR) / f"{BASE_FILENAME}.wav"
+            midi_path=midi_file, output_path=Path(OUTPUT_DIR) / f"{BASE_FILENAME}.wav"
         )
 
         mp3_file = audio_util.wav_to_mp3(
             wav_path=wav_file,
             output_path=Path(OUTPUT_DIR) / f"{BASE_FILENAME}.mp3",
-            volume_change_db=10.0
+            volume_change_db=10.0,
         )
 
         logger.success(f"処理が正常に完了しました: {mp3_file}")
 
     except (FileNotFoundError, RuntimeError) as e:
         logger.error(f"処理中にエラーが発生しました: {e}")
-
- 

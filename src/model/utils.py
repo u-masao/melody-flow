@@ -1,9 +1,9 @@
+import unsloth  # noqa: F401
 import os
 
 from src.model.melody_processor import NoteTokenizer
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
-import unsloth  # noqa: F401
 from unsloth import FastLanguageModel
 
 

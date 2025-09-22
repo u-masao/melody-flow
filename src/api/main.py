@@ -1,3 +1,4 @@
+import unsloth  # noqa: F401
 import base64
 import os
 import re
@@ -10,7 +11,6 @@ from fastapi.staticfiles import StaticFiles
 from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
-import unsloth  # noqa: F401
 from unsloth import FastLanguageModel
 import uvicorn
 

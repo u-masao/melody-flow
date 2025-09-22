@@ -104,11 +104,9 @@ class MelodyGenerator:
                 wav_data = f.read()
 
             # 一時ファイルをクリーンアップするために新しい一時ファイルに書き込む
-            final_wav_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-            final_wav_file.write(wav_data)
-            final_wav_file.close()
-
-            return final_wav_file.name
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as final_wav_file:
+                final_wav_file.write(wav_data)
+                return final_wav_file.name
 
         except Exception as e:
             logger.error(f"Error creating MP3 file: {e}")
