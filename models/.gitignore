@@ -6,3 +6,7 @@
 /minimum-llama-midi.pth
 /minimum-llama-3.2-1b.pth
 /base-llama-midi.pth
+/e5-llama-midi.pth
+/e10-llama-midi.pth
+/e20-llama-midi.pth
+/e30-llama-midi.pth
