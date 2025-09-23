@@ -1,4 +1,5 @@
 import unsloth  # noqa: F401
+import textwrap
 import base64
 import os
 import re
@@ -90,7 +91,12 @@ app.add_middleware(
 # --- Weaveのデコレータを条件付きで適用 ---
 @op()  # APP_ENVに応じて本物のデコレータかダミーが使われる
 def generate_midi_from_model(
-    prompt: str, processor: MelodyControlLogitsProcessor, seed: int
+    prompt: str,
+    processor: MelodyControlLogitsProcessor,
+    seed: int,
+    max_new_tokens: int = 128,
+    temperature: float = 0.75,
+    do_sample: bool = True,
 ) -> str:
     if not MODEL or not TOKENIZER:
         raise RuntimeError("Model is not loaded.")
@@ -99,17 +105,26 @@ def generate_midi_from_model(
     logits_processors = LogitsProcessorList([processor])
     output = MODEL.generate(
         **inputs,
-        max_new_tokens=128,
-        temperature=0.75,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
         pad_token_id=TOKENIZER.eos_token_id,
         logits_processor=logits_processors,
+        do_sample=do_sample,
     )
+
     # 開発モードの時だけWeaveに情報を記録
     if APP_ENV != "production" and "weave" in globals():
         weave.summary(
             {"allowed_notes": processor.note_tokenizer.ids_to_string(processor.allowed_token_ids)}
         )
     return TOKENIZER.decode(output[0])
+
+
+def parse_and_pickup_notes(decoded_text: str, head_k: int = 5) -> str:
+    match = re.search(r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL)
+    midi_note_data = match.group(1).strip() if match else decoded_text
+    notes = [line.split(" ")[0] for line in midi_note_data.split("\n")]
+    return " ".join(notes[:head_k])
 
 
 def parse_and_encode_midi(decoded_text: str) -> str:
@@ -125,18 +140,37 @@ def generate_melody(
     chord_progression: str = Query(..., description="コード進行"),
     style: str = Query(..., description="音楽スタイル"),
     variation: int = Query(1, description="バリエーション（乱数シード）"),
+    supress_token_prob_ratio: float = Query(
+        0.3, ge=0.0, lt=1.0, description="許可されていないピッチの発生確率抑制レシオ"
+    ),
+    instrument: str = Query("Alto Saxophone", description="楽器"),
 ):
     start_time = time.time()
     chords = [chord.strip() for chord in chord_progression.split("-")]
     melodies = {}
+    prev_bar_notes = ""
 
-    for chord in chords:
-        processor = MelodyControlLogitsProcessor(chord, NOTE_TOKENIZER_HELPER)
-        prompt = (
-            f"style={style}, chord_progression={chord}\npitch duration wait velocity instrument\n"
+    for bars, chord in enumerate(chords):
+        processor = MelodyControlLogitsProcessor(
+            chord, NOTE_TOKENIZER_HELPER, supress_token_prob_ratio=supress_token_prob_ratio
         )
+        prompt = f"""
+            Act as a world-class jazz musician improvising over a chord progression.
+            Your task is to generate a single bar of a masterful melodic phrase for
+            the specific chord at the current position in the progression.
+            - Style: {style}
+            - Full Chord Progression: {chord_progression}
+            - Current Bar Number: {bars + 1}
+            - Chord for This Bar: {chord}
+            - Prev Bar Notes: {prev_bar_notes}
+            - Instrument: {instrument}
+            Generate the melody for this bar only. The output format is:
+            pitch duration wait velocity instrument
+            """
+        prompt = textwrap.dedent(prompt)
         raw_output = generate_midi_from_model(prompt, processor, seed=variation)
         encoded_midi = parse_and_encode_midi(raw_output)
+        prev_bar_notes = parse_and_pickup_notes(raw_output)
 
         key = chord
         count = 2

@@ -1,133 +1,171 @@
-import re
-
-from loguru import logger
 import pytest
-from src.model.melody_processor import MelodyControlLogitsProcessor, NoteTokenizer
 import torch
-from transformers import AutoTokenizer
+import torch.nn.functional as F
+from transformers import PreTrainedTokenizer
 
-
-def is_arabic_numerals_only(s: str) -> bool:
-    # 空文字列は False とする
-    if not s:
-        return False
-    if s == "0":
-        return True
-    if s.startswith("0"):
-        return False
-    # パターン r'[0-9]+' が文字列全体にマッチするかチェック
-    return re.fullmatch(r"[0-9]+", s) is not None
-
-
-@pytest.fixture(scope="module")
-def tokenizer():
-    """テスト全体で一度だけトークナイザを読み込むためのフィクスチャ"""
-    return AutoTokenizer.from_pretrained("dx2102/llama-midi")
-
-
-@pytest.fixture(scope="module")
-def note_tokenizer(tokenizer):
-    """NoteTokenizerのフィクスチャ"""
-    return NoteTokenizer(tokenizer)
-
-
-@pytest.fixture(scope="module")
-def token_to_pitches_map(note_tokenizer):
-    """トークンIDからピッチのリストへの逆引きマップを作成するフィクスチャ"""
-    mapping = {}
-    for pitch, token_id in note_tokenizer.pitch_to_token_id_cache.items():
-        if token_id not in mapping:
-            mapping[token_id] = []
-        mapping[token_id].append(pitch)
-    return mapping
-
-
-@pytest.mark.parametrize(
-    "chord, expected_allowed_notes",
-    [
-        # C Major Pentatonic: C, D, E, G, A -> 0, 2, 4, 7, 9
-        ("C", {0, 2, 4, 7, 9}),
-        # G Major Pentatonic: G, A, B, D, E -> 7, 9, 11, 2, 4
-        ("G", {2, 4, 7, 9, 11}),
-        # A Minor Pentatonic: A, C, D, E, G -> 9, 0, 2, 4, 7
-        ("Am", {0, 2, 4, 7, 9}),
-        # Fmaj7 uses F Lydian pentatonic and a major pentatonic from the 3rd.
-        # Combined notes are: {0, 2, 4, 5, 7, 9}
-        ("Fmaj7", {0, 2, 4, 5, 7, 9}),
-        # Dm uses D minor pentatonic. Notes are: {0, 2, 5, 7, 9}
-        ("Dm", {0, 2, 5, 7, 9}),
-    ],
+from src.model.melody_processor import (
+    MelodyControlLogitsProcessor,
+    NoteTokenizer,
 )
-def test_melody_processor_restricts_notes(
-    tokenizer, note_tokenizer, token_to_pitches_map, chord, expected_allowed_notes
-):
-    """
-    指定されたコードに基づき、スケール外の音の確率が-infに設定されるかをテストする
-    """
-    processor = MelodyControlLogitsProcessor(chord=chord, note_tokenizer=note_tokenizer)
 
-    scores = torch.zeros((1, len(tokenizer)))
-    input_ids = torch.LongTensor([tokenizer.encode("\n", add_special_tokens=False)])
-    logger.info(f"{input_ids=}")
-    processed_scores = processor(input_ids, scores)
-    logger.info(f"{scores.sum()=}")
-    logger.info(f"{processed_scores.sum()=}")
-    logger.info(f"{processed_scores[:100]=}")
-    logger.info(f"{processed_scores.shape=}")
-    logger.info(f"{(processed_scores==0).sum()=}")
-    logger.info(f"{(processed_scores==-float('inf')).sum()=}")
-    logger.info(f"{expected_allowed_notes=}")
+# --- Mocks and Fixtures ---
 
-    for token_id in range(len(tokenizer)):
-        token_str = tokenizer.decode([token_id], skip_special_tokens=True)
 
-        if is_arabic_numerals_only(token_str):
-            pitch = int(token_str.strip())
-            if 48 <= pitch <= 84:
-                note_index = pitch % 12
+# `transformers.AutoTokenizer`の挙動を模倣するモッククラス
+class MockTokenizer(PreTrainedTokenizer):
+    def __init__(self, **kwargs):
+        self.vocab = {"<eos>": 0, "\n": 1}
+        for i in range(128):
+            self.vocab[str(i)] = i + 2
+        self.reverse_vocab = {v: k for k, v in self.vocab.items()}
 
-                # logger.info(f"{pitch=}, {note_index=}")
-                if note_index in expected_allowed_notes:
-                    assert processed_scores[0, token_id] == 0, (
-                        f"Chord '{chord}': Allowed note {pitch} "
-                        f"({note_index}) was incorrectly restricted. "
-                        f"Logit was {processed_scores[0, token_id]}."
-                    )
-                else:  # Disallowed note
-                    logger.info(
-                        f"disallowed: {scores[0, token_id]} -> {processed_scores[0, token_id]}"
-                    )
-                    if processed_scores[0, token_id] != scores[0, token_id]:
-                        # トークンが抑制されていない場合、トークン衝突が原因かチェックする
-                        colliding_pitches = token_to_pitches_map.get(token_id, [])
-                        colliding_notes = {p % 12 for p in colliding_pitches}
+        super().__init__(eos_token="<eos>", **kwargs)
 
-                        # このトークンが表す音の中に、許可されたスケール音が含まれていないか？
-                        if not colliding_notes.intersection(expected_allowed_notes):
-                            # 含まれていない場合、これは真の失敗
-                            pytest.fail(
-                                f"Chord '{chord}': Disallowed note {pitch} ({note_index}) "
-                                "with token "
-                                f"{token_id} was not restricted, "
-                                "and no other pitch for this token is in the allowed scale "
-                                f"{expected_allowed_notes}. "
-                                f"Colliding notes were {colliding_notes}. "
-                                f"Logit was {processed_scores[0, token_id]}."
-                            )
-                        # else: 含まれている場合、衝突により抑制されなかったのは許容される挙動
-        elif processed_scores[0, token_id] != 0:
-            # ピッチ以外のトークンは変更されてはいけない
-            if token_id in token_to_pitches_map:
-                # This is a pitch token, but not in the 48-84 range. It should be suppressed.
-                if processed_scores[0, token_id] != -float("inf"):
-                    colliding_pitches = token_to_pitches_map.get(token_id, [])
-                    colliding_notes = {p % 12 for p in colliding_pitches}
-                    if not colliding_notes.intersection(expected_allowed_notes):
-                        pytest.fail(f"Out-of-range pitch token {token_id} was not restricted.")
+    @property
+    def vocab_size(self):
+        return len(self.vocab)
+
+    def get_vocab(self):
+        return self.vocab
+
+    def _convert_token_to_id(self, token):
+        return self.vocab.get(token)
+
+    def _convert_id_to_token(self, index):
+        return self.reverse_vocab.get(index)
+
+    def _tokenize(self, text, **kwargs):
+        # 改行を独立したトークンとして扱えるように修正
+        processed_text = text.replace("\n", " \n ")
+        return [token for token in processed_text.split(" ") if token]
+
+
+@pytest.fixture(scope="module")
+def mock_tokenizer():
+    return MockTokenizer()
+
+
+@pytest.fixture(scope="module")
+def note_tokenizer(mock_tokenizer):
+    return NoteTokenizer(mock_tokenizer)
+
+
+# --- Test Cases ---
+
+
+class TestNoteTokenizer:
+    def test_build_pitch_cache(self, note_tokenizer, mock_tokenizer):
+        assert len(note_tokenizer.pitch_to_token_id_cache) == 128
+        assert note_tokenizer.pitch_to_token_id(60) == mock_tokenizer.vocab["60"]
+        assert note_tokenizer.pitch_to_token_id(127) == mock_tokenizer.vocab["127"]
+        assert len(note_tokenizer.all_pitch_token_ids) == 128
+
+    def test_pitch_to_token_id(self, note_tokenizer):
+        assert note_tokenizer.pitch_to_token_id(72) is not None
+        assert note_tokenizer.pitch_to_token_id(128) is None
+
+    def test_get_pitch_scores(self, note_tokenizer, mock_tokenizer):
+        scores = torch.randn(1, mock_tokenizer.vocab_size)
+        pitch_scores = note_tokenizer.get_pitch_scores(scores)
+        assert pitch_scores.shape == (1, 128)
+
+    def test_ids_to_string(self, note_tokenizer, mock_tokenizer):
+        token_ids = [
+            mock_tokenizer.vocab["60"],
+            mock_tokenizer.vocab["64"],
+            mock_tokenizer.vocab["67"],
+        ]
+        assert note_tokenizer.ids_to_string(token_ids) == "60 64 67"
+        shuffled_ids = [
+            mock_tokenizer.vocab["67"],
+            mock_tokenizer.vocab["60"],
+            mock_tokenizer.vocab["64"],
+        ]
+        assert note_tokenizer.ids_to_string(shuffled_ids) == "60 64 67"
+        invalid_ids = [mock_tokenizer.vocab["60"], 9999, mock_tokenizer.vocab["64"]]
+        assert note_tokenizer.ids_to_string(invalid_ids) == "60 64"
+
+
+class TestMelodyControlLogitsProcessor:
+    def test_get_allowed_token_ids_for_cm7(self, note_tokenizer):
+        processor = MelodyControlLogitsProcessor("Cm7", note_tokenizer)
+        allowed_ids = processor.allowed_token_ids
+        allowed_pitches = {
+            note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids
+        }
+        assert allowed_pitches == {0, 2, 3, 5, 7, 10}
+
+        # オクターブ範囲 (4, 7) -> MIDIピッチ 48 から 83 まで
+        # 範囲内のスケール音
+        assert note_tokenizer.pitch_to_token_id(48) in allowed_ids  # C4
+        assert note_tokenizer.pitch_to_token_id(82) in allowed_ids  # A#6 (82 % 12 = 10)
+        # 範囲内だがスケール外の音
+        assert note_tokenizer.pitch_to_token_id(49) not in allowed_ids  # C#4
+        assert note_tokenizer.pitch_to_token_id(83) not in allowed_ids  # B6
+        # 範囲外の音
+        assert note_tokenizer.pitch_to_token_id(47) not in allowed_ids  # B3
+        assert note_tokenizer.pitch_to_token_id(84) not in allowed_ids  # C7
+        assert note_tokenizer.pitch_to_token_id(95) not in allowed_ids  # B7
+
+    def test_get_allowed_token_ids_for_invalid_chord(self, note_tokenizer):
+        processor = MelodyControlLogitsProcessor("InvalidChord", note_tokenizer)
+        allowed_ids = processor.allowed_token_ids
+        allowed_pitches = {
+            note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids
+        }
+        assert allowed_pitches == {0, 2, 4, 7, 9}
+
+    def test_parse_pitch_from_string(self, note_tokenizer):
+        processor = MelodyControlLogitsProcessor("C", note_tokenizer)
+        assert processor._parse_pitch_from_string("60") == 60
+        assert processor._parse_pitch_from_string("0") == 0
+        assert processor._parse_pitch_from_string("abc") is None
+        assert processor._parse_pitch_from_string("60a") is None
+        assert processor._parse_pitch_from_string("01") is None
+        assert processor._parse_pitch_from_string("") is None
+
+    def test_calculate_pitch_trend(self, note_tokenizer):
+        processor = MelodyControlLogitsProcessor("C", note_tokenizer)
+        sequence = "style=... chord=...\npitch duration...\n60 1 1 100\n62 1 1 100\n64 1 1 100\n"
+        trend, last = processor._calculate_pitch_trend(sequence)
+        assert last == 64
+        assert trend == 62
+
+    def test_call_does_not_trigger(self, note_tokenizer):
+        processor = MelodyControlLogitsProcessor("C", note_tokenizer)
+        token_id_60 = note_tokenizer.pitch_to_token_id(60)
+        input_ids = torch.LongTensor([[token_id_60]])
+        original_scores = torch.randn(1, note_tokenizer.tokenizer.vocab_size)
+        scores = original_scores.clone()
+        new_scores = processor(input_ids, scores)
+        assert torch.equal(original_scores, new_scores)
+
+    def test_call_applies_penalty(self, note_tokenizer):
+        processor = MelodyControlLogitsProcessor("C", note_tokenizer)
+        sequence = "60 1 1\n62 1 1\n64 1 1\n"
+        input_ids = torch.LongTensor(
+            [note_tokenizer.tokenizer.encode(sequence, add_special_tokens=False)]
+        )
+        scores = torch.zeros(1, note_tokenizer.tokenizer.vocab_size)
+        original_scores = scores.clone()
+
+        new_scores = processor(input_ids, scores)
+
+        assert not torch.equal(original_scores, new_scores)
+
+        # C Major Pentatonic (0,2,4,7,9) とトレンド [57, 67) の積集合
+        # 直前の音(64)は除外 -> {57, 60, 62}
+        allowed_pitches = {57, 60, 62}
+        allowed_ids = {note_tokenizer.pitch_to_token_id(p) for p in allowed_pitches}
+
+        # Logitsではなく確率(Probability)で比較する
+        original_probs = F.softmax(original_scores, dim=-1)
+        new_probs = F.softmax(new_scores, dim=-1)
+
+        for token_id in note_tokenizer.all_pitch_token_ids:
+            if token_id in allowed_ids:
+                # 許可されたトークンは確率が上がる
+                assert new_probs[0, token_id] > original_probs[0, token_id]
             else:
-                # This is a non-pitch token and should be untouched.
-                assert processed_scores[0, token_id] == 0, (
-                    f"Non-pitch token '{tokenizer.decode([token_id])}' "
-                    f"(ID: {token_id}) was incorrectly modified to "
-                    f"{processed_scores[0, token_id]}."
-                )
+                # 許可されなかったトークンは確率が下がる
+                assert new_probs[0, token_id] < original_probs[0, token_id]

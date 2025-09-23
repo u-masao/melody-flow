@@ -2,14 +2,12 @@
 
 clear
 
-FILES=`cat .dump_files | grep -v '^#'`
-
-for ((i=0; i<${#FILES[@]}; i++))
+grep -v '^#' .dump_files | while read -r file
 do
-    echo "## ${FILES[$i]}"
+    echo "## $file"
     echo ""
     echo '```'
-    cat ${FILES[$i]}
+    cat $file
     echo '```'
     echo ""
 done
