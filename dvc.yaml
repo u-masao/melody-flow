@@ -17,31 +17,23 @@ stages:
     outs:
       - data/interim/train.json
 
-  train_model_llama-midi:
-    cmd: >-
-      uv run python -m src.model.train_model
-      --model_name 'dx2102/llama-midi'
-      --num_train_epochs ${train_epochs}
-      data/interim/train.json
-      models/llama-midi-e${train_epochs}.pth/
-    deps:
-      - src/model/train_model.py
-      - data/interim/train.json
-    outs:
-      - models/llama-midi-e${train_epochs}.pth/
-
-  train_model_llama_3.2-1b:
-    cmd: >-
-      uv run python -m src.model.train_model
-      --model_name 'unsloth/Llama-3.2-1B-bnb-4bit'
-      --num_train_epochs ${train_epochs}
-      data/interim/train.json
-      models/llama-3.2-1b-e${train_epochs}.pth/
-    deps:
-      - src/model/train_model.py
-      - data/interim/train.json
-    outs:
-      - models/llama-3.2-1b-e${train_epochs}.pth/
+  train_model:
+    foreach: ${train_params}
+    do:
+      cmd: >-
+        uv run python -m src.model.train_model
+        --model_name "${item.model_path}"
+        --num_train_epochs ${item.epochs}
+        data/interim/train.json
+        models/${key}.pth/
+      deps:
+        - src/model/train_model.py
+        - src/model/utils.py
+        - src/model/melody_processor.py
+        - src/model/chord_name_parser.py
+        - data/interim/train.json
+      outs:
+        - models/${key}.pth/
 
   download_soundfont:
     cmd: >-
@@ -52,18 +44,19 @@ stages:
       - data/raw/FluidR3_GM.sf2
 
   evaluate_model:
-    cmd: >-
-      uv run python -m src.model.evaluate
-      --model_paths models/llama-midi-e${train_epochs}.pth/ models/llama-3.2-1b-e${train_epochs}.pth/
-      --soundfont_path data/raw/FluidR3_GM.sf2
-      && date > data/interim/flag_evaluate_model.txt
-    deps:
-      - src/model/evaluate.py
-      - src/model/utils.py
-      - src/model/melody_processor.py
-      - src/model/chord_name_parser.py
-      - models/llama-3.2-1b-e${train_epochs}.pth/
-      - models/llama-midi-e${train_epochs}.pth/
-      - data/raw/FluidR3_GM.sf2
-    outs:
-      - data/interim/flag_evaluate_model.txt
+    foreach: ${train_params}
+    do:
+      cmd: >-
+        uv run python -m src.model.evaluate
+        --model_paths models/${key}.pth/
+        --soundfont_path data/raw/FluidR3_GM.sf2
+        && date > data/interim/flag_evaluate_model-${key}.txt
+      deps:
+        - src/model/evaluate.py
+        - src/model/utils.py
+        - src/model/melody_processor.py
+        - src/model/chord_name_parser.py
+        - models/${key}.pth/
+        - data/raw/FluidR3_GM.sf2
+      outs:
+        - data/interim/flag_evaluate_model-${key}.txt

@@ -1,1 +1,9 @@
-train_epochs: 30
+train_params:
+  minimum-llama-midi:
+    epochs: 1
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
+  minimum-llama-3.2-1b:
+    epochs: 1
+    model_path: 'unsloth/Llama-3.2-1B-bnb-4bit'
+    model_name: 'llama-3.2-1b'
