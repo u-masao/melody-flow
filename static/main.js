@@ -1,5 +1,64 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- トラッキング用コード START ---
+
+    /**
+     * ユーザーIDをlocalStorageから取得または新規作成する
+     * @returns {string} ユーザーID
+     */
+    function getUserId() {
+        let userId = localStorage.getItem('melodyFlowUserId');
+        if (!userId) {
+            userId = self.crypto.randomUUID();
+            localStorage.setItem('melodyFlowUserId', userId);
+        }
+        return userId;
+    }
+
+    const USER_ID = getUserId();
+    const IS_PRODUCTION = window.location.hostname === 'melody-flow.click';
+
+    /**
+     * イベントをトラッキングサービスに送信するラッパー関数
+     * @param {string} eventName - イベント名 (snake_case形式)
+     * @param {object} [properties={}] - イベントに紐付けるプロパティ
+     * @param {boolean} [useBeacon=false] - ページ離脱時など確実性が求められる場合 true
+     */
+    function trackEvent(eventName, properties = {}, useBeacon = false) {
+        // 本番環境以外ではコンソールに出力するのみ
+        if (!IS_PRODUCTION) {
+            console.log(`[TRACKING SKIPPED] Event: ${eventName}`, { user_id: USER_ID, ...properties });
+            return;
+        }
+
+        // gtag関数が存在しない場合は何もしない
+        if (typeof gtag === 'function' && !useBeacon) {
+            const eventData = { user_id: USER_ID, ...properties };
+            // 高頻度イベントはブラウザのアイドル時に実行
+            if (eventName === 'play_note' && 'requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    gtag('event', eventName, eventData);
+                });
+            } else {
+                gtag('event', eventName, eventData);
+            }
+            return;
+        }
+
+        // ページ離脱時など、信頼性が重要なイベントはビーコンを使う
+        if (useBeacon && 'sendBeacon' in navigator) {
+            const proxyUrl = '/track'; // CloudFrontのパスパターン
+            const data = new Blob([JSON.stringify({ eventName, properties, userId: USER_ID })], { type: 'application/json' });
+            navigator.sendBeacon(proxyUrl, data);
+        }
+    }
+
+    // ページ表示イベントを最初に送信
+    trackEvent('page_view');
+
+    // --- トラッキング用コード END ---
+
+
     const PRODUCTION_HOSTNAME = "melody-flow.click";
     const CLOUDFRONT_ENDPOINT = "https://melody-flow.click";
     const LOCAL_API_ENDPOINT = "http://localhost:8000";
@@ -138,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let midiKeyDownCount = 0, backingPart = null, beatLoop = null;
     let activeKeys = new Set();
     let currentMidiInput = null;
+    let playbackStartTime = 0;
 
     // --- Initial Setup ---
     setupEventListeners();
@@ -147,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupEventListeners() {
         const ALL_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B', 'C#', 'D#', 'F#', 'G#', 'A#'];
         if (keySelect) {
-            keySelect.innerHTML = ''; // Clear existing options before populating
+            keySelect.innerHTML = '';
             const sortedKeys = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
             sortedKeys.forEach(key => {
                 const option = document.createElement('option');
@@ -162,39 +222,83 @@ document.addEventListener('DOMContentLoaded', () => {
             resetGenerateButtonState();
         };
 
-        if(chordSelect) chordSelect.addEventListener('change', resetOptions);
-        if(keySelect) keySelect.addEventListener('change', resetOptions);
-        if(styleSelect) styleSelect.addEventListener('change', resetOptions);
-
-        if(bpmSlider) bpmSlider.addEventListener('input', (e) => {
-            if(bpmValue) bpmValue.textContent = e.target.value;
-            Tone.Transport.bpm.value = e.target.value;
+        if(chordSelect) chordSelect.addEventListener('change', (e) => {
+            resetOptions();
+            trackEvent('change_setting', {
+                setting_name: 'chord_progression',
+                value: e.target.options[e.target.selectedIndex].text
+            });
         });
-        if(bpmSlider) bpmSlider.addEventListener('click', () => bpmSlider.blur());
+        if(keySelect) keySelect.addEventListener('change', (e) => {
+            resetOptions();
+            trackEvent('change_setting', {
+                setting_name: 'key',
+                value: e.target.value
+            });
+        });
+        if(styleSelect) styleSelect.addEventListener('change', (e) => {
+            resetOptions();
+            trackEvent('change_setting', {
+                setting_name: 'style',
+                value: e.target.value
+            });
+        });
+
+        if(bpmSlider) {
+             bpmSlider.addEventListener('input', (e) => {
+                if(bpmValue) bpmValue.textContent = e.target.value;
+             });
+             bpmSlider.addEventListener('change', (e) => {
+                Tone.Transport.bpm.value = e.target.value;
+                trackEvent('change_setting', {
+                    setting_name: 'bpm',
+                    value: e.target.value,
+                    method: 'slider'
+                });
+             });
+             bpmSlider.addEventListener('click', () => bpmSlider.blur());
+        }
+
         if(generateButton) generateButton.addEventListener('click', generatePhrases);
         if(playStopButton) playStopButton.addEventListener('click', togglePlayback);
+
         if(muteBackingTrackCheckbox) muteBackingTrackCheckbox.addEventListener('change', (e) => {
             pianoSynth.volume.value = e.target.checked ? -Infinity : -12;
             muteBackingTrackCheckbox.blur();
+            trackEvent('change_setting', {
+                setting_name: 'mute_backing_track',
+                value: e.target.checked
+            });
         });
 
         if(modeToggle) modeToggle.addEventListener('change', (e) => {
             document.body.classList.toggle('studio-mode', e.target.checked);
+            trackEvent('change_setting', {
+                setting_name: 'mode',
+                value: e.target.checked ? 'studio' : 'play'
+            });
         });
 
-        if(helpButton) helpButton.addEventListener('click', () => helpModal.classList.remove('hidden'));
+        if(helpButton) helpButton.addEventListener('click', () => {
+            helpModal.classList.remove('hidden');
+            trackEvent('open_modal', { modal_name: 'help' });
+        });
         if(closeHelpButton) closeHelpButton.addEventListener('click', () => helpModal.classList.add('hidden'));
         if(helpModal) helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.add('hidden'); });
-        if(settingsButton) settingsButton.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        
+        if(settingsButton) settingsButton.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+            trackEvent('open_modal', { modal_name: 'settings' });
+        });
         if(closeSettingsButton) closeSettingsButton.addEventListener('click', () => settingsModal.classList.add('hidden'));
         if(settingsModal) settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.add('hidden'); });
 
         if(tapTempoButton) setupTapTempo();
         if(playNoteButton) {
-            playNoteButton.addEventListener('mousedown', () => handleMidiNoteOn());
+            playNoteButton.addEventListener('mousedown', () => handleMidiNoteOn(0.75, 'button'));
             playNoteButton.addEventListener('mouseup', () => { handleMidiNoteOff(); playNoteButton.blur(); });
             playNoteButton.addEventListener('mouseleave', () => { if (midiKeyDownCount > 0) handleMidiNoteOff(); });
-            playNoteButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleMidiNoteOn(); });
+            playNoteButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleMidiNoteOn(0.75, 'button'); });
             playNoteButton.addEventListener('touchend', (e) => { e.preventDefault(); handleMidiNoteOff(); playNoteButton.blur(); });
         }
 
@@ -271,6 +375,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     bpmSlider.value = newBpm;
                     bpmValue.textContent = newBpm;
                     Tone.Transport.bpm.value = newBpm;
+                    trackEvent('change_setting', {
+                        setting_name: 'bpm',
+                        value: newBpm,
+                        method: 'tap'
+                    });
                 }
             }
         });
@@ -296,6 +405,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function generatePhrases() {
         await ensureAudioContext();
+        
+        trackEvent('generate_melody', {
+            chord_progression: chordSelect.options[chordSelect.selectedIndex].text,
+            key: keySelect.value,
+            style: styleSelect.value
+        });
+        const startTime = performance.now();
+        
         generateButton.disabled = true;
         if(playStopButton) playStopButton.disabled = true;
         if(playNoteButton) playNoteButton.disabled = true;
@@ -340,6 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!IS_LOCALHOST && statusArea) statusArea.textContent = 'キャッシュされたフレーズを読み込んでいます...';
 
             const response = await fetch(requestUrl);
+            const durationMs = performance.now() - startTime;
+
             if (!response.ok) throw new Error(`API Error: ${response.status}`);
             const data = await response.json();
 
@@ -355,6 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).filter(note => !isNaN(note.pitch));
             }
 
+            trackEvent('generate_melody_success', {
+                duration_ms: Math.round(durationMs),
+                source: IS_LOCALHOST || requestUrl.includes('/generate?') ? 'api' : 'cache'
+            });
+
             notificationSynth.triggerAttackRelease(["C5", "G5"], "8n", Tone.now());
             updateProgressionDisplay();
             drawTimingIndicators();
@@ -367,6 +491,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 generateButton.classList.add('bg-gray-700', 'cursor-not-allowed', 'opacity-50');
             }
         } catch (error) {
+            trackEvent('generate_melody_failed', {
+                error_message: error.message,
+                duration_ms: Math.round(performance.now() - startTime)
+            });
             console.error('フレーズの準備に失敗:', error.message);
             if(statusArea) statusArea.textContent = `エラー: ${error.message}`;
             notificationSynth.triggerAttackRelease(["C4", "Eb4"], "8n", Tone.now());
@@ -390,6 +518,9 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleBackingTrack();
         Tone.Transport.seconds = 0; Tone.Transport.start();
         isPlaying = true;
+        playbackStartTime = performance.now();
+        trackEvent('start_playback', { bpm: Tone.Transport.bpm.value });
+
         if(playStopButton) {
             playStopButton.classList.replace('bg-teal-600', 'bg-amber-600');
             playStopButton.classList.replace('hover:bg-teal-700', 'hover:bg-amber-700');
@@ -403,6 +534,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function stopPlayback() {
+        if (isPlaying) {
+             const durationSec = (performance.now() - playbackStartTime) / 1000;
+             trackEvent('stop_playback', {
+                 playback_duration_sec: Math.round(durationSec)
+             }, true); // Use Beacon for reliability
+        }
+
         Tone.Transport.stop(); Tone.Transport.cancel(0);
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
         if (leadSynth) leadSynth.triggerRelease();
@@ -574,7 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (['INPUT', 'SELECT'].includes(e.target.tagName) || !isPlayKey(e) || activeKeys.has(e.code)) return;
             e.preventDefault();
             activeKeys.add(e.code);
-            if (activeKeys.size === 1) handleMidiNoteOn();
+            if (activeKeys.size === 1) handleMidiNoteOn(0.75, 'keyboard');
         });
         document.addEventListener('keyup', (e) => {
             if (['INPUT', 'SELECT'].includes(e.target.tagName) || !isPlayKey(e)) return;
@@ -583,7 +721,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function handleMidiNoteOn(velocity = 0.75) {
+    function handleMidiNoteOn(velocity = 0.75, source = 'unknown') {
+        if (midiKeyDownCount === 0) {
+            trackEvent('play_note', { source: source });
+        }
+        
         if (mainContainer) {
             mainContainer.classList.add('feedback-glow');
             setTimeout(() => mainContainer.classList.remove('feedback-glow'), 500);
@@ -612,7 +754,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let newColorRgbString = null;
 
         if (midiKeyDownCount > 0) {
-            // シンセのパラメータを更新
             if (leadSynth) {
                 const now = Tone.now(); const timeConstant = 0.02;
                 const newFrequency = 1200 + (3800 * value);
@@ -621,21 +762,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
             }
 
-            // ボタンの色を計算
             const hue = 260;
             const saturation = 100 - (80 * value);
             const brightness = 80;
             const [r, g, b] = hsvToRgb(hue / 360, saturation / 100, brightness / 100);
             newColorRgbString = `rgb(${r}, ${g}, ${b})`;
 
-            // ボタンの色を更新
             if(playNoteButton) {
                 playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-purple-500');
                 playNoteButton.style.backgroundColor = newColorRgbString;
             }
         }
 
-        // 発音中のピアノロールノートの色を変更
         if (activeLeadNoteInfo && activeLeadNoteInfo.element && newColorRgbString) {
             activeLeadNoteInfo.colorStops.push({
                 ticks: Tone.Transport.ticks,
@@ -669,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         currentMidiInput = WebMidi.getInputById(inputId);
         if (currentMidiInput) {
-            currentMidiInput.on("noteon", e => handleMidiNoteOn(e.velocity));
+            currentMidiInput.on("noteon", e => handleMidiNoteOn(e.velocity, 'midi'));
             currentMidiInput.on("noteoff", e => handleMidiNoteOff());
             currentMidiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
         } else {
@@ -706,10 +844,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await WebMidi.enable();
             populateMidiDeviceList();
-            if(midiInputSelect) midiInputSelect.addEventListener('change', (e) => attachMidiListeners(e.target.value));
+            if(midiInputSelect) midiInputSelect.addEventListener('change', (e) => {
+                const selectedDeviceName = e.target.options[e.target.selectedIndex].text;
+                attachMidiListeners(e.target.value);
+                trackEvent('select_midi_device', {
+                    device_name: selectedDeviceName
+                });
+            });
             WebMidi.addListener("connected", () => populateMidiDeviceList());
             WebMidi.addListener("disconnected", () => populateMidiDeviceList());
         } catch (err) {
+            trackEvent('midi_error', { error_message: err.message });
             console.error("Could not enable MIDI:", err);
             if(statusArea) statusArea.textContent = 'MIDIデバイスの有効化に失敗しました。';
             if(midiInputSelect) midiInputSelect.innerHTML = '<option>MIDIの有効化に失敗</option>';
