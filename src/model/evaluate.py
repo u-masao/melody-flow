@@ -5,7 +5,7 @@ import tempfile
 from typing import Any
 
 from loguru import logger
-from src.model.audio import AudioUtility  #  নতুন লাইব্রেরি আমদানি করা হচ্ছে
+from src.model.audio import AudioUtility
 from src.model.melody_processor import MelodyControlLogitsProcessor
 from src.model.utils import generate_midi_from_model, load_model_and_tokenizer
 from tap import Tap
@@ -27,9 +27,7 @@ class MelodyGenerator:
         self.tokenizer = tokenizer
         self.note_tokenizer_helper = note_tokenizer_helper
         self.device = device
-        # ▼▼▼ 【変更点1】AudioUtilityを初期化 ▼▼▼
         self.audio_util = AudioUtility(soundfont_path=soundfont_path)
-        # ▲▲▲ 【ここまで】 ▲▲▲
 
     def _parse_full_melody(self, midi_text: str) -> list[dict[str, int]]:
         # このメソッドは変更なし
@@ -121,7 +119,11 @@ class MelodyGenerator:
     # ▲▲▲ 【ここまで】 ▲▲▲
 
     def run_single_prediction(
-        self, chord_progression: str, style: str, variation: int
+        self,
+        chord_progression: str,
+        style: str,
+        variation: int,
+        supress_token_prob_ratio: float = 0.3,
     ) -> dict[str, Any]:
         logger.info(f"Running prediction for: {style} - {chord_progression} - var{variation}")
         all_notes_text = ""
@@ -129,7 +131,11 @@ class MelodyGenerator:
         chords = [chord.strip() for chord in chord_progression.split("-")]
 
         for chord in chords:
-            processor = MelodyControlLogitsProcessor(chord, self.note_tokenizer_helper)
+            processor = MelodyControlLogitsProcessor(
+                chord,
+                self.note_tokenizer_helper,
+                supress_token_prob_ratio=supress_token_prob_ratio,
+            )
             prompt = (
                 f"style={style}, chord_progression={chord}\n"
                 "pitch duration wait velocity instrument\n"
@@ -168,8 +174,16 @@ def main():
     args = Args().parse_args()
     weave.init(args.wandb_project)
     base_evaluation_set = [
-        {"chord_progression": "Dm7 - G7 - Cmaj7", "style": "JAZZ風"},
-        {"chord_progression": "Am - G - C - F", "style": "POP風"},
+        {
+            "chord_progression": "Dm7 - G7 - Cmaj7",
+            "style": "JAZZ風",
+            "supress_token_prob_ratio": 0.3,
+        },
+        {
+            "chord_progression": "Am - G - C - F",
+            "style": "POP風",
+            "supress_token_prob_ratio": 0.3,
+        },
     ]
     variations = [1, 42]
     full_evaluation_set = [
