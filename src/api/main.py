@@ -143,6 +143,7 @@ def generate_melody(
     supress_token_prob_ratio: float = Query(
         0.3, ge=0.0, lt=1.0, description="許可されていないピッチの発生確率抑制レシオ"
     ),
+    instrument: str = Query("Alto Saxophone", description="楽器"),
 ):
     start_time = time.time()
     chords = [chord.strip() for chord in chord_progression.split("-")]
@@ -162,6 +163,7 @@ def generate_melody(
             - Current Bar Number: {bars + 1}
             - Chord for This Bar: {chord}
             - Prev Bar Notes: {prev_bar_notes}
+            - Instrument: {instrument}
             Generate the melody for this bar only. The output format is:
             pitch duration wait velocity instrument
             """
