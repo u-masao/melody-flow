@@ -22,7 +22,6 @@ def is_arabic_numerals_only(s: str) -> bool:
 class NoteTokenizer:
     """
     MIDIピッチ番号とモデルのトークンIDを相互変換するためのヘルパークラス。
-    モデルは数値を ' 60' のような文字列トークンとして扱うため、この変換処理が必要。
     """
 
     def __init__(self, tokenizer: AutoTokenizer):
