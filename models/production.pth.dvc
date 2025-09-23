@@ -1,0 +1,6 @@
+outs:
+- md5: 51d1dd7534a594d30c5696401e0995c2.dir
+  size: 62389352
+  nfiles: 7
+  hash: md5
+  path: production.pth

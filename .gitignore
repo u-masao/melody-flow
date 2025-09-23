@@ -2,7 +2,6 @@ __pycache__
 *.sw[po]
 /data/
 /mlruns/
-/models/
 /outputs/
 /unsloth_compiled_cache/
 
