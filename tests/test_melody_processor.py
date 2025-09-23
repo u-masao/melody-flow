@@ -1,5 +1,6 @@
 import pytest
 import torch
+import torch.nn.functional as F
 from transformers import PreTrainedTokenizer
 
 from src.model.melody_processor import (
@@ -89,18 +90,29 @@ class TestMelodyControlLogitsProcessor:
     def test_get_allowed_token_ids_for_cm7(self, note_tokenizer):
         processor = MelodyControlLogitsProcessor("Cm7", note_tokenizer)
         allowed_ids = processor.allowed_token_ids
-        allowed_pitches = {note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids}
-        assert allowed_pitches == {0, 3, 5, 7, 10}
-        # 修正されたオクターブ範囲のテスト
-        assert note_tokenizer.pitch_to_token_id(48) not in allowed_ids  # C3は範囲外
-        assert note_tokenizer.pitch_to_token_id(59) not in allowed_ids  # B3は範囲外
-        assert note_tokenizer.pitch_to_token_id(60) in allowed_ids  # C4は範囲内
-        assert note_tokenizer.pitch_to_token_id(96) not in allowed_ids  # C7は範囲外
+        allowed_pitches = {
+            note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids
+        }
+        assert allowed_pitches == {0, 2, 3, 5, 7, 10}
+
+        # オクターブ範囲 (4, 7) -> MIDIピッチ 48 から 83 まで
+        # 範囲内のスケール音
+        assert note_tokenizer.pitch_to_token_id(48) in allowed_ids  # C4
+        assert note_tokenizer.pitch_to_token_id(82) in allowed_ids  # A#6 (82 % 12 = 10)
+        # 範囲内だがスケール外の音
+        assert note_tokenizer.pitch_to_token_id(49) not in allowed_ids  # C#4
+        assert note_tokenizer.pitch_to_token_id(83) not in allowed_ids  # B6
+        # 範囲外の音
+        assert note_tokenizer.pitch_to_token_id(47) not in allowed_ids  # B3
+        assert note_tokenizer.pitch_to_token_id(84) not in allowed_ids  # C7
+        assert note_tokenizer.pitch_to_token_id(95) not in allowed_ids  # B7
 
     def test_get_allowed_token_ids_for_invalid_chord(self, note_tokenizer):
         processor = MelodyControlLogitsProcessor("InvalidChord", note_tokenizer)
         allowed_ids = processor.allowed_token_ids
-        allowed_pitches = {note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids}
+        allowed_pitches = {
+            note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids
+        }
         assert allowed_pitches == {0, 2, 4, 7, 9}
 
     def test_parse_pitch_from_string(self, note_tokenizer):
@@ -134,8 +146,7 @@ class TestMelodyControlLogitsProcessor:
         input_ids = torch.LongTensor(
             [note_tokenizer.tokenizer.encode(sequence, add_special_tokens=False)]
         )
-        scores = torch.ones(1, note_tokenizer.tokenizer.vocab_size)
-        scores[0, 2:] = torch.randn(128)
+        scores = torch.zeros(1, note_tokenizer.tokenizer.vocab_size)
         original_scores = scores.clone()
 
         new_scores = processor(input_ids, scores)
@@ -147,8 +158,14 @@ class TestMelodyControlLogitsProcessor:
         allowed_pitches = {57, 60, 62}
         allowed_ids = {note_tokenizer.pitch_to_token_id(p) for p in allowed_pitches}
 
+        # Logitsではなく確率(Probability)で比較する
+        original_probs = F.softmax(original_scores, dim=-1)
+        new_probs = F.softmax(new_scores, dim=-1)
+
         for token_id in note_tokenizer.all_pitch_token_ids:
             if token_id in allowed_ids:
-                assert new_scores[0, token_id] == original_scores[0, token_id]
+                # 許可されたトークンは確率が上がる
+                assert new_probs[0, token_id] > original_probs[0, token_id]
             else:
-                assert new_scores[0, token_id] < original_scores[0, token_id]
+                # 許可されなかったトークンは確率が下がる
+                assert new_probs[0, token_id] < original_probs[0, token_id]
