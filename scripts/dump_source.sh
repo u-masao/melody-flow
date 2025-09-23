@@ -2,16 +2,7 @@
 
 clear
 
-FILES=(
-#README.md
-docs/project_summary.md
-static/app.html
-#static/favicon.svg
-#static/index.html
-static/main.js
-#static/midi-test.html
-#static/presentation.html
-)
+FILES=`cat .dump_files | grep -v '^#'`
 
 for ((i=0; i<${#FILES[@]}; i++))
 do
