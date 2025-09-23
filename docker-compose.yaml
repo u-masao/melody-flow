@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile # ルートにあるAPIサーバー用のDockerfile
     restart: unless-stopped
     environment:
-      - MODEL_NAME=/app/models/llama-midi.pth/
+      - MODEL_NAME=/app/models/production.pth/
     volumes:
       - ./src:/app/src # ソースコードの変更を即時反映
       - ./static:/app/static # static コードの変更を即時反映

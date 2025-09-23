@@ -40,7 +40,7 @@ def load_model_and_tokenizer(model_path: str | None, disable_unsloth: bool = Fal
     ローカルパスの場合はUnslothを、Hubのパスの場合はTransformersを使用します。
     """
     if model_path is None:
-        model_path = "models/llama-midi.pth/"
+        model_path = "models/production.pth/"
     print(f"🧠 Loading model: {model_path}...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"🔥 Using device: {device}")
