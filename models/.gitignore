@@ -3,3 +3,5 @@
 /llama-midi-e30.pth
 /llama-3.2-1b-e30.pth
 /production.pth
+/minimum-llama-midi.pth
+/minimum-llama-3.2-1b.pth
