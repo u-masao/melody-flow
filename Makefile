@@ -34,13 +34,13 @@ deploy-development: lock
 .PHONY: dev-server
 dev-server:
 	@echo "🔥 --- Starting local API server on http://localhost:8000 ---"
-	uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir src
+	MODEL_NAME=$(MODEL_NAME) uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir src
 
 ## 🐳 ローカル開発サーバーの起動 (Docker + Nginxキャッシュ)
 .PHONY: dev-server-docker
 dev-server-docker: lock
 	@echo "🐳 --- Starting local API server with Docker Compose on http://localhost:8000 ---"
-	docker compose up --build
+	MODEL_NAME=$(MODEL_NAME) docker compose up --build
 
 # --- ヘルパーターゲット (デプロイ) ---
 
