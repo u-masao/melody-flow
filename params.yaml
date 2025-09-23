@@ -1,12 +1,28 @@
 train_params:
-  minimum-llama-midi:
-    epochs: 1
-    model_path: 'dx2102/llama-midi'
-    model_name: 'llama-midi'
   minimum-llama-3.2-1b:
     epochs: 1
     model_path: 'unsloth/Llama-3.2-1B-bnb-4bit'
     model_name: 'llama-3.2-1b'
+  minimum-llama-midi:
+    epochs: 1
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
+  e5-llama-midi:
+    epochs: 5
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
+  e10-llama-midi:
+    epochs: 10
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
+  e20-llama-midi:
+    epochs: 20
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
+  e30-llama-midi:
+    epochs: 30
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
   base-llama-midi:
     epochs: 50
     model_path: 'dx2102/llama-midi'
