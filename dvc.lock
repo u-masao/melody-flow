@@ -111,3 +111,135 @@ stages:
       hash: md5
       md5: 1cc160a92fadb6a43eb1695563524982
       size: 32322864
+  train_model@minimum-llama-midi:
+    cmd: uv run python -m src.model.train_model --model_name "dx2102/llama-midi"
+      --num_train_epochs 1 data/interim/train.json 
+      models/minimum-llama-midi.pth/
+    deps:
+    - path: data/interim/train.json
+      hash: md5
+      md5: 19832914ba9f4e183cb51740531c5754
+      size: 3560985
+    - path: src/model/chord_name_parser.py
+      hash: md5
+      md5: c0a22f1515f985e7c595dbfbe2221d3b
+      size: 7068
+    - path: src/model/melody_processor.py
+      hash: md5
+      md5: 59be6753782ec198a7b51b3565505d24
+      size: 7869
+    - path: src/model/train_model.py
+      hash: md5
+      md5: 32ccd869d9464d9b0ee1728dda2a6bfb
+      size: 9099
+    - path: src/model/utils.py
+      hash: md5
+      md5: 7702655b36c1259ab1f1cbecd547dd99
+      size: 3468
+    outs:
+    - path: models/minimum-llama-midi.pth/
+      hash: md5
+      md5: 3166a3b44704b49a777cf4ade866a25f.dir
+      size: 62389352
+      nfiles: 7
+  train_model@minimum-llama-3.2-1b:
+    cmd: uv run python -m src.model.train_model --model_name 
+      "unsloth/Llama-3.2-1B-bnb-4bit" --num_train_epochs 1 
+      data/interim/train.json models/minimum-llama-3.2-1b.pth/
+    deps:
+    - path: data/interim/train.json
+      hash: md5
+      md5: 19832914ba9f4e183cb51740531c5754
+      size: 3560985
+    - path: src/model/chord_name_parser.py
+      hash: md5
+      md5: c0a22f1515f985e7c595dbfbe2221d3b
+      size: 7068
+    - path: src/model/melody_processor.py
+      hash: md5
+      md5: 59be6753782ec198a7b51b3565505d24
+      size: 7869
+    - path: src/model/train_model.py
+      hash: md5
+      md5: 32ccd869d9464d9b0ee1728dda2a6bfb
+      size: 9099
+    - path: src/model/utils.py
+      hash: md5
+      md5: 7702655b36c1259ab1f1cbecd547dd99
+      size: 3468
+    outs:
+    - path: models/minimum-llama-3.2-1b.pth/
+      hash: md5
+      md5: 3fd5591b32526c471bebd6b30ae920f2.dir
+      size: 62385622
+      nfiles: 6
+  evaluate_model@minimum-llama-midi:
+    cmd: uv run python -m src.model.evaluate --model_paths 
+      models/minimum-llama-midi.pth/ --soundfont_path data/raw/FluidR3_GM.sf2 &&
+      date > data/interim/flag_evaluate_model-minimum-llama-midi.txt
+    deps:
+    - path: data/raw/FluidR3_GM.sf2
+      hash: md5
+      md5: 1cc160a92fadb6a43eb1695563524982
+      size: 32322864
+    - path: models/minimum-llama-midi.pth/
+      hash: md5
+      md5: 3166a3b44704b49a777cf4ade866a25f.dir
+      size: 62389352
+      nfiles: 7
+    - path: src/model/chord_name_parser.py
+      hash: md5
+      md5: c0a22f1515f985e7c595dbfbe2221d3b
+      size: 7068
+    - path: src/model/evaluate.py
+      hash: md5
+      md5: 715636d601cc8f88df1dacaa01939738
+      size: 8391
+    - path: src/model/melody_processor.py
+      hash: md5
+      md5: 59be6753782ec198a7b51b3565505d24
+      size: 7869
+    - path: src/model/utils.py
+      hash: md5
+      md5: 7702655b36c1259ab1f1cbecd547dd99
+      size: 3468
+    outs:
+    - path: data/interim/flag_evaluate_model-minimum-llama-midi.txt
+      hash: md5
+      md5: c1bff4cd8d7c3dc8f6c26982f379c3d2
+      size: 43
+  evaluate_model@minimum-llama-3.2-1b:
+    cmd: uv run python -m src.model.evaluate --model_paths 
+      models/minimum-llama-3.2-1b.pth/ --soundfont_path data/raw/FluidR3_GM.sf2 
+      && date > data/interim/flag_evaluate_model-minimum-llama-3.2-1b.txt
+    deps:
+    - path: data/raw/FluidR3_GM.sf2
+      hash: md5
+      md5: 1cc160a92fadb6a43eb1695563524982
+      size: 32322864
+    - path: models/minimum-llama-3.2-1b.pth/
+      hash: md5
+      md5: 3fd5591b32526c471bebd6b30ae920f2.dir
+      size: 62385622
+      nfiles: 6
+    - path: src/model/chord_name_parser.py
+      hash: md5
+      md5: c0a22f1515f985e7c595dbfbe2221d3b
+      size: 7068
+    - path: src/model/evaluate.py
+      hash: md5
+      md5: 715636d601cc8f88df1dacaa01939738
+      size: 8391
+    - path: src/model/melody_processor.py
+      hash: md5
+      md5: 59be6753782ec198a7b51b3565505d24
+      size: 7869
+    - path: src/model/utils.py
+      hash: md5
+      md5: 7702655b36c1259ab1f1cbecd547dd99
+      size: 3468
+    outs:
+    - path: data/interim/flag_evaluate_model-minimum-llama-3.2-1b.txt
+      hash: md5
+      md5: 35d1254a746937920e8f3dd24a239501
+      size: 43
