@@ -90,9 +90,7 @@ class TestMelodyControlLogitsProcessor:
     def test_get_allowed_token_ids_for_cm7(self, note_tokenizer):
         processor = MelodyControlLogitsProcessor("Cm7", note_tokenizer)
         allowed_ids = processor.allowed_token_ids
-        allowed_pitches = {
-            note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids
-        }
+        allowed_pitches = {note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids}
         assert allowed_pitches == {0, 2, 3, 5, 7, 10}
 
         # オクターブ範囲 (4, 7) -> MIDIピッチ 48 から 83 まで
@@ -110,9 +108,7 @@ class TestMelodyControlLogitsProcessor:
     def test_get_allowed_token_ids_for_invalid_chord(self, note_tokenizer):
         processor = MelodyControlLogitsProcessor("InvalidChord", note_tokenizer)
         allowed_ids = processor.allowed_token_ids
-        allowed_pitches = {
-            note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids
-        }
+        allowed_pitches = {note_tokenizer.token_id_to_pitch_cache[tid] % 12 for tid in allowed_ids}
         assert allowed_pitches == {0, 2, 4, 7, 9}
 
     def test_parse_pitch_from_string(self, note_tokenizer):
