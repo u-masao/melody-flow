@@ -24,6 +24,7 @@ dependencies = [
     "lxml>=6.0.1",
     "python-dotenv>=1.1.1",
     "fluidsynth>=0.2",
+    "matplotlib>=3.10.6",
 ]
 
 [project.optional-dependencies]
