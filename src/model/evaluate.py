@@ -190,7 +190,7 @@ class MelodyGenerator:
         if wav_data:
             results["audio"] = weave.Audio(wav_data, format="wav")
         if pianoroll_image:
-            results["pianoroll"] = wandb.Image(pianoroll_image)
+            results["pianoroll"] = pianoroll_image
 
         return results
 
