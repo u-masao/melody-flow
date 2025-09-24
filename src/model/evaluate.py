@@ -1,5 +1,7 @@
 import unsloth  # noqa: F401
 import os
+import re
+import textwrap
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -30,9 +32,24 @@ class MelodyGenerator:
         self.device = device
         self.audio_util = AudioUtility(soundfont_path=soundfont_path)
 
+    def _parse_and_pickup_notes(self, decoded_text: str, head_k: int = 5) -> str:
+        """main.pyから移植: 生成されたテキストからノート部分だけを抽出し、次のプロンプトに渡す"""
+        match = re.search(
+            r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL
+        )
+        midi_note_data = match.group(1).strip() if match else decoded_text
+        # EOSトークンなどが含まれる場合があるので、有効な行のみを抽出
+        notes = [
+            line.split(" ")[0]
+            for line in midi_note_data.split("\n")
+            if line.strip() and " " in line
+        ]
+        return " ".join(notes[:head_k])
+
     def _parse_full_melody(self, midi_text: str) -> list[dict[str, int]]:
         notes = []
         lines = midi_text.strip().split("\n")
+        # ヘッダー行があればスキップ
         if lines and "pitch" in lines[0]:
             lines = lines[1:]
         for line in lines:
@@ -48,7 +65,7 @@ class MelodyGenerator:
                             "instrument": int(parts[4]),
                         }
                     )
-                except ValueError:
+                except (ValueError, IndexError):
                     continue
         return notes
 
@@ -108,22 +125,39 @@ class MelodyGenerator:
         style: str,
         variation: int,
         supress_token_prob_ratio: float = 0.3,
+        instrument: str = "Alto Saxophone",  # main.pyから移植
     ) -> dict[str, Any]:
         logger.info(f"Running prediction for: {style} - {chord_progression} - var{variation}")
         all_notes_text = ""
         allowed_pitches_union = set()
         chords = [chord.strip() for chord in chord_progression.split("-")]
 
-        for chord in chords:
+        # ▼▼▼ 【変更点】main.pyのロジックを移植 ▼▼▼
+        prev_bar_notes = ""
+
+        for bars, chord in enumerate(chords):
             processor = MelodyControlLogitsProcessor(
                 chord,
                 self.note_tokenizer_helper,
                 supress_token_prob_ratio=supress_token_prob_ratio,
             )
-            prompt = (
-                f"style={style}, chord_progression={chord}\n"
-                "pitch duration wait velocity instrument\n"
-            )
+            # main.pyからプロンプトを移植
+            prompt = f"""
+                Act as a world-class jazz musician improvising over a chord progression.
+                Your task is to generate a single bar of a masterful melodic phrase for
+                the specific chord at the current position in the progression.
+                - Style: {style}
+                - Full Chord Progression: {chord_progression}
+                - Current Bar Number: {bars + 1}
+                - Chord for This Bar: {chord}
+                - Prev Bar Notes: {prev_bar_notes}
+                - Instrument: {instrument}
+                Generate the melody for this bar only. The output format is:
+                pitch duration wait velocity instrument
+                """
+            prompt = textwrap.dedent(prompt).strip()
+            # ▲▲▲ 【ここまで】 ▲▲▲
+
             for token_id in processor.allowed_token_ids:
                 decoded = self.tokenizer.decode([token_id])
                 if decoded.strip().isdigit():
@@ -132,8 +166,20 @@ class MelodyGenerator:
             raw_output = generate_midi_from_model(
                 self.model, self.tokenizer, self.device, prompt, processor, seed=variation
             )
-            midi_text_part = raw_output.split("instrument\n")[-1]
-            all_notes_text += midi_text_part.strip() + "\n"
+
+            # ▼▼▼ 【変更点】main.pyのロジックを移植 ▼▼▼
+            # ヘッダー以降のMIDIテキスト部分を抽出
+            midi_text_part = re.search(r"instrument\s*\n(.*)", raw_output, re.DOTALL)
+            if midi_text_part:
+                clean_midi_text = midi_text_part.group(1).strip()
+                all_notes_text += clean_midi_text + "\n"
+                # 次の小節のために、生成されたノートをパース
+                prev_bar_notes = self._parse_and_pickup_notes(raw_output)
+            else:
+                # もしヘッダーが見つからなければ、元のテキストをそのまま使う
+                all_notes_text += raw_output.replace(prompt, "").strip() + "\n"
+                prev_bar_notes = self._parse_and_pickup_notes(raw_output)
+            # ▲▲▲ 【ここまで】 ▲▲▲
 
         parsed_notes = self._parse_full_melody(all_notes_text)
         metrics = self._calculate_metrics(parsed_notes, allowed_pitches_union)
@@ -144,8 +190,7 @@ class MelodyGenerator:
         if wav_data:
             results["audio"] = weave.Audio(wav_data, format="wav")
         if pianoroll_image:
-            # Pillow Imageオブジェクトをそのまま格納
-            results["pianoroll"] = pianoroll_image
+            results["pianoroll"] = wandb.Image(pianoroll_image)
 
         return results
 
