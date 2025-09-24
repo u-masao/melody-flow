@@ -193,8 +193,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -203,10 +203,14 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-minimum-llama-midi.txt
       hash: md5
-      md5: 26284471a39c2020bbf5a915a8977b50
+      md5: 0456e4a5208957d2300c728ce748a723
       size: 43
   evaluate_model@minimum-llama-3.2-1b:
     cmd: uv run python -m src.model.evaluate --model_paths 
@@ -228,8 +232,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -238,10 +242,14 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-minimum-llama-3.2-1b.txt
       hash: md5
-      md5: b52c85042da35f40ca58c6bfe1eb9f03
+      md5: b7f2cf63876c07c209121e385aa29755
       size: 43
   train_model@base-llama-midi:
     cmd: uv run python -m src.model.train_model --model_name "dx2102/llama-midi"
@@ -293,8 +301,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -303,10 +311,14 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-base-llama-midi.txt
       hash: md5
-      md5: 97a7b1684c9d816cd61b973e4a058092
+      md5: b804ecd53c9edb14a61e312e3c0e1c8b
       size: 43
   train_model@e5-llama-midi:
     cmd: uv run python -m src.model.train_model --model_name "dx2102/llama-midi"
@@ -448,8 +460,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -458,10 +470,14 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-e5-llama-midi.txt
       hash: md5
-      md5: eaccb43cabf0389f13b2eedeb266853b
+      md5: 59df4fb1057e83e325b50f859ec0145c
       size: 43
   evaluate_model@e10-llama-midi:
     cmd: uv run python -m src.model.evaluate --model_paths 
@@ -483,8 +499,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -493,10 +509,14 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-e10-llama-midi.txt
       hash: md5
-      md5: 6cc7f41b6a093ad1e58ab8615120b36b
+      md5: e58119dfc8c91d31dc81e8ecd981d264
       size: 43
   evaluate_model@e20-llama-midi:
     cmd: uv run python -m src.model.evaluate --model_paths 
@@ -518,8 +538,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -528,10 +548,14 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-e20-llama-midi.txt
       hash: md5
-      md5: 6cde73563b454d6b26f9c014730e2835
+      md5: 802b65af70c7fa24934275610aadd01b
       size: 43
   evaluate_model@e30-llama-midi:
     cmd: uv run python -m src.model.evaluate --model_paths 
@@ -553,8 +577,8 @@ stages:
       size: 7068
     - path: src/model/evaluate.py
       hash: md5
-      md5: 8355911f91b38a3648deadf43fb9e6ec
-      size: 8527
+      md5: b289ba0193371efe4b98951b882cb6f3
+      size: 7751
     - path: src/model/melody_processor.py
       hash: md5
       md5: 2917ef36696cde4b6468e691938c09e3
@@ -563,8 +587,12 @@ stages:
       hash: md5
       md5: 7702655b36c1259ab1f1cbecd547dd99
       size: 3468
+    - path: src/model/visualize.py
+      hash: md5
+      md5: b0eeb0f6bda4e21e0ad19cbcb08875f1
+      size: 1923
     outs:
     - path: data/interim/flag_evaluate_model-e30-llama-midi.txt
       hash: md5
-      md5: f0d5733b240d610f60a85ce084ce588a
+      md5: 15f991e9922227d61982eaa5e352ec9e
       size: 43
