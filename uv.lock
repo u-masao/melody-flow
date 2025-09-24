@@ -2578,6 +2578,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "midi2audio" },
     { name = "mido" },
+    { name = "pretty-midi" },
     { name = "python-dotenv" },
     { name = "symusic" },
     { name = "torch" },
@@ -2610,6 +2611,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.6" },
     { name = "midi2audio", specifier = ">=0.1.1" },
     { name = "mido", specifier = ">=1.3.3" },
+    { name = "pretty-midi", specifier = ">=0.2.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.11" },
@@ -3352,6 +3354,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/16/11/7e0b3908a4f543619
 wheels = [
     { url = "https://files.pythonhosted.org/packages/19/63/04c5c7c2093cf69c9eeea338f4757522a5d048703a35b3ac8a5580ed2369/polyfile_weave-0.5.6-py3-none-any.whl", hash = "sha256:658e5b6ed040a973279a0cd7f54f4566249c85b977dee556788fa6f903c1d30b", size = 1655007, upload-time = "2025-07-28T20:26:30.132Z" },
 ]
+
+[[package]]
+name = "pretty-midi"
+version = "0.2.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mido" },
+    { name = "numpy" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c2/81/f3e47efdf65eab347d1b78e8279222f6e3122d722cc9d68d443503a3c0e7/pretty_midi-0.2.10.tar.gz", hash = "sha256:ea6e192f94044674e833336ea1f415318ddf28e320302ac7b109edff0d4534bd", size = 5592108, upload-time = "2023-03-03T18:34:14.04Z" }
 
 [[package]]
 name = "prompt-toolkit"

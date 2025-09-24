@@ -25,6 +25,7 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "fluidsynth>=0.2",
     "matplotlib>=3.10.6",
+    "pretty-midi>=0.2.10",
 ]
 
 [project.optional-dependencies]
