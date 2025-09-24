@@ -138,13 +138,14 @@ class MelodyGenerator:
         parsed_notes = self._parse_full_melody(all_notes_text)
         metrics = self._calculate_metrics(parsed_notes, allowed_pitches_union)
         wav_data = self._create_wav_from_notes(parsed_notes)
-        pianoroll_image_data = create_pianoroll_image(parsed_notes)
+        pianoroll_image = create_pianoroll_image(parsed_notes)
 
         results = {"output_text": all_notes_text.strip(), "scores": metrics}
         if wav_data:
             results["audio"] = weave.Audio(wav_data, format="wav")
-        if pianoroll_image_data:
-            results["pianoroll"] = weave.Image(pianoroll_image_data, "png")
+        if pianoroll_image:
+            # Pillow Imageオブジェクトをそのまま格納
+            results["pianoroll"] = pianoroll_image
 
         return results
 
