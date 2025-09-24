@@ -56,6 +56,7 @@ stages:
         - src/model/utils.py
         - src/model/melody_processor.py
         - src/model/chord_name_parser.py
+        - src/model/visualize.py
         - models/${key}.pth/
         - data/raw/FluidR3_GM.sf2
       outs:

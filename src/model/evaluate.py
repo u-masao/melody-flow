@@ -8,6 +8,7 @@ from loguru import logger
 from src.model.audio import AudioUtility
 from src.model.melody_processor import MelodyControlLogitsProcessor
 from src.model.utils import generate_midi_from_model, load_model_and_tokenizer
+from src.model.visualize import create_pianoroll_image
 from tap import Tap
 from tqdm import tqdm
 import wandb
@@ -30,7 +31,6 @@ class MelodyGenerator:
         self.audio_util = AudioUtility(soundfont_path=soundfont_path)
 
     def _parse_full_melody(self, midi_text: str) -> list[dict[str, int]]:
-        # このメソッドは変更なし
         notes = []
         lines = midi_text.strip().split("\n")
         if lines and "pitch" in lines[0]:
@@ -55,7 +55,6 @@ class MelodyGenerator:
     def _calculate_metrics(
         self, parsed_notes: list[dict[str, int]], allowed_pitches: set[int]
     ) -> dict[str, float]:
-        # このメソッドは変更なし
         if not parsed_notes:
             return {
                 "total_notes": 0,
@@ -74,49 +73,34 @@ class MelodyGenerator:
             "average_interval": average_interval,
         }
 
-    # ▼▼▼ 【変更点2】AudioUtilityを使うように音声生成メソッドをリファクタリング ▼▼▼
-    def _create_wav_from_notes(self, parsed_notes: list[dict[str, int]]) -> str | None:
+    def _create_wav_from_notes(self, parsed_notes: list[dict[str, int]]) -> bytes | None:
         if not parsed_notes:
             return None
 
-        # AudioUtilityが期待する形式にノート情報を変換
-        # ('pitch' -> 'note', 'wait'は新しいMIDI生成ロジックでは使われない)
         utility_notes = [
             {"note": n["pitch"], "duration": n["duration"], "velocity": n["velocity"]}
             for n in parsed_notes
         ]
 
-        # 一時ファイルパスを管理
         temp_dir = tempfile.mkdtemp()
         mid_path = Path(temp_dir) / "temp.mid"
         wav_path = Path(temp_dir) / "temp.wav"
 
         try:
-            # 1. MIDIファイルを作成
             self.audio_util.create_midi_file(notes=utility_notes, output_path=mid_path)
-            # 2. MIDIをWAVに変換
             self.audio_util.midi_to_wav(midi_path=mid_path, output_path=wav_path, gain=0.9)
 
-            # 最終的なWAVファイルのデータを読み込んで返す
             with open(wav_path, "rb") as f:
                 wav_data = f.read()
                 return wav_data
-
-            # 一時ファイルをクリーンアップするために新しい一時ファイルに書き込む
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as final_wav_file:
-                final_wav_file.write(wav_data)
-                return final_wav_file.name
 
         except Exception as e:
             logger.error(f"Error creating WAV file: {e}")
             return None
         finally:
-            # 一時ディレクトリ内のファイルをすべて削除
             for f in os.listdir(temp_dir):
                 os.remove(os.path.join(temp_dir, f))
             os.rmdir(temp_dir)
-
-    # ▲▲▲ 【ここまで】 ▲▲▲
 
     def run_single_prediction(
         self,
@@ -154,15 +138,17 @@ class MelodyGenerator:
         parsed_notes = self._parse_full_melody(all_notes_text)
         metrics = self._calculate_metrics(parsed_notes, allowed_pitches_union)
         wav_data = self._create_wav_from_notes(parsed_notes)
+        pianoroll_image_data = create_pianoroll_image(parsed_notes)
 
         results = {"output_text": all_notes_text.strip(), "scores": metrics}
         if wav_data:
             results["audio"] = weave.Audio(wav_data, format="wav")
+        if pianoroll_image_data:
+            results["pianoroll"] = weave.Image(pianoroll_image_data, "png")
 
         return results
 
 
-# Argsクラスとmain関数は変更なし
 class Args(Tap):
     model_paths: list[str]
     wandb_project: str = "melody-flow-model-manage"

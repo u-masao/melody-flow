@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock, patch, mock_open
+import os
 from pathlib import Path
 
 import pytest
@@ -52,7 +53,8 @@ def test_create_wav_from_notes_success(
     """
     fake_temp_dir = "/tmp/fake_dir"
     mock_tempfile.mkdtemp.return_value = fake_temp_dir
-    mock_os.listdir.return_value = ["temp.mid", "temp.wav"]
+    mock_os.listdir.return_value = ["temp.mid", "temp.wav"]  # これらはクリーンアップされる
+    mock_os.path.join.side_effect = os.path.join  # os.path.joinを本物の動作に戻す
 
     result_data = melody_generator._create_wav_from_notes(sample_parsed_notes)
 
@@ -64,7 +66,7 @@ def test_create_wav_from_notes_success(
     # open()がPathオブジェクトを引数にして呼ばれることを確認
     mock_open_builtin.assert_any_call(Path(fake_temp_dir) / "temp.wav", "rb")
     mock_os.listdir.assert_called_once_with(fake_temp_dir)
-    assert mock_os.remove.call_count == 2
+    assert mock_os.remove.call_count == 2  # midとwavの2つを削除
     mock_os.rmdir.assert_called_once_with(fake_temp_dir)
 
 
@@ -88,13 +90,15 @@ def test_create_wav_from_notes_audio_util_error(
     ファイルをクリーンアップすることを確認
     """
     mock_tempfile.mkdtemp.return_value = "/tmp/fake_dir"
-    mock_os.listdir.return_value = []
-    melody_generator.audio_util.create_midi_file.side_effect = Exception(
-        "MIDI creation failed"
-    )
+    # エラー時でもクリーンアップ処理が走るので、リストは空ではない可能性もあるが、
+    # いずれにせよrmdirが呼ばれることを確認するのが目的
+    mock_os.listdir.return_value = ["some_file.mid"]
+    mock_os.path.join.side_effect = os.path.join
+    melody_generator.audio_util.create_midi_file.side_effect = Exception("MIDI creation failed")
 
     result = melody_generator._create_wav_from_notes(sample_parsed_notes)
 
     assert result is None
     mock_os.listdir.assert_called_once_with("/tmp/fake_dir")
+    mock_os.remove.assert_called_once_with("/tmp/fake_dir/some_file.mid")
     mock_os.rmdir.assert_called_once_with("/tmp/fake_dir")
