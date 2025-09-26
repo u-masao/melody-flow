@@ -104,6 +104,13 @@
             color: #D1D5DB;
              margin-top: 1.5rem;
         }
+        
+        .slide h3.feature-title {
+            font-size: clamp(1.1rem, 2vw, 1.5rem); /* Adjust size for feature titles */
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
 
         .slide p, .slide li {
             font-size: clamp(1rem, 1.8vw, 1.25rem);
@@ -236,7 +243,30 @@
     <section class="slide">
         <div class="w-full max-w-6xl text-center fade-in">
             <h2 class="mb-8"><span class="gradient-text">新しい音楽体験</span>の全体像</h2>
-            <img src="artifacts/music_experience_architecture.png" alt="音楽体験の全体像の図" class="w-full max-w-4xl mx-auto rounded-lg shadow-2xl">
+            <!--  Image size is adjusted with max-h-[75vh] to prevent overflow -->
+            <img src="artifacts/music_experience_architecture.png" alt="音楽体験の全体像の図" class="w-full max-w-4xl mx-auto rounded-lg shadow-2xl max-h-[75vh] object-contain">
+        </div>
+    </section>
+
+    <section class="slide">
+         <div class="text-center fade-in max-w-6xl w-full">
+            <h2 class="mb-4">Melody Flow の<span class="gradient-text">急速な進化</span></h2>
+            <p class="mb-10 text-xl text-gray-300">AIから、あなたの感情を奏でる「楽器」へ</p>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div class="bg-gray-800 p-8 rounded-2xl">
+                    <h3 class="feature-title text-white">⚡️ 待ち時間ゼロの「即応性」</h3>
+                    <p class="text-gray-400 text-base leading-relaxed">AIの思考時間を完全に撤廃。あなたのリズムに**瞬時に**メロディが追従する、まるで本物の楽器のような一体感を実現。</p>
+                </div>
+                <div class="bg-gray-800 p-8 rounded-2xl">
+                    <h3 class="feature-title text-white">🎷 息で操る「表現力」</h3>
+                    <!-- Modified vibrato explanation -->
+                    <p class="text-gray-400 text-base leading-relaxed">新開発の**`UniSuling`**で息による強弱を。さらに、伸ばした音には自動で**ビブラート**がかかり、人間らしい豊かな感情表現を可能にします。</p>
+                </div>
+                <div class="bg-gray-800 p-8 rounded-2xl">
+                    <h3 class="feature-title text-white">🎛️ 自由自在の「創造性」</h3>
+                    <p class="text-gray-400 text-base leading-relaxed">**Studioモード**でキーやテンポを直感的にコントロール。AIをあなたの創造性を解放する最高のパートナーに。</p>
+                </div>
+            </div>
         </div>
     </section>
 
