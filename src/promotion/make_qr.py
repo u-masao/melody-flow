@@ -12,7 +12,7 @@ OUTPUT_FILENAME = "docs/slide_qr_code.png"
 DOT_COLOR = (147, 112, 219) # "#9370db"
 QR_BG_COLOR = (229, 231, 235)  # "#e5e7eb"
 SLIDE_BG_COLOR = "#111827"
-CANVAS_SIZE = 400
+CANVAS_SIZE = 800
 SVG_DATA = """
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
