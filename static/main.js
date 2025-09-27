@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeHelpButton = document.getElementById('close-help-button');
 
     // --- Initial Generate Button Content ---
-    const initialGenerateButtonHTML = generateButton.innerHTML;
+    const initialGenerateButtonHTML = generateButton ? generateButton.innerHTML : '';
 
     // --- Synths ---
     const leadSynth = new Tone.MonoSynth({
@@ -198,6 +198,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeKeys = new Set();
     let currentMidiInput = null;
     let playbackStartTime = 0;
+    
+    // --- Analytics Variables ---
+    let sessionAnalytics = {};
+    function resetSessionAnalytics() {
+        sessionAnalytics = {
+            velocities: [],
+            aftertouchValues: [],
+            noteOnCount: 0,
+            aftertouchCount: 0
+        };
+    }
+    resetSessionAnalytics(); // Initialize
 
     // --- Initial Setup ---
     setupEventListeners();
@@ -296,10 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(tapTempoButton) setupTapTempo();
         if(playNoteButton) {
             playNoteButton.addEventListener('mousedown', () => handleMidiNoteOn(0.75, 'button'));
-            playNoteButton.addEventListener('mouseup', () => { handleMidiNoteOff(); playNoteButton.blur(); });
-            playNoteButton.addEventListener('mouseleave', () => { if (midiKeyDownCount > 0) handleMidiNoteOff(); });
+            playNoteButton.addEventListener('mouseup', () => handleMidiNoteOff('button'));
+            playNoteButton.addEventListener('mouseleave', () => { if (midiKeyDownCount > 0) handleMidiNoteOff('button'); });
             playNoteButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleMidiNoteOn(0.75, 'button'); });
-            playNoteButton.addEventListener('touchend', (e) => { e.preventDefault(); handleMidiNoteOff(); playNoteButton.blur(); });
+            playNoteButton.addEventListener('touchend', (e) => { e.preventDefault(); handleMidiNoteOff('button'); });
         }
 
         setupKeyboardListener();
@@ -404,6 +416,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generatePhrases() {
+        // ガード節：必要なUI要素がDOMに存在するかを確認
+        if (!chordSelect || !keySelect || !styleSelect) {
+            const errorMessage = "エラー: UI要素（コード進行、キー、スタイル選択）が見つかりません。HTMLのIDが正しいか確認してください。";
+            console.error(errorMessage);
+            if (statusArea) statusArea.textContent = errorMessage;
+            return;
+        }
+
         await ensureAudioContext();
 
         trackEvent('generate_melody', {
@@ -515,6 +535,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startPlayback() {
         if(pianoRollContent) pianoRollContent.querySelectorAll('.note-block').forEach(note => note.remove());
+
+        if (progression.length > 0) {
+            activeChord = progression[0];
+            currentNoteIndex = 0;
+            updateNoteDisplay(chordMelodies[activeChord]);
+            if (progressionDisplay) {
+                progressionDisplay.querySelectorAll('.indicator').forEach((el, index) => {
+                    el.classList.toggle('bg-sky-500', index === 0);
+                    el.classList.toggle('scale-110', index === 0);
+                });
+            }
+        }
+        
+        resetSessionAnalytics();
         scheduleBackingTrack();
         Tone.Transport.seconds = 0; Tone.Transport.start();
         isPlaying = true;
@@ -535,23 +569,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopPlayback() {
         if (isPlaying) {
-             const durationSec = (performance.now() - playbackStartTime) / 1000;
-             trackEvent('stop_playback', {
-                 playback_duration_sec: Math.round(durationSec)
-             }, true); // Use Beacon for reliability
+            sendSessionAnalytics();
+            const durationSec = (performance.now() - playbackStartTime) / 1000;
+            trackEvent('stop_playback', {
+                playback_duration_sec: Math.round(durationSec)
+            }, true);
         }
 
         Tone.Transport.stop(); Tone.Transport.cancel(0);
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
-        if (leadSynth) leadSynth.triggerRelease();
-        if (pianoSynth) pianoSynth.releaseAll();
-        activeLeadNoteInfo = null;
-        if (midiKeyDownCount > 0) { midiKeyDownCount = 0; handleMidiNoteOff(); }
+
+        if (activeLeadNoteInfo) {
+            stopCurrentLeadNote();
+        } else {
+            leadSynth.triggerRelease();
+        }
+        pianoSynth.releaseAll();
+        midiKeyDownCount = 0;
         activeKeys.clear();
+        if(playNoteButton) {
+            playNoteButton.style.backgroundColor = '';
+            playNoteButton.classList.remove('bg-purple-500');
+            playNoteButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        }
+
         if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
         if(playhead) playhead.style.left = '0%';
         if(progressionDisplay) progressionDisplay.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-sky-500', 'scale-110'));
-        activeChord = null; isPlaying = false;
+        activeChord = null; 
+        isPlaying = false;
+
         if(playStopButton) {
             playStopButton.classList.replace('bg-amber-600', 'bg-teal-600');
             playStopButton.classList.replace('hover:bg-amber-700', 'hover:bg-teal-700');
@@ -569,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const shuffleDuration = Tone.Time('8t').toSeconds() * 2;
 
-        const events = progression.flatMap((chord, measureIndex) => {
+        let events = progression.flatMap((chord, measureIndex) => {
             const chordName = chord.split('_')[0];
             const notes = Chord.getVoicing(chordName);
             const measureEvents = [{ time: `${measureIndex}m`, type: 'update', chord: chord, chordIndex: measureIndex }];
@@ -580,6 +627,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return measureEvents;
         });
+
+        if (progression.length > 0) {
+            const reportTime = Tone.Time(`${progression.length}m`).toSeconds() - 0.1;
+            if (reportTime > 0) {
+                events.push({ time: reportTime, type: 'report_analytics' });
+            }
+        }
 
         if (events.length === 0) return;
         backingPart = new Tone.Part((time, value) => {
@@ -593,6 +647,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const activeIndicator = document.getElementById(`indicator-${value.chordIndex}`);
                     if (activeIndicator) activeIndicator.classList.add('bg-sky-500', 'scale-110');
                 }, time);
+            } else if (value.type === 'report_analytics') {
+                Tone.Draw.schedule(() => {
+                    sendSessionAnalytics();
+                    resetSessionAnalytics();
+                }, time);
             }
         }, events).start(0);
         backingPart.loop = true;
@@ -601,40 +660,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function playNextLeadNote(velocity = 0.75) {
         await ensureAudioContext();
-        if (!isPlaying || !activeChord || !chordMelodies[activeChord] || chordMelodies[activeChord].length === 0 || activeLeadNoteInfo) return;
+        if (!isPlaying || !activeChord || !chordMelodies[activeChord] || chordMelodies[activeChord].length === 0) return;
+        
+        if (activeLeadNoteInfo) {
+            stopCurrentLeadNote();
+        }
+
         const notesOfCurrentChord = chordMelodies[activeChord];
         const noteToPlay = notesOfCurrentChord[currentNoteIndex];
         if (!noteToPlay || typeof noteToPlay.pitch !== 'number') return;
-        
+       
         const now = Tone.now();
         const freq = Tone.Midi(noteToPlay.pitch).toFrequency();
 
-        // --- ビブラート実装 ---
-        // 以前のLFOが残っていれば破棄 (念のため)
-        if (activeLeadNoteInfo && activeLeadNoteInfo.vibratoLFO) {
-            activeLeadNoteInfo.vibratoLFO.dispose();
-        }
+        if (activeLeadNoteInfo && activeLeadNoteInfo.vibratoLFO) {
+            activeLeadNoteInfo.vibratoLFO.dispose();
+        }
 
-        // テンポに同期したビブラート用のLFOを作成
-        const bpm = Tone.Transport.bpm.value;
-        const vibratoFrequency = (bpm / 60) * 2; // 1拍に2周期
+        const bpm = Tone.Transport.bpm.value;
+        const vibratoFrequency = (bpm / 60) * 2; 
 
-        const vibratoLFO = new Tone.LFO({
-            frequency: vibratoFrequency,
-            type: 'sine',
-            min: -20, // 最大のビブラート幅 ±20セント
-            max: 20,
-        }).connect(leadSynth.detune).start(now);
+        const vibratoLFO = new Tone.LFO({
+            frequency: vibratoFrequency,
+            type: 'sine',
+            min: -20,
+            max: 20,
+        }).connect(leadSynth.detune).start(now);
 
-        // ビブラートの深さ(amplitude)のエンベロープを設定
-        const oneBeatInSeconds = 60 / bpm;
-        const startRampTime = now + (2 * oneBeatInSeconds); // ノート開始から2拍後 (3拍目の頭)
-        const maxRampTime = now + (5 * oneBeatInSeconds); // ノート開始から5拍後 (6拍目の頭)
+        const oneBeatInSeconds = 60 / bpm;
+        const startRampTime = now + (2 * oneBeatInSeconds); 
+        const maxRampTime = now + (5 * oneBeatInSeconds); 
 
-        vibratoLFO.amplitude.setValueAtTime(0, now);
-        vibratoLFO.amplitude.setValueAtTime(0, startRampTime); // 3拍目の頭までは振幅0を維持
-        vibratoLFO.amplitude.linearRampToValueAtTime(1, maxRampTime); // 3拍目から6拍目にかけて振幅を最大(1)にする
-        // --- ビブラート実装ここまで ---
+        vibratoLFO.amplitude.setValueAtTime(0, now);
+        vibratoLFO.amplitude.setValueAtTime(0, startRampTime);
+        vibratoLFO.amplitude.linearRampToValueAtTime(1, maxRampTime); 
 
         leadSynth.triggerAttack(freq, now, velocity);
         const noteStartTicks = Tone.Transport.ticks;
@@ -644,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pitch: noteToPlay.pitch,
             startTicks: noteStartTicks,
             element: noteElement,
-            vibratoLFO: vibratoLFO, // LFOを保存
+            vibratoLFO: vibratoLFO,
             colorStops: [{
                 ticks: noteStartTicks,
                 color: 'rgba(99, 102, 241, 0.8)'
@@ -655,15 +714,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopCurrentLeadNote() {
         if (!activeLeadNoteInfo) return;
-        
-        // --- ビブラート停止処理 ---
-        if (activeLeadNoteInfo.vibratoLFO) {
-            const now = Tone.now();
-            activeLeadNoteInfo.vibratoLFO.stop(now).dispose();
-        }
-        // --- ビブラート停止処理ここまで ---
+       
+        if (activeLeadNoteInfo.vibratoLFO) {
+            const now = Tone.now();
+            activeLeadNoteInfo.vibratoLFO.stop(now).dispose();
+        }
 
-        leadSynth.triggerRelease(Tone.now());
+        leadSynth.triggerRelease(Tone.now());
         const { startTicks, element, colorStops } = activeLeadNoteInfo;
         const durationTicks = Tone.Transport.ticks - startTicks;
         const totalTicks = progression.length * TICKS_PER_MEASURE;
@@ -756,13 +813,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keyup', (e) => {
             if (['INPUT', 'SELECT'].includes(e.target.tagName) || !isPlayKey(e)) return;
             activeKeys.delete(e.code);
-            if (activeKeys.size === 0) handleMidiNoteOff();
+            if (activeKeys.size === 0) handleMidiNoteOff('keyboard');
         });
     }
 
     function handleMidiNoteOn(velocity = 0.75, source = 'unknown') {
-        if (midiKeyDownCount === 0) {
-            trackEvent('play_note', { source: source });
+        if (source !== 'button') { // ボタンの押下はトラッキングしない
+            sessionAnalytics.velocities.push(velocity);
+            sessionAnalytics.noteOnCount++;
         }
 
         if (mainContainer) {
@@ -775,12 +833,33 @@ document.addEventListener('DOMContentLoaded', () => {
             playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
             playNoteButton.classList.add('bg-purple-500');
         }
-        if (++midiKeyDownCount === 1) playNextLeadNote(velocity);
+        
+        if (source === 'midi') {
+            midiKeyDownCount++;
+            playNextLeadNote(velocity);
+        } else {
+            if (++midiKeyDownCount === 1) playNextLeadNote(velocity);
+        }
     }
 
-    function handleMidiNoteOff() {
-        if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) {
+    function handleMidiNoteOff(source = 'unknown') {
+        // PCキーボードとUIボタンはカウンタで厳密に管理
+        if (source === 'keyboard' || source === 'button') {
+            if (midiKeyDownCount > 0 && --midiKeyDownCount === 0) {
+                stopCurrentLeadNote();
+                if(playNoteButton) {
+                    playNoteButton.style.backgroundColor = '';
+                    playNoteButton.classList.remove('bg-purple-500');
+                    playNoteButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                }
+            }
+            return;
+        }
+
+        // MIDI入力はNote Off信号の欠落に弱いため、より強力に音を停止する
+        if (source === 'midi') {
             stopCurrentLeadNote();
+            midiKeyDownCount = 0; // カウンタを強制リセット
             if(playNoteButton) {
                 playNoteButton.style.backgroundColor = '';
                 playNoteButton.classList.remove('bg-purple-500');
@@ -790,14 +869,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleMidiChannelAftertouch(value) { // value is 0.0 ~ 1.0
+        sessionAnalytics.aftertouchValues.push(value);
+        sessionAnalytics.aftertouchCount++;
         let newColorRgbString = null;
 
         if (midiKeyDownCount > 0) {
             if (leadSynth) {
-                const now = Tone.now(); const timeConstant = 0.02;
-                const newFrequency = 1200 + (3800 * value);
+                const now = Tone.now(); 
+                const timeConstant = 0.02;
+
+                const easedValue = Math.pow(value, 1.5);
+                
+                const newFrequency = 800 + (6200 * easedValue);
                 leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
-                const newVolume = -12 + (10 * value);
+
+                // MODIFIED: 最小音量を-12dBに変更
+                const newVolume = -12 + (12 * easedValue);
                 leadSynth.volume.setTargetAtTime(newVolume, now, timeConstant);
             }
 
@@ -821,6 +908,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function sendSessionAnalytics() {
+        if (sessionAnalytics.noteOnCount === 0 && sessionAnalytics.aftertouchCount === 0) {
+            return;
+        }
+
+        const calculateStats = (arr) => {
+            if (arr.length === 0) return { min: 0, q1: 0, median: 0, mean: 0, q3: 0, max: 0 };
+            const sorted = [...arr].sort((a, b) => a - b);
+            const sum = arr.reduce((a, b) => a + b, 0);
+            return {
+                min: parseFloat(sorted[0].toFixed(2)),
+                q1: parseFloat(sorted[Math.floor(sorted.length / 4)].toFixed(2)),
+                median: parseFloat(sorted[Math.floor(sorted.length / 2)].toFixed(2)),
+                mean: parseFloat((sum / arr.length).toFixed(2)),
+                q3: parseFloat(sorted[Math.floor(sorted.length * 3 / 4)].toFixed(2)),
+                max: parseFloat(sorted[sorted.length - 1].toFixed(2)),
+            };
+        };
+
+        const velocityStats = calculateStats(sessionAnalytics.velocities);
+        const aftertouchStats = calculateStats(sessionAnalytics.aftertouchValues);
+
+        trackEvent('play_session_summary', {
+            note_on_count: sessionAnalytics.noteOnCount,
+            aftertouch_count: sessionAnalytics.aftertouchCount,
+            velocity_min: velocityStats.min,
+            velocity_q1: velocityStats.q1,
+            velocity_median: velocityStats.median,
+            velocity_mean: velocityStats.mean,
+            velocity_q3: velocityStats.q3,
+            velocity_max: velocityStats.max,
+            aftertouch_min: aftertouchStats.min,
+            aftertouch_q1: aftertouchStats.q1,
+            aftertouch_median: aftertouchStats.median,
+            aftertouch_mean: aftertouchStats.mean,
+            aftertouch_q3: aftertouchStats.q3,
+            aftertouch_max: aftertouchStats.max
+        });
+    }
+
+
     function updateNoteGradient(element, startTicks, durationTicks, colorStops) {
         if (!element || durationTicks <= 0 || colorStops.length === 0) return;
 
@@ -840,15 +968,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function attachMidiListeners(inputId) {
         if (currentMidiInput) {
-            currentMidiInput.removeListener("noteon");
-            currentMidiInput.removeListener("noteoff");
-            currentMidiInput.removeListener("channelaftertouch");
+            currentMidiInput.removeListener();
         }
         currentMidiInput = WebMidi.getInputById(inputId);
         if (currentMidiInput) {
             currentMidiInput.on("noteon", e => handleMidiNoteOn(e.velocity, 'midi'));
-            currentMidiInput.on("noteoff", e => handleMidiNoteOff());
+            currentMidiInput.on("noteoff", e => handleMidiNoteOff('midi'));
             currentMidiInput.on("channelaftertouch", e => handleMidiChannelAftertouch(e.value));
+            currentMidiInput.on('controlchange', e => {
+                if (e.controller.number === 123) {
+                    console.warn('All Notes Off message received. Forcibly stopping sound.');
+                    if (activeLeadNoteInfo) stopCurrentLeadNote();
+                    if (midiKeyDownCount > 0) {
+                        midiKeyDownCount = 0;
+                        if(playNoteButton) {
+                            playNoteButton.style.backgroundColor = '';
+                            playNoteButton.classList.remove('bg-purple-500');
+                            playNoteButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                        }
+                    }
+                }
+            });
         } else {
              if(statusArea) statusArea.textContent = 'MIDIデバイス未接続。PCのキーボードで演奏できます。';
         }
