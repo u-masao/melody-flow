@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeKeys = new Set();
     let currentMidiInput = null;
     let playbackStartTime = 0;
-    
+   
     // --- Analytics Variables ---
     let sessionAnalytics = {};
     function resetSessionAnalytics() {
@@ -547,7 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-        
+       
         resetSessionAnalytics();
         scheduleBackingTrack();
         Tone.Transport.seconds = 0; Tone.Transport.start();
@@ -596,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
         if(playhead) playhead.style.left = '0%';
         if(progressionDisplay) progressionDisplay.querySelectorAll('.indicator').forEach(el => el.classList.remove('bg-sky-500', 'scale-110'));
-        activeChord = null; 
+        activeChord = null;
         isPlaying = false;
 
         if(playStopButton) {
@@ -661,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function playNextLeadNote(velocity = 0.75) {
         await ensureAudioContext();
         if (!isPlaying || !activeChord || !chordMelodies[activeChord] || chordMelodies[activeChord].length === 0) return;
-        
+       
         if (activeLeadNoteInfo) {
             stopCurrentLeadNote();
         }
@@ -678,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const bpm = Tone.Transport.bpm.value;
-        const vibratoFrequency = (bpm / 60) * 2; 
+        const vibratoFrequency = (bpm / 60) * 2;
 
         const vibratoLFO = new Tone.LFO({
             frequency: vibratoFrequency,
@@ -688,12 +688,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }).connect(leadSynth.detune).start(now);
 
         const oneBeatInSeconds = 60 / bpm;
-        const startRampTime = now + (2 * oneBeatInSeconds); 
-        const maxRampTime = now + (5 * oneBeatInSeconds); 
+        const startRampTime = now + (2 * oneBeatInSeconds);
+        const maxRampTime = now + (5 * oneBeatInSeconds);
 
         vibratoLFO.amplitude.setValueAtTime(0, now);
         vibratoLFO.amplitude.setValueAtTime(0, startRampTime);
-        vibratoLFO.amplitude.linearRampToValueAtTime(1, maxRampTime); 
+        vibratoLFO.amplitude.linearRampToValueAtTime(1, maxRampTime);
 
         leadSynth.triggerAttack(freq, now, velocity);
         const noteStartTicks = Tone.Transport.ticks;
@@ -703,6 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pitch: noteToPlay.pitch,
             startTicks: noteStartTicks,
             element: noteElement,
+            element2: null, // ループをまたぐノートの後半部分
             vibratoLFO: vibratoLFO,
             colorStops: [{
                 ticks: noteStartTicks,
@@ -721,13 +722,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         leadSynth.triggerRelease(Tone.now());
-        const { startTicks, element, colorStops } = activeLeadNoteInfo;
+        const { startTicks, element, element2, colorStops } = activeLeadNoteInfo;
         const durationTicks = Tone.Transport.ticks - startTicks;
         const totalTicks = progression.length * TICKS_PER_MEASURE;
+
         if (totalTicks > 0 && element) {
-            const widthPercentage = (durationTicks / totalTicks) * 100;
-            element.style.width = `${Math.max(0.5, widthPercentage)}%`;
-            updateNoteGradient(element, startTicks, durationTicks, colorStops);
+            const startLoopTicks = startTicks % totalTicks;
+            
+            if (startLoopTicks + durationTicks > totalTicks) {
+                // ループをまたぐ場合
+                const width1_ticks = totalTicks - startLoopTicks;
+                element.style.width = `${Math.max(0.5, (width1_ticks / totalTicks) * 100)}%`;
+                updateNoteGradient(element, startTicks, durationTicks, colorStops);
+
+                if (element2) {
+                    const width2_ticks = durationTicks - width1_ticks;
+                    element2.style.width = `${Math.max(0.5, (width2_ticks / totalTicks) * 100)}%`;
+                    element2.style.background = element.style.background;
+                }
+            } else {
+                // ループをまたがない場合
+                const widthPercentage = (durationTicks / totalTicks) * 100;
+                element.style.width = `${Math.max(0.5, widthPercentage)}%`;
+                updateNoteGradient(element, startTicks, durationTicks, colorStops);
+                if (element2) element2.style.width = '0%';
+            }
         }
         activeLeadNoteInfo = null;
     }
@@ -792,11 +811,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (activeLeadNoteInfo) {
-                const { startTicks, element, colorStops } = activeLeadNoteInfo;
-                const durationTicks = currentTransportTicks - startTicks;
-                const widthPercentage = (durationTicks / totalTicks) * 100;
-                element.style.width = `${Math.max(0.5, widthPercentage)}%`;
-                updateNoteGradient(element, startTicks, durationTicks, colorStops);
+                const { pitch, startTicks, element, colorStops } = activeLeadNoteInfo;
+                const durationTicks = Math.max(0, currentTransportTicks - startTicks);
+                const startLoopTicks = startTicks % totalTicks;
+
+                if (startLoopTicks + durationTicks > totalTicks) {
+                    // --- ループをまたぐ場合の処理 ---
+                    const width1_ticks = totalTicks - startLoopTicks;
+                    element.style.width = `${Math.max(0.5, (width1_ticks / totalTicks) * 100)}%`;
+                    updateNoteGradient(element, startTicks, durationTicks, colorStops);
+
+                    if (!activeLeadNoteInfo.element2) {
+                        const nextLoopStartTicks = Math.floor(startTicks / totalTicks) * totalTicks + totalTicks;
+                        const newElement2 = drawPlayedNote(pitch, nextLoopStartTicks);
+                        if (newElement2) {
+                            activeLeadNoteInfo.element2 = newElement2;
+                        }
+                    }
+
+                    if (activeLeadNoteInfo.element2) {
+                        const width2_ticks = durationTicks - width1_ticks;
+                        activeLeadNoteInfo.element2.style.width = `${Math.max(0.5, (width2_ticks / totalTicks) * 100)}%`;
+                        activeLeadNoteInfo.element2.style.background = element.style.background;
+                    }
+                } else {
+                    // --- ループをまたがない場合の処理 ---
+                    const widthPercentage = (durationTicks / totalTicks) * 100;
+                    element.style.width = `${Math.max(0.5, widthPercentage)}%`;
+                    updateNoteGradient(element, startTicks, durationTicks, colorStops);
+                    if (activeLeadNoteInfo.element2) {
+                        activeLeadNoteInfo.element2.style.width = '0%';
+                    }
+                }
             }
         }
         animationFrameId = requestAnimationFrame(animatePlayhead);
@@ -833,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playNoteButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
             playNoteButton.classList.add('bg-purple-500');
         }
-        
+       
         if (source === 'midi') {
             midiKeyDownCount++;
             playNextLeadNote(velocity);
@@ -875,11 +921,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (midiKeyDownCount > 0) {
             if (leadSynth) {
-                const now = Tone.now(); 
+                const now = Tone.now();
                 const timeConstant = 0.02;
 
                 const easedValue = Math.pow(value, 1.5);
-                
+               
                 const newFrequency = 800 + (6200 * easedValue);
                 leadSynth.filter.frequency.setTargetAtTime(newFrequency, now, timeConstant);
 
