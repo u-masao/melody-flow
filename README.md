@@ -59,7 +59,7 @@ Melody Flow でリズムを刻みながら、UniSuling で息を吹き込むこ�
 キーボードの打鍵だけでは表現が難しかった、**管楽器や声のような有機的なニュアンス**をあなたのメロディに加え、AIとのセッションをさらに深化させましょう！
 
 
-<img src="docs/UniSuling_overview.jpg" alt="UniSuling Overview" with="400">
+<img src="docs/UniSuling_overview.jpg" alt="UniSuling Overview" width="400">
 
 -----
 
