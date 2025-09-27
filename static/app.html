@@ -97,17 +97,12 @@
                                 <option value="C:Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7 - Dm7 - G7 - CM7 - Am7">逆循環コード</option>
                             </select>
                         </div>
-                        <div class="studio-mode-item grid grid-cols-2 gap-4">
+                        <div class="studio-mode-item grid grid-cols-1 gap-4">
                             <div>
                                 <label for="key-select" class="block text-xs font-medium text-gray-300 mb-1">キー</label>
                                 <select id="key-select" class="w-full bg-gray-700 rounded-md p-2"></select>
                             </div>
-                            <div>
-                                <label for="music-style" class="block text-xs font-medium text-gray-300 mb-1">スタイル</label>
-                                <select id="music-style" class="w-full bg-gray-700 rounded-md p-2">
-                                    <option>JAZZ風</option><option>POP風</option>
-                                </select>
-                            </div>
+                            <input type="hidden" id="music-style" name="music-style" value="JAZZ風">
                         </div>
                     </div>
                 </div>
@@ -150,7 +145,7 @@
                             <span id="beat-1" class="beat-indicator downbeat"></span><span id="beat-2" class="beat-indicator"></span><span id="beat-3" class="beat-indicator"></span><span id="beat-4" class="beat-indicator"></span>
                         </div>
                          <div class="studio-mode-item-flex items-center gap-3">
-                            <span class="text-sm text-gray-300">伴奏</span>
+                            <span class="text-sm text-gray-300">伴奏オフ</span>
                             <label for="mute-backing-track" class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="mute-backing-track" class="sr-only peer"><div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div></label>
                         </div>
                     </div>
