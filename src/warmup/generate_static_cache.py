@@ -1,6 +1,4 @@
 import unsloth  # noqa: F401
-import textwrap
-import base64
 import hashlib
 import itertools
 import json
@@ -12,11 +10,10 @@ import sys
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from loguru import logger
-from src.model.melody_processor import MelodyControlLogitsProcessor
 from src.model.utils import load_model_and_tokenizer  # 共通関数をインポート
-import torch
+from src.api.main import generate_melody
+from fastapi import Response
 from tqdm import tqdm
-from transformers import LogitsProcessorList
 import wandb
 import weave
 
@@ -41,10 +38,10 @@ MODEL_NAME = os.getenv("MODEL_NAME", None)
 APP_ENV = os.getenv("APP_ENV", "development")
 if APP_ENV == "production":
     VARIATIONS = range(1, 6)  # 本番は5個
-    print(f"✅ Running in PRODUCTION mode: {len(VARIATIONS)} variations will be generated.")
+    logger.info(f"✅ Running in PRODUCTION mode: {len(VARIATIONS)} variations will be generated.")
 else:
     VARIATIONS = range(1, 3)  # 開発中は2個
-    print(f"🛠️ Running in DEVELOPMENT mode: {len(VARIATIONS)} variations will be generated.")
+    logger.info(f"🛠️ Running in DEVELOPMENT mode: {len(VARIATIONS)} variations will be generated.")
 
 STYLES = ["JAZZ風", "POP風"]
 
@@ -72,7 +69,7 @@ ALL_KEYS = [
 ]
 
 
-# --- 移調ロジック (変更なし) ---
+# --- 移調ロジック ---
 def parse_chord(chord_name: str) -> tuple[str | None, str | None]:
     if not chord_name:
         return None, None
@@ -121,9 +118,9 @@ def transpose_progression(prog_string: str, original_key: str, target_key: str) 
     return " - ".join(transposed_chords)
 
 
-# --- HTMLからコード進行リストを動的に取得 (変更なし) ---
+# --- HTMLからコード進行リストを動的に取得 ---
 def get_chord_progressions_from_html(file_path: Path) -> list[dict]:
-    print(f"📄 Parsing chord progressions from: {file_path}")
+    logger.info(f"📄 Parsing chord progressions from: {file_path}")
     try:
         with open(file_path, encoding="utf-8") as f:
             soup = BeautifulSoup(f, "lxml")
@@ -138,70 +135,18 @@ def get_chord_progressions_from_html(file_path: Path) -> list[dict]:
                 if len(parts) == 2:
                     key, prog = parts[0].strip(), parts[1].strip()
                     progressions.append({"original_key": key, "progression": prog})
-        print(f"🎶 Found {len(progressions)} chord progressions.")
+        logger.info(f"🎶 Found {len(progressions)} chord progressions.")
         return progressions
     except Exception as e:
-        print(f"❌ Error parsing HTML: {e}")
+        logger.error(f"❌ Error parsing HTML: {e}")
         return []
 
 
-# --- 生成ロジック (Weaveトレースを追加) ---
-@weave.op()
-def generate_midi_from_model(
-    model, tokenizer, device, prompt: str, processor: MelodyControlLogitsProcessor, seed: int
-) -> str:
-    torch.manual_seed(seed)
-    inputs = tokenizer(prompt, return_tensors="pt").to(device)
-    logits_processors = LogitsProcessorList([processor])
-    output = model.generate(
-        **inputs,
-        max_new_tokens=128,
-        temperature=0.75,
-        pad_token_id=tokenizer.eos_token_id,
-        logits_processor=logits_processors,
-    )
-    # どの音を許可したかをWandBサマリーに記録
-    if wandb.run:
-        wandb.summary["allowd_notes"] = processor.note_tokenizer.ids_to_string(
-            processor.allowed_token_ids
-        )
-    return tokenizer.decode(output[0])
-
-
-def parse_and_pickup_notes(decoded_text: str, head_k: int = 5) -> str:
-    match = re.search(r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL)
-    midi_note_data = match.group(1).strip() if match else decoded_text
-    notes = [line.split(" ")[0] for line in midi_note_data.split("\n")]
-    return " ".join(notes[:head_k])
-
-
-def parse_and_encode_midi(decoded_text: str) -> str:
-    match = re.search(r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL)
-    midi_note_data = match.group(1).strip() if match else decoded_text
-    return base64.b64encode(midi_note_data.encode("utf-8")).decode("utf-8")
-
-
-@weave.op()
-def build_prompt(style, original_prog, bars, chord, prev_bar_notes, instrument):
-    prompt = f"""
-        Act as a world-class jazz musician improvising over a chord progression.
-        Your task is to generate a single bar of a masterful melodic phrase for
-        the specific chord at the current position in the progression.
-        **- Create a rich variety of melodic patterns. Avoid simple repetition.**
-        - Style: {style}
-        - Full Chord Progression: {original_prog}
-        - Current Bar Number: {bars + 1}
-        - Chord for This Bar: {chord}
-        - Prev Bar Notes: {prev_bar_notes}
-        - Instrument: {instrument}
-        Generate the melody for this bar only. The output format is:
-        pitch duration wait velocity instrument
-        """
-    return textwrap.dedent(prompt)
-
-
 # --- メイン処理 ---
-def main():
+def main(
+    supress_token_prob_ratio: float = 0.3,
+    instrument: str = "Alto Saxophone",
+):
     # Weaveを初期化
     weave.init(os.environ["WANDB_PROJECT"])
 
@@ -210,67 +155,54 @@ def main():
     if not model:
         return
 
+    # APP HTML からコード進行を読み込む
     chord_progressions = get_chord_progressions_from_html(APP_HTML_PATH)
     if not chord_progressions:
-        print("Aborting: No chord progressions found.")
+        logger.info("Aborting: No chord progressions found.")
         return
 
-    print("🚀 Starting static cache generation for all keys...")
+    # 全ての組み合わせを作成
+    logger.info("🚀 Starting static cache generation for all keys...")
     all_combinations = list(itertools.product(chord_progressions, ALL_KEYS, STYLES, VARIATIONS))
-
-    supress_token_prob_ratio: float = 0.3
-    instrument: str = "Alto Saxophone"
 
     with tqdm(all_combinations, desc="Generating Cache", unit="file") as pbar:
         for prog_info, target_key, style, var in pbar:
+            # 変数を作成
             original_prog = prog_info["progression"]
             original_key = prog_info["original_key"]
             transposed_prog = transpose_progression(original_prog, original_key, target_key)
             prog_hash = hashlib.md5(transposed_prog.encode()).hexdigest()
 
+            # プログレスバーを更新
             pbar.set_description(f"Hash: {prog_hash}, Style: {style}, Variation: {var}")
+
+            # ファイル名を作成
             output_path = OUTPUT_DIR / prog_hash / style
             os.makedirs(output_path, exist_ok=True)
             output_file = output_path / f"{var}.json"
 
+            # ファイル存在チェック
             if os.path.exists(output_file):
                 continue
 
-            chords = [chord.strip() for chord in transposed_prog.split("-")]
-            melodies = {}
+            # メロディを生成(API 呼び出し)
+            response = generate_melody(
+                Response,
+                chord_progression=transposed_prog,
+                style=style,
+                variation=var,
+                supress_token_prob_ratio=supress_token_prob_ratio,
+                instrument=instrument,
+            )
+
+            # ファイルに保存
             try:
-                prev_bar_notes = ""
-                for bars, chord in enumerate(chords):
-                    processor = MelodyControlLogitsProcessor(
-                        chord,
-                        note_tokenizer_helper,
-                        supress_token_prob_ratio=supress_token_prob_ratio,
-                    )
-
-                    prompt = build_prompt(
-                        style, original_prog, bars, chord, prev_bar_notes, instrument
-                    )
-
-                    raw_output = generate_midi_from_model(
-                        model, tokenizer, device, prompt, processor, seed=var
-                    )
-                    encoded_midi = parse_and_encode_midi(raw_output)
-                    prev_bar_notes = parse_and_pickup_notes(raw_output)
-
-                    key = chord
-                    count = 2
-                    while key in melodies:
-                        key = f"{chord}_{count}"
-                        count += 1
-                    melodies[key] = encoded_midi
-
-                with open(output_file, "w", encoding="utf-8") as f:
-                    json.dump({"chord_melodies": melodies}, f)
-
+                with open(output_file, "w", encoding="utf-8") as fo:
+                    json.dump(response, fo)
             except Exception as e:
                 tqdm.write(f"❌ FAILED to generate {output_file}: {e}")
 
-    print("🎉 Static cache generation finished!")
+    logger.info("🎉 Static cache generation finished!")
 
 
 if __name__ == "__main__":
