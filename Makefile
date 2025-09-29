@@ -7,7 +7,7 @@ include .env
 AWS_PROFILE_NAME := melody-flow
 S3_BUCKET_NAME := melody-flow.click
 GENERATOR_DOCKER_IMAGE := "melody-flow-generator"
-MODEL_NAME := models/production.pth/
+MODEL_NAME := models/e5-llama-midi.pth/
 
 
 # ==============================================================================
