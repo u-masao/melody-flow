@@ -22,6 +22,7 @@ if APP_ENV != "production":
     print("🚀 Running in DEVELOPMENT mode. Weave is enabled.")
     try:
         import weave
+        import wandb
 
         weave.init("melody-flow-api-dev")
         op = weave.op  # 開発モードでは実際のweave.opを使用
@@ -114,8 +115,8 @@ def generate_midi_from_model(
 
     # 開発モードの時だけWeaveに情報を記録
     if APP_ENV != "production" and "weave" in globals():
-        weave.summary(
-            {"allowed_notes": processor.note_tokenizer.ids_to_string(processor.allowed_token_ids)}
+        wandb.summary["allowed_notes"] = processor.note_tokenizer.ids_to_string(
+            processor.allowed_token_ids
         )
     return TOKENIZER.decode(output[0])
 
