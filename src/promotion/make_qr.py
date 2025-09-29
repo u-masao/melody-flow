@@ -9,7 +9,7 @@ import io
 # --- 設定項目 ---
 QR_DATA = "https://melody-flow.click"
 OUTPUT_FILENAME = "docs/slide_qr_code.png"
-DOT_COLOR = (147, 112, 219) # "#9370db"
+DOT_COLOR = (147, 112, 219)  # "#9370db"
 QR_BG_COLOR = (229, 231, 235)  # "#e5e7eb"
 SLIDE_BG_COLOR = "#111827"
 CANVAS_SIZE = 800
