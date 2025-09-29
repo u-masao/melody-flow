@@ -1,4 +1,5 @@
 import unsloth  # noqa: F401
+import textwrap
 import base64
 import hashlib
 import itertools
@@ -167,10 +168,36 @@ def generate_midi_from_model(
     return tokenizer.decode(output[0])
 
 
+def parse_and_pickup_notes(decoded_text: str, head_k: int = 5) -> str:
+    match = re.search(r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL)
+    midi_note_data = match.group(1).strip() if match else decoded_text
+    notes = [line.split(" ")[0] for line in midi_note_data.split("\n")]
+    return " ".join(notes[:head_k])
+
+
 def parse_and_encode_midi(decoded_text: str) -> str:
     match = re.search(r"pitch duration wait velocity instrument\s*\n(.*)", decoded_text, re.DOTALL)
     midi_note_data = match.group(1).strip() if match else decoded_text
     return base64.b64encode(midi_note_data.encode("utf-8")).decode("utf-8")
+
+
+@weave.op()
+def build_prompt(style, original_prog, bars, chord, prev_bar_notes, instrument):
+    prompt = f"""
+        Act as a world-class jazz musician improvising over a chord progression.
+        Your task is to generate a single bar of a masterful melodic phrase for
+        the specific chord at the current position in the progression.
+        **- Create a rich variety of melodic patterns. Avoid simple repetition.**
+        - Style: {style}
+        - Full Chord Progression: {original_prog}
+        - Current Bar Number: {bars + 1}
+        - Chord for This Bar: {chord}
+        - Prev Bar Notes: {prev_bar_notes}
+        - Instrument: {instrument}
+        Generate the melody for this bar only. The output format is:
+        pitch duration wait velocity instrument
+        """
+    return textwrap.dedent(prompt)
 
 
 # --- メイン処理 ---
@@ -191,6 +218,9 @@ def main():
     print("🚀 Starting static cache generation for all keys...")
     all_combinations = list(itertools.product(chord_progressions, ALL_KEYS, STYLES, VARIATIONS))
 
+    supress_token_prob_ratio: float = 0.3
+    instrument: str = "Alto Saxophone"
+
     with tqdm(all_combinations, desc="Generating Cache", unit="file") as pbar:
         for prog_info, target_key, style, var in pbar:
             original_prog = prog_info["progression"]
@@ -209,16 +239,23 @@ def main():
             chords = [chord.strip() for chord in transposed_prog.split("-")]
             melodies = {}
             try:
-                for chord in chords:
-                    processor = MelodyControlLogitsProcessor(chord, note_tokenizer_helper)
-                    prompt = (
-                        f"style={style}, chord_progression={chord}\n"
-                        "pitch duration wait velocity instrument\n"
+                prev_bar_notes = ""
+                for bars, chord in enumerate(chords):
+                    processor = MelodyControlLogitsProcessor(
+                        chord,
+                        note_tokenizer_helper,
+                        supress_token_prob_ratio=supress_token_prob_ratio,
                     )
+
+                    prompt = build_prompt(
+                        style, original_prog, bars, chord, prev_bar_notes, instrument
+                    )
+
                     raw_output = generate_midi_from_model(
                         model, tokenizer, device, prompt, processor, seed=var
                     )
                     encoded_midi = parse_and_encode_midi(raw_output)
+                    prev_bar_notes = parse_and_pickup_notes(raw_output)
 
                     key = chord
                     count = 2
