@@ -53,12 +53,14 @@ generate-build-image:
 generate-cache-prod: generate-build-image
 	@echo "🔥 Running PRODUCTION cache generation (5 variations)..."
 	docker run --gpus all --rm -v ./dist:/app/dist \
-    -e APP_ENV=production --env-file .env $(GENERATOR_DOCKER_IMAGE)
+	-e MODEL_NAME=$(MODEL_NAME) \
+	-e APP_ENV=production --env-file .env $(GENERATOR_DOCKER_IMAGE)
 
 generate-cache-dev: generate-build-image
 	@echo "🔥 Running DEVELOPMENT cache generation (2 variations)..."
 	docker run --gpus all --rm -v ./dist:/app/dist \
-    -e APP_ENV=development --env-file .env $(GENERATOR_DOCKER_IMAGE)
+	-e MODEL_NAME=$(MODEL_NAME) \
+	-e APP_ENV=development --env-file .env $(GENERATOR_DOCKER_IMAGE)
 
 sync-s3:
 	@if [ ! -d "./dist" ]; then \
