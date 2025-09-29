@@ -52,7 +52,7 @@ else:
         return decorator
 
 
-# --- モデル読み込み (変更なし) ---
+# --- モデル読み込み ---
 MODEL_NAME = os.getenv("MODEL_NAME", "models/production.pth/")
 print(f"🧠 Loading model: {MODEL_NAME}...")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
