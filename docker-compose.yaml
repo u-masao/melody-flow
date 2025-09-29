@@ -14,7 +14,7 @@ services:
     expose:
       - "8000" # コンテナ間通信用
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 10s
       timeout: 5s
       retries: 10
