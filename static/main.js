@@ -614,15 +614,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function scheduleBackingTrack() {
         if (backingPart) { backingPart.stop(0).clear().dispose(); backingPart = null; }
 
-        const shuffleDuration = Tone.Time('8t').toSeconds() * 2;
-
         let events = progression.flatMap((chord, measureIndex) => {
             const chordName = chord.split('_')[0];
             const notes = Chord.getVoicing(chordName);
             const measureEvents = [{ time: `${measureIndex}m`, type: 'update', chord: chord, chordIndex: measureIndex }];
             if (notes.length > 0) {
                 for (let beat = 0; beat < 4; beat++) {
-                    measureEvents.push({ time: `${measureIndex}:${beat}:0`, type: 'play', notes: notes, duration: shuffleDuration });
+                    const isBackbeat = (beat === 1 || beat === 3);
+                    const velocity = isBackbeat ? 0.9 : 0.6; // バックビートを強く
+                    const duration = '4t'; // Note Offをシャッフルっぽく（3連符の長さ）
+
+                    measureEvents.push({
+                        time: `${measureIndex}:${beat}:0`,
+                        type: 'play',
+                        notes: notes,
+                        duration: duration,
+                        velocity: velocity
+                    });
                 }
             }
             return measureEvents;
@@ -638,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (events.length === 0) return;
         backingPart = new Tone.Part((time, value) => {
             if (value.type === 'play') {
-                pianoSynth.triggerAttackRelease(value.notes, value.duration, time);
+                pianoSynth.triggerAttackRelease(value.notes, value.duration, time, value.velocity);
             } else if (value.type === 'update') {
                 Tone.Draw.schedule(() => {
                     activeChord = value.chord; currentNoteIndex = 0;
@@ -728,7 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (totalTicks > 0 && element) {
             const startLoopTicks = startTicks % totalTicks;
-            
+           
             if (startLoopTicks + durationTicks > totalTicks) {
                 // ループをまたぐ場合
                 const width1_ticks = totalTicks - startLoopTicks;
@@ -1065,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof WebMidi === 'undefined' || !navigator.requestMIDIAccess) {
             if(settingsButton) settingsButton.style.display = 'none';
             return;
-        }
+        }
         try {
             await WebMidi.enable();
             populateMidiDeviceList();
