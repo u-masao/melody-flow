@@ -170,7 +170,7 @@ def generate_melody(
             pitch duration wait velocity instrument
             """
         prompt = textwrap.dedent(prompt)
-        raw_output = generate_midi_from_model(prompt, processor, seed=variation)
+        raw_output = generate_midi_from_model(prompt, processor, seed=variation + bars)
         encoded_midi = parse_and_encode_midi(raw_output)
         prev_bar_notes = parse_and_pickup_notes(raw_output)
 
