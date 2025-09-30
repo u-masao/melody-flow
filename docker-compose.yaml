@@ -6,13 +6,19 @@ services:
       dockerfile: Dockerfile # ルートにあるAPIサーバー用のDockerfile
     restart: unless-stopped
     environment:
-      - MODEL_NAME=/app/models/production.pth/
+      - MODEL_NAME=${MODEL_NAME}
     volumes:
       - ./src:/app/src # ソースコードの変更を即時反映
       - ./static:/app/static # static コードの変更を即時反映
       - ./models:/app/models:ro # モデルをRead-Onlyでマウント
     expose:
       - "8000" # コンテナ間通信用
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s # モデル読み込みなど起動に時間がかかるため、30秒の猶予期間を設ける
     deploy:
       resources:
         reservations:
@@ -32,7 +38,8 @@ services:
     ports:
       - "8000:80" # ホストの8000番ポートをNginxの80番ポートに接続
     depends_on:
-      - api
+      api:
+        condition: service_healthy # apiサービスがhealthy状態になるまで待機する
 
 volumes:
   nginx_cache_data:
