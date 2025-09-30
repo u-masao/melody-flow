@@ -1,8 +1,6 @@
 import unsloth  # noqa: F401
-from PIL import Image
-import io
-import matplotlib.pyplot as plt
 import hashlib
+import io
 import itertools
 import json
 import os
@@ -12,14 +10,16 @@ import sys
 
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from loguru import logger
-from src.model.utils import load_model_and_tokenizer  # 共通関数をインポート
-from src.api.main import generate_melody
 from fastapi import Response
+from loguru import logger
+import matplotlib.pyplot as plt
+from PIL import Image
+from src.api.main import generate_melody
+from src.model.utils import load_model_and_tokenizer  # 共通関数をインポート
+from src.model.visualize import plot_melodies
 from tqdm import tqdm
 import wandb
 import weave
-from src.model.visualize import plot_melodies
 
 load_dotenv()
 

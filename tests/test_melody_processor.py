@@ -1,12 +1,11 @@
 import pytest
-import torch
-import torch.nn.functional as F
-from transformers import PreTrainedTokenizer
-
 from src.model.melody_processor import (
     MelodyControlLogitsProcessor,
     NoteTokenizer,
 )
+import torch
+import torch.nn.functional as F
+from transformers import PreTrainedTokenizer
 
 # --- Mocks and Fixtures ---
 

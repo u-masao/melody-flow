@@ -1,13 +1,14 @@
-import json
-from fastapi import Response
-import streamlit as st
 import hashlib
 import itertools
+import json
 import os
 from pathlib import Path
 import sys
+
 from dotenv import load_dotenv
+from fastapi import Response
 from loguru import logger
+import streamlit as st
 from tqdm import tqdm
 import wandb
 
@@ -15,13 +16,12 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 load_dotenv()
 
 from src.api.main import generate_melody  # noqa: E402
+from src.model.visualize import plot_melodies  # noqa: E402
+import src.warmup.generate_static_cache as conf  # noqa: E402
 from src.warmup.generate_static_cache import (  # noqa: E402
     get_chord_progressions_from_html,
     transpose_progression,
 )
-import src.warmup.generate_static_cache as conf  # noqa: E402
-from src.model.visualize import plot_melodies  # noqa: E402
-
 
 # デフォルトのハンドラを削除
 logger.remove()

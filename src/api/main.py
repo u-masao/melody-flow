@@ -1,8 +1,8 @@
 import unsloth  # noqa: F401
-import textwrap
 import base64
 import os
 import re
+import textwrap
 import time
 
 from fastapi import FastAPI, Query, Response
@@ -21,8 +21,8 @@ APP_ENV = os.getenv("APP_ENV", "production")  # デフォルトは安全な 'pro
 if APP_ENV != "production":
     print("🚀 Running in DEVELOPMENT mode. Weave is enabled.")
     try:
-        import weave
         import wandb
+        import weave
 
         weave.init("melody-flow-api-dev")
         op = weave.op  # 開発モードでは実際のweave.opを使用

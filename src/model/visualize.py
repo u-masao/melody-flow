@@ -1,11 +1,12 @@
-import io
-import matplotlib.pyplot as plt
-import pretty_midi
-from typing import Any
-from PIL import Image
-import weave
 import base64
+import io
+from typing import Any
+
+import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from PIL import Image
+import pretty_midi
+import weave
 
 
 @weave.op()
