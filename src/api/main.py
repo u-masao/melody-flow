@@ -165,6 +165,7 @@ def generate_melody(
             - Chord for This Bar: {chord}
             - Prev Bar Notes: {prev_bar_notes}
             - Instrument: {instrument}
+            - Remark: Utilize a wide tonal range
             Generate the melody for this bar only. The output format is:
             pitch duration wait velocity instrument
             """
