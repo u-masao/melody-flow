@@ -4,6 +4,8 @@ import pretty_midi
 from typing import Any
 from PIL import Image
 import weave  # weaveをインポート
+import base64
+from matplotlib.ticker import MultipleLocator
 
 # Pillowをインストールする必要があります
 # pip install Pillow
@@ -59,3 +61,38 @@ def create_pianoroll_image(parsed_notes: list[dict[str, Any]]) -> Image.Image | 
 
     # バイト列からPillow Imageオブジェクトを作成して返す
     return Image.open(buf)
+
+
+def plot_melodies(cache: dict):
+    """
+    ノートをプロットする関数。
+    x軸を非表示にし、y軸に12間隔の補助線を追加します。
+    """
+    chord_melodies = cache.get("chord_melodies", {})
+
+    # プロットの準備
+    fig, ax = plt.subplots(2, (1 + len(chord_melodies)) // 2, figsize=(8, 3), sharey=True)
+    ax = ax.flatten()
+
+    # 各コードごとにプロット
+    for i, (chord, notes_base64) in enumerate(chord_melodies.items()):
+        # データのデコード
+        notes_str = base64.b64decode(notes_base64).decode()
+        notes = [int(x.split(" ")[0]) for x in notes_str.split("\n") if x]
+
+        # 散布図をプロット
+        ax[i].plot(notes, marker=".", linestyle="")
+
+        # y軸の範囲とタイトルを設定
+        ax[i].set_ylim(12 * 4, 12 * 7)
+        ax[i].set_title(chord)
+
+        # x軸の目盛りとラベルを非表示にする
+        ax[i].tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
+
+        # y軸に12ごとの補助線（グリッド）を引く
+        ax[i].yaxis.set_major_locator(MultipleLocator(12))
+        ax[i].grid(which="major", axis="y", linestyle="--")
+
+    fig.tight_layout()
+    return fig
