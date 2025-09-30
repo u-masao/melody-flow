@@ -1,4 +1,5 @@
 import unsloth  # noqa: F401
+from PIL import Image
 import io
 import matplotlib.pyplot as plt
 import hashlib
@@ -146,13 +147,14 @@ def get_chord_progressions_from_html(file_path: Path) -> list[dict]:
 
 
 @weave.op()
-def plot_melodies_weave(response):
+def plot_melodies_weave(response, **kwargs):
     fig = plot_melodies(response)
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     plt.close(fig)
     buf.seek(0)
-    return buf
+    # バイト列からPillow Imageオブジェクトを作成して返す
+    return Image.open(buf)
 
 
 # --- メイン処理 ---
@@ -200,22 +202,23 @@ def main(
                 continue
 
             # メロディを生成(API 呼び出し)
+            generate_options = {
+                "chord_progression": transposed_prog,
+                "style": style,
+                "variation": var,
+                "supress_token_prob_ratio": supress_token_prob_ratio,
+                "instrument": instrument,
+            }
             response = generate_melody(
                 Response,
-                chord_progression=transposed_prog,
-                style=style,
-                variation=var,
-                supress_token_prob_ratio=supress_token_prob_ratio,
-                instrument=instrument,
+                **generate_options,
             )
 
             # ファイルに保存
             try:
                 with open(output_file, "w", encoding="utf-8") as fo:
                     json.dump(response, fo)
-                buf = plot_melodies_weave(response)
-                with open(png_file, "wb") as fo:
-                    fo.write(buf)
+                plot_melodies_weave(response, **generate_options).save(png_file)
 
             except Exception as e:
                 tqdm.write(f"❌ FAILED to generate {output_file}: {e}")
