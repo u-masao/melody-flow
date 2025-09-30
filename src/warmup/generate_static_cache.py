@@ -47,7 +47,8 @@ else:
     VARIATIONS = range(1, 3)  # 開発中は2個
     logger.info(f"🛠️ Running in DEVELOPMENT mode: {len(VARIATIONS)} variations will be generated.")
 
-STYLES = ["JAZZ風", "POP風"]
+# STYLES = ["JAZZ風", "POP風"]
+STYLES = ["JAZZ風"]
 
 # --- 移調ロジック用の定数 (変更なし) ---
 NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -179,6 +180,12 @@ def main(
     # 全ての組み合わせを作成
     logger.info("🚀 Starting static cache generation for all keys...")
     all_combinations = list(itertools.product(chord_progressions, ALL_KEYS, STYLES, VARIATIONS))
+
+    # output setup
+    logger.info(f"{chord_progressions=}")
+    logger.info(f"{ALL_KEYS=}")
+    logger.info(f"{STYLES=}")
+    logger.info(f"{VARIATIONS=}")
 
     with tqdm(all_combinations, desc="Generating Cache", unit="file") as pbar:
         for prog_info, target_key, style, var in pbar:
