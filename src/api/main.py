@@ -1,8 +1,8 @@
 import unsloth  # noqa: F401
-import textwrap
 import base64
 import os
 import re
+import textwrap
 import time
 
 from fastapi import FastAPI, Query, Response
@@ -21,8 +21,8 @@ APP_ENV = os.getenv("APP_ENV", "production")  # デフォルトは安全な 'pro
 if APP_ENV != "production":
     print("🚀 Running in DEVELOPMENT mode. Weave is enabled.")
     try:
-        import weave
         import wandb
+        import weave
 
         weave.init("melody-flow-api-dev")
         op = weave.op  # 開発モードでは実際のweave.opを使用
@@ -165,11 +165,12 @@ def generate_melody(
             - Chord for This Bar: {chord}
             - Prev Bar Notes: {prev_bar_notes}
             - Instrument: {instrument}
+            - Remark: Utilize a wide tonal range
             Generate the melody for this bar only. The output format is:
             pitch duration wait velocity instrument
             """
         prompt = textwrap.dedent(prompt)
-        raw_output = generate_midi_from_model(prompt, processor, seed=variation)
+        raw_output = generate_midi_from_model(prompt, processor, seed=variation + bars)
         encoded_midi = parse_and_encode_midi(raw_output)
         prev_bar_notes = parse_and_pickup_notes(raw_output)
 

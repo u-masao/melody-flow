@@ -26,6 +26,7 @@ dependencies = [
     "fluidsynth>=0.2",
     "matplotlib>=3.10.6",
     "pretty-midi>=0.2.10",
+    "streamlit>=1.50.0",
 ]
 
 [project.optional-dependencies]
