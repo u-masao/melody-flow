@@ -1,4 +1,6 @@
 import unsloth  # noqa: F401
+import io
+import matplotlib.pyplot as plt
 import hashlib
 import itertools
 import json
@@ -143,6 +145,16 @@ def get_chord_progressions_from_html(file_path: Path) -> list[dict]:
         return []
 
 
+@weave.op()
+def plot_melodies_weave(response):
+    fig = plot_melodies(response)
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
 # --- メイン処理 ---
 def main(
     supress_token_prob_ratio: float = 0.3,
@@ -181,6 +193,7 @@ def main(
             output_path = OUTPUT_DIR / prog_hash / style
             os.makedirs(output_path, exist_ok=True)
             output_file = output_path / f"{var}.json"
+            png_file = output_path / f"{var}.png"
 
             # ファイル存在チェック
             if os.path.exists(output_file):
@@ -200,7 +213,10 @@ def main(
             try:
                 with open(output_file, "w", encoding="utf-8") as fo:
                     json.dump(response, fo)
-                plot_melodies(response).savefig(output_path / f"{var}.png")
+                buf = plot_melodies_weave(response)
+                with open(png_file, "wb") as fo:
+                    fo.write(buf)
+
             except Exception as e:
                 tqdm.write(f"❌ FAILED to generate {output_file}: {e}")
 

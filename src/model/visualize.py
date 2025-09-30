@@ -63,7 +63,6 @@ def create_pianoroll_image(parsed_notes: list[dict[str, Any]]) -> Image.Image | 
     return Image.open(buf)
 
 
-@weave.op()
 def plot_melodies(cache: dict):
     """
     ノートをプロットする関数。
