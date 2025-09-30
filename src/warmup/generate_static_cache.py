@@ -16,6 +16,7 @@ from fastapi import Response
 from tqdm import tqdm
 import wandb
 import weave
+from src.model.visualize import plot_melodies
 
 load_dotenv()
 
@@ -199,6 +200,7 @@ def main(
             try:
                 with open(output_file, "w", encoding="utf-8") as fo:
                     json.dump(response, fo)
+                plot_melodies(response).savefig(output_path / f"{var}.png")
             except Exception as e:
                 tqdm.write(f"❌ FAILED to generate {output_file}: {e}")
 

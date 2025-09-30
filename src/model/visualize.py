@@ -11,7 +11,7 @@ from matplotlib.ticker import MultipleLocator
 # pip install Pillow
 
 
-@weave.op()  # weave.opで関数を装飾
+@weave.op()
 def create_pianoroll_image(parsed_notes: list[dict[str, Any]]) -> Image.Image | None:
     """
     パースされたノート情報からピアノロール画像を生成し、Pillow Imageオブジェクトとして返す。
@@ -63,6 +63,7 @@ def create_pianoroll_image(parsed_notes: list[dict[str, Any]]) -> Image.Image | 
     return Image.open(buf)
 
 
+@weave.op()
 def plot_melodies(cache: dict):
     """
     ノートをプロットする関数。
