@@ -7,6 +7,14 @@ train_params:
     epochs: 1
     model_path: 'dx2102/llama-midi'
     model_name: 'llama-midi'
+  e2-llama-midi:
+    epochs: 2
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
+  e3-llama-midi:
+    epochs: 3
+    model_path: 'dx2102/llama-midi'
+    model_name: 'llama-midi'
   e5-llama-midi:
     epochs: 5
     model_path: 'dx2102/llama-midi'
