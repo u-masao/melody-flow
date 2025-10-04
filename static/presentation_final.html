@@ -141,13 +141,14 @@
         }
         #prev { left: 2vw; }
         #next { right: 2vw; }
+
+        #opening-video { max-height: 50px; }
     </style>
 </head>
 <body>
-
     <section class="slide active">
         <div class="text-center fade-in-up">
-             <svg class="mx-auto mb-8" width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="mx-auto mb-8" width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
                         <stop offset="0%" stop-color="#818cf8"/>
@@ -281,7 +282,7 @@
     </section>
 
     <section class="slide p-0 relative">
-        <video class="w-full h-full object-cover" loop playsinline>
+        <video id="demo-video" class="w-full h-full object-cover" loop playsinline>
             <source src="artifacts/demo.mp4" type="video/mp4">
         </video>
         <div id="autoplay-error-message" class="hidden absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center text-center p-8">
@@ -379,6 +380,19 @@
         </div>
     </section>
 
+    <section class="slide">
+        <div class="fade-in bottom-1 left-1">
+           <video id="opening-video" loop playsinline>
+               <source src="artifacts/opening_bgm.mp4" type="video/mp4">
+           </video>
+        </div>
+        <div id="opening-video-error" class="hidden inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center text-center p-8">
+            <h3 class="text-2xl font-bold text-white mb-4">動画の自動再生がブロックされました</h3>
+            <p class="text-lg text-gray-300">快適なデモ体験のため、ブラウザの設定でこのサイトの音声の再生を許可してください。</p>
+            <p class="text-sm text-gray-400 mt-8">設定変更後、ページを再読み込みしてください。</p>
+        </div>
+    </section>
+
     <div id="prev" class="nav-arrow">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -401,10 +415,14 @@
                 vid.pause();
             });
 
-            // Hide the error message when switching slides
-            const errorMessage = document.getElementById('autoplay-error-message');
-            if (errorMessage) {
-                errorMessage.classList.add('hidden');
+            // Hide error messages when switching slides
+            const demoErrorMessage = document.getElementById('autoplay-error-message');
+            if (demoErrorMessage) {
+                demoErrorMessage.classList.add('hidden');
+            }
+            const openingVideoError = document.getElementById('opening-video-error');
+            if (openingVideoError) {
+                openingVideoError.classList.add('hidden');
             }
 
             slides.forEach((slide, i) => {
@@ -414,18 +432,34 @@
             const newSlide = slides[index];
             newSlide.classList.add('active');
 
-            // If the new slide has a video, try to play it
-            const video = newSlide.querySelector('video');
-            if (video) {
-                video.currentTime = 0; // Rewind to start
-                video.volume = 1.0;    // Set volume to max
-                const playPromise = video.play();
+            // Try to play the opening BGM video on the first slide
+            const openingVideo = newSlide.querySelector('#opening-video');
+            if (openingVideo) {
+                openingVideo.currentTime = 0;
+                openingVideo.muted = false; // Attempt to play with sound for the check
+                openingVideo.volume = 0.3;  // Keep it subtle
+                const playPromise = openingVideo.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.log("Video autoplay was prevented:", error);
-                        // Show the message if autoplay fails
-                        if (errorMessage) {
-                            errorMessage.classList.remove('hidden');
+                        console.error("Opening BGM autoplay failed:", error);
+                        if (openingVideoError) {
+                            openingVideoError.classList.remove('hidden');
+                        }
+                    });
+                }
+            }
+
+            // Try to play the main demo video on its slide
+            const demoVideo = newSlide.querySelector('#demo-video');
+            if (demoVideo) {
+                demoVideo.currentTime = 0;
+                demoVideo.volume = 1.0;
+                const playPromise = demoVideo.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Demo video autoplay was prevented:", error);
+                        if (demoErrorMessage) {
+                            demoErrorMessage.classList.remove('hidden');
                         }
                     });
                 }
