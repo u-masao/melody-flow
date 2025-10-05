@@ -472,6 +472,12 @@
         }
 
         function prevSlide() {
+            if (currentSlide === 0) {
+                // すでに全画面でなければ実行
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(e => console.error(e));
+                }
+            }
             currentSlide = (currentSlide - 1 + slides.length) % slides.length;
             showSlide(currentSlide);
         }
